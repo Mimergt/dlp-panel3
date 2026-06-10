@@ -182,3 +182,27 @@ Este archivo documenta el historial tecnico y resumen de conversaciones para ret
 
 ### Estado
 - Cambio listo para validar visualmente con recarga normal del panel.
+
+## 2026-06-09 (iteracion 1.1.7)
+
+### Resumen de conversacion
+- Se solicito usar la guia visual como referencia, empezando solo por el header.
+- Se pidio: marca/logo DEL PUENTE, nombre tienda, fecha/hora y boton de cerrar sesion.
+
+### Cambios realizados
+- Version actualizada a 1.1.7.
+- Header redisenado con:
+  - logo y titulo de marca
+  - badge de tienda activa
+  - fecha/hora en vivo
+  - boton Cerrar Sesion
+
+### Archivos tocados
+- dlp-paneles.php
+- includes/shortcode.php
+- assets/js/panel.js
+- assets/css/panel.css
+- README.md
+
+### Estado
+- Listo para validacion visual del header en desktop y mobile.

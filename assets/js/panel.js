@@ -29,6 +29,33 @@
       .replace(/'/g, '&#39;');
   }
 
+  function getStoreLabel() {
+    if (!Array.isArray(state.stores) || state.stores.length === 0) {
+      return 'Sin tienda asignada';
+    }
+
+    if (state.stores.length === 1) {
+      return state.stores[0].name || 'Tienda';
+    }
+
+    return state.stores[0].name + ' +' + (state.stores.length - 1);
+  }
+
+  function formatNowTime() {
+    return new Date().toLocaleTimeString('es-GT', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  function formatNowDate() {
+    return new Date().toLocaleDateString('es-GT', {
+      weekday: 'long',
+      day: '2-digit',
+      month: 'long'
+    });
+  }
+
   function statusLabel(status) {
     if (status === 'processing') return 'Procesando';
     if (status === 'prep') return 'Preparando';
@@ -170,8 +197,20 @@
 
     root.innerHTML = '' +
       '<div class="dlp-toolbar">' +
-        '<h2>DLP Paneles v1.1.6</h2>' +
-        '<small>Refresco automatico cada ' + Number(window.DLP_PANELES_CONFIG.refreshSeconds || 30) + 's</small>' +
+        '<div class="dlp-toolbar-left">' +
+          '<div class="dlp-brand">' +
+            '<img src="' + esc(window.DLP_PANELES_CONFIG.brandLogoUrl || '') + '" alt="DEL PUENTE" class="dlp-brand-logo" />' +
+            '<span class="dlp-brand-title">' + esc(window.DLP_PANELES_CONFIG.brandTitle || 'DEL PUENTE') + '</span>' +
+          '</div>' +
+          '<div class="dlp-store-name">' + esc(getStoreLabel()) + '</div>' +
+        '</div>' +
+        '<div class="dlp-toolbar-right">' +
+          '<div class="dlp-datetime">' +
+            '<strong>' + esc(formatNowTime()) + '</strong>' +
+            '<span>' + esc(formatNowDate()) + '</span>' +
+          '</div>' +
+          '<a class="dlp-btn dlp-btn-logout" href="' + esc(window.DLP_PANELES_CONFIG.logoutUrl || '#') + '">Cerrar Sesion</a>' +
+        '</div>' +
       '</div>' +
       (state.networkWarning ? '<div class="dlp-netwarn">' + esc(state.networkWarning) + '</div>' : '') +
       '<div class="dlp-layout">' +

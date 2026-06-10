@@ -2,9 +2,70 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
+  gap: 14px;
   margin-bottom: 12px;
   font-family: "Segoe UI", Tahoma, sans-serif;
+  border: 1px solid #d8dce8;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 12px 14px;
+}
+
+.dlp-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dlp-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dlp-brand-logo {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.dlp-brand-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: #be0f2f;
+  letter-spacing: 0.3px;
+}
+
+.dlp-store-name {
+  border: 1px solid #d8dce8;
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: #f3f5f9;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.dlp-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dlp-datetime {
+  display: grid;
+  text-align: right;
+}
+
+.dlp-datetime strong {
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+.dlp-datetime span {
+  font-size: 13px;
+  color: #596172;
 }
 
 .dlp-layout {
@@ -186,7 +247,34 @@
   color: #fff;
 }
 
+.dlp-btn-logout {
+  text-decoration: none;
+  background: #1e2025;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+}
+
 @media (max-width: 980px) {
+  .dlp-toolbar {
+    align-items: flex-start;
+  }
+
+  .dlp-toolbar,
+  .dlp-toolbar-left,
+  .dlp-toolbar-right {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .dlp-toolbar-right {
+    align-items: flex-start;
+  }
+
+  .dlp-datetime {
+    text-align: left;
+  }
+
   .dlp-layout {
     grid-template-columns: 1fr;
   }
