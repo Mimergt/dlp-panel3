@@ -120,3 +120,23 @@ Este archivo documenta el historial tecnico y resumen de conversaciones para ret
 
 ### Estado
 - Version 1.1.3 lista para validacion en usuarios `multistore_user` de tienda.
+
+## 2026-06-09 (iteracion 1.1.4)
+
+### Resumen de conversacion
+- El filtrado y fetch mejoraron, pero faltaba separar visualmente pedidos en `prep`.
+- Se solicito mostrar totales en titulos de columnas con formato `(N)`.
+
+### Cambios realizados
+- Version actualizada a 1.1.4.
+- Se separo columna `Preparacion` de `Procesando`.
+- Se ajustaron titulos de columnas para mostrar totales en parentesis.
+
+### Archivos tocados
+- dlp-paneles.php
+- includes/rest.php
+- assets/js/panel.js
+- README.md
+
+### Estado
+- Pendiente de validacion funcional en panel con pedidos `processing`, `prep` y `lpr/rtp`.

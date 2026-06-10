@@ -7,7 +7,7 @@
   var state = {
     orders: [],
     selectedOrderId: null,
-    counts: { processing: 0, shipped: 0 },
+    counts: { processing: 0, prep: 0, shipped: 0 },
     stores: [],
     networkWarning: '',
     firstLoadDone: false,
@@ -101,7 +101,9 @@
   function renderCards(status) {
     return state.orders
       .filter(function (order) {
-        return status === 'processing' ? order.group === 'processing' : order.group === 'shipped';
+        if (status === 'processing') return order.group === 'processing';
+        if (status === 'prep') return order.group === 'prep';
+        return order.group === 'shipped';
       })
       .map(function (order) {
         var active = order.id === state.selectedOrderId ? 'active' : '';
@@ -168,14 +170,15 @@
 
     root.innerHTML = '' +
       '<div class="dlp-toolbar">' +
-        '<h2>DLP Paneles v1.1.3</h2>' +
+        '<h2>DLP Paneles v1.1.4</h2>' +
         '<small>Refresco automatico cada ' + Number(window.DLP_PANELES_CONFIG.refreshSeconds || 30) + 's</small>' +
       '</div>' +
       (state.networkWarning ? '<div class="dlp-netwarn">' + esc(state.networkWarning) + '</div>' : '') +
       '<div class="dlp-layout">' +
         '<section class="dlp-board">' +
-          '<div class="dlp-column"><h3>Procesando / Preparacion <span>' + Number(state.counts.processing || 0) + '</span></h3><div>' + renderCards('processing') + '</div></div>' +
-          '<div class="dlp-column"><h3>Enviada / LPR <span>' + Number(state.counts.shipped || 0) + '</span></h3><div>' + renderCards('shipped') + '</div></div>' +
+          '<div class="dlp-column"><h3>Procesando (' + Number(state.counts.processing || 0) + ')</h3><div>' + renderCards('processing') + '</div></div>' +
+          '<div class="dlp-column"><h3>Preparacion (' + Number(state.counts.prep || 0) + ')</h3><div>' + renderCards('prep') + '</div></div>' +
+          '<div class="dlp-column"><h3>Enviada / LPR (' + Number(state.counts.shipped || 0) + ')</h3><div>' + renderCards('shipped') + '</div></div>' +
         '</section>' +
         renderDetail(selected) +
       '</div>';
@@ -186,7 +189,7 @@
       .then(function (data) {
         state.networkWarning = '';
         state.orders = Array.isArray(data.orders) ? data.orders : [];
-        state.counts = data.counts || { processing: 0, shipped: 0 };
+        state.counts = data.counts || { processing: 0, prep: 0, shipped: 0 };
         state.stores = Array.isArray(data.stores) ? data.stores : [];
 
         if (!state.selectedOrderId && state.orders.length) {

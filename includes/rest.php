@@ -232,7 +232,7 @@ class DLP_Paneles_REST {
                 return new WP_REST_Response(array(
                     'scope' => 'tienda',
                     'orders' => array(),
-                    'counts' => array('processing' => 0, 'shipped' => 0),
+                    'counts' => array('processing' => 0, 'prep' => 0, 'shipped' => 0),
                     'stores' => array(),
                     'server_time' => current_time('mysql'),
                 ));
@@ -250,7 +250,7 @@ class DLP_Paneles_REST {
 
         $order_ids = wc_get_orders($args);
         $now_ts = current_time('timestamp');
-        $counts = array('processing' => 0, 'shipped' => 0);
+        $counts = array('processing' => 0, 'prep' => 0, 'shipped' => 0);
         $result = array();
 
         foreach ($order_ids as $order_id) {
@@ -273,7 +273,13 @@ class DLP_Paneles_REST {
                 continue;
             }
 
-            $group = self::is_processing_status($status) ? 'processing' : 'shipped';
+            if ($status === 'processing') {
+                $group = 'processing';
+            } elseif ($status === 'prep') {
+                $group = 'prep';
+            } else {
+                $group = 'shipped';
+            }
 
             $counts[$group]++;
 
