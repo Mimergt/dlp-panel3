@@ -140,3 +140,24 @@ Este archivo documenta el historial tecnico y resumen de conversaciones para ret
 
 ### Estado
 - Pendiente de validacion funcional en panel con pedidos `processing`, `prep` y `lpr/rtp`.
+
+## 2026-06-09 (iteracion 1.1.5)
+
+### Resumen de conversacion
+- Se solicito definir columnas una por una con nombres de operacion exactos.
+
+### Cambios realizados
+- Version actualizada a 1.1.5.
+- Nombres de columnas ajustados:
+  - `Recibidos` -> estado `processing`
+  - `En preparacion` -> estado `prep`
+  - `Enviado / LPR` -> estados `lpr`/`rtp`
+- Etiqueta de estado `prep` mostrada como `Preparando` en tarjetas/detalle.
+
+### Archivos tocados
+- dlp-paneles.php
+- assets/js/panel.js
+- README.md
+
+### Estado
+- Listo para validar en tienda con pedidos en los 3 bloques de estado.

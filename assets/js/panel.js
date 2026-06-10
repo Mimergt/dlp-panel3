@@ -31,7 +31,7 @@
 
   function statusLabel(status) {
     if (status === 'processing') return 'Procesando';
-    if (status === 'prep') return 'Preparacion';
+    if (status === 'prep') return 'Preparando';
     if (status === 'lpr') return 'Enviada / LPR';
     if (status === 'rtp') return 'Enviada / LPR';
     return status;
@@ -170,15 +170,15 @@
 
     root.innerHTML = '' +
       '<div class="dlp-toolbar">' +
-        '<h2>DLP Paneles v1.1.4</h2>' +
+        '<h2>DLP Paneles v1.1.5</h2>' +
         '<small>Refresco automatico cada ' + Number(window.DLP_PANELES_CONFIG.refreshSeconds || 30) + 's</small>' +
       '</div>' +
       (state.networkWarning ? '<div class="dlp-netwarn">' + esc(state.networkWarning) + '</div>' : '') +
       '<div class="dlp-layout">' +
         '<section class="dlp-board">' +
-          '<div class="dlp-column"><h3>Procesando (' + Number(state.counts.processing || 0) + ')</h3><div>' + renderCards('processing') + '</div></div>' +
-          '<div class="dlp-column"><h3>Preparacion (' + Number(state.counts.prep || 0) + ')</h3><div>' + renderCards('prep') + '</div></div>' +
-          '<div class="dlp-column"><h3>Enviada / LPR (' + Number(state.counts.shipped || 0) + ')</h3><div>' + renderCards('shipped') + '</div></div>' +
+          '<div class="dlp-column"><h3>Recibidos (' + Number(state.counts.processing || 0) + ')</h3><div>' + renderCards('processing') + '</div></div>' +
+          '<div class="dlp-column"><h3>En preparacion (' + Number(state.counts.prep || 0) + ')</h3><div>' + renderCards('prep') + '</div></div>' +
+          '<div class="dlp-column"><h3>Enviado / LPR (' + Number(state.counts.shipped || 0) + ')</h3><div>' + renderCards('shipped') + '</div></div>' +
         '</section>' +
         renderDetail(selected) +
       '</div>';
