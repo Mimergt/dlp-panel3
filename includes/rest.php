@@ -72,17 +72,12 @@ class DLP_Paneles_REST {
     }
 
     public static function is_supervisor_user($user_id) {
-        if (user_can($user_id, 'manage_woocommerce') || user_can($user_id, 'manage_options')) {
+        if (user_can($user_id, 'manage_options')) {
             return true;
         }
 
-        $user = get_user_by('id', $user_id);
-        if (!$user) {
-            return false;
-        }
-
-        $roles = (array) $user->roles;
-        return in_array('shop_manager', $roles, true) || in_array('administrator', $roles, true);
+        // Permite marcar supervisores sin depender de roles compartidos como shop_manager.
+        return get_user_meta($user_id, '_dlp_paneles_supervisor', true) === '1';
     }
 
     public static function get_user_store_ids($user_id) {
@@ -181,6 +176,7 @@ class DLP_Paneles_REST {
                     'key' => 'extra_store_name',
                     'value' => $accessible_store_ids,
                     'compare' => 'IN',
+                    'type' => 'NUMERIC',
                 ),
             );
         }

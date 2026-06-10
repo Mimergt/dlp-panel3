@@ -15,6 +15,16 @@
   color: #1e2025;
 }
 
+.dlp-netwarn {
+  margin-bottom: 10px;
+  padding: 10px;
+  border: 1px solid #f2d99f;
+  border-radius: 8px;
+  background: #fff8e7;
+  color: #76561b;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+}
+
 .dlp-board {
   display: grid;
   grid-template-columns: repeat(3, minmax(220px, 1fr));

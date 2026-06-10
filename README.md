@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.1.1
+- 1.1.2
 
 ## Shortcode
 - [dlp_paneles]
@@ -19,6 +19,11 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 - Reasignacion de tienda desde el detalle del pedido.
 - Prioridad editable por pedido.
 - Nota interna editable por pedido.
+
+## Incluido en 1.1.2
+- Correccion de alcance: usuarios de tienda ven solo pedidos de sus tiendas asociadas.
+- Supervisores ahora se determinan por `manage_options` o meta de usuario `_dlp_paneles_supervisor = 1`.
+- Polling mas robusto con timeout/reintento y aviso de red no bloqueante.
 
 ## Versionado acordado
 - Ajustes pequenos: 1.1.1, 1.1.2, 1.1.3

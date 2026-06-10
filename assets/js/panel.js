@@ -9,6 +9,8 @@
     selectedOrderId: null,
     counts: { processing: 0, dlv: 0, rtp: 0 },
     stores: [],
+    networkWarning: '',
+    firstLoadDone: false,
   };
 
   function fmtElapsed(seconds) {
@@ -48,7 +50,16 @@
     return 'Sin accion';
   }
 
-  function api(path, method, payload) {
+  function api(path, method, payload, opts) {
+    var options = opts || {};
+    var retries = typeof options.retries === 'number' ? options.retries : 0;
+    var timeoutMs = typeof options.timeoutMs === 'number' ? options.timeoutMs : 12000;
+
+    var controller = new AbortController();
+    var timeout = setTimeout(function () {
+      controller.abort();
+    }, timeoutMs);
+
     return fetch(window.DLP_PANELES_CONFIG.apiBase + path, {
       method: method || 'GET',
       headers: {
@@ -57,13 +68,24 @@
       },
       credentials: 'same-origin',
       body: payload ? JSON.stringify(payload) : undefined,
+      signal: controller.signal,
     }).then(function (res) {
+      clearTimeout(timeout);
       return res.json().then(function (data) {
         if (!res.ok) {
           throw new Error((data && data.message) || 'Error de API');
         }
         return data;
       });
+    }).catch(function (error) {
+      clearTimeout(timeout);
+      if (retries > 0) {
+        return api(path, method, payload, {
+          retries: retries - 1,
+          timeoutMs: timeoutMs
+        });
+      }
+      throw error;
     });
   }
 
@@ -134,9 +156,10 @@
 
     root.innerHTML = '' +
       '<div class="dlp-toolbar">' +
-        '<h2>DLP Paneles v1.1.1</h2>' +
+        '<h2>DLP Paneles v1.1.2</h2>' +
         '<small>Refresco automatico cada ' + Number(window.DLP_PANELES_CONFIG.refreshSeconds || 30) + 's</small>' +
       '</div>' +
+      (state.networkWarning ? '<div class="dlp-netwarn">' + esc(state.networkWarning) + '</div>' : '') +
       '<div class="dlp-layout">' +
         '<section class="dlp-board">' +
           '<div class="dlp-column"><h3>Preparando <span>' + state.counts.processing + '</span></h3><div>' + renderCards('processing') + '</div></div>' +
@@ -148,8 +171,9 @@
   }
 
   function loadPanel() {
-    return api('/panel', 'GET')
+    return api('/panel', 'GET', null, { retries: 1, timeoutMs: 10000 })
       .then(function (data) {
+        state.networkWarning = '';
         state.orders = Array.isArray(data.orders) ? data.orders : [];
         state.counts = data.counts || { processing: 0, dlv: 0, rtp: 0 };
         state.stores = Array.isArray(data.stores) ? data.stores : [];
@@ -167,11 +191,18 @@
           }
         }
 
+        state.firstLoadDone = true;
         render();
       })
       .catch(function (error) {
         console.error(error);
-        alert('No se pudo cargar el panel: ' + error.message);
+
+        if (!state.firstLoadDone) {
+          alert('No se pudo cargar el panel: ' + error.message);
+        } else {
+          state.networkWarning = 'Conexion inestable. Reintentando refresco automatico...';
+          render();
+        }
       });
   }
 

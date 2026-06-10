@@ -68,3 +68,27 @@ Este archivo documenta el historial tecnico y resumen de conversaciones para ret
 ### Estado
 - Fase 1.1 completada en version 1.1.1.
 - Pendiente siguiente: mejorar UX de cancelacion (modal) y hardening adicional.
+
+## 2026-06-09 (iteracion 1.1.2)
+
+### Resumen de conversacion
+- En pruebas reales se detectaron dos incidencias:
+  - error intermitente `Failed to fetch` al refrescar panel
+  - pedidos no filtrados correctamente por tienda
+
+### Cambios realizados
+- Version actualizada a 1.1.2.
+- Se ajusto la logica de supervisor para evitar que `shop_manager` se trate automaticamente como supervisor.
+- Se agrego criterio explicito de supervisor por meta de usuario `_dlp_paneles_supervisor = 1` o capability `manage_options`.
+- Se reforzo filtro por tienda con `meta_query` tipo numerico.
+- Se robustecio polling en frontend con timeout + reintento y aviso de red no bloqueante.
+
+### Archivos tocados
+- dlp-paneles.php
+- includes/rest.php
+- assets/js/panel.js
+- assets/css/panel.css
+- README.md
+
+### Estado
+- Correcciones listas para validacion en entorno WordPress.
