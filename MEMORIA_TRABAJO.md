@@ -92,3 +92,31 @@ Este archivo documenta el historial tecnico y resumen de conversaciones para ret
 
 ### Estado
 - Correcciones listas para validacion en entorno WordPress.
+
+## 2026-06-09 (iteracion 1.1.3)
+
+### Resumen de conversacion
+- Persistia visualizacion de pedidos de otras tiendas para usuarios como `multistore_user`.
+- Persistia error intermitente `Failed to fetch`.
+- Se solicito priorizar logica de obtencion/filtrado antes de mejoras esteticas.
+
+### Cambios realizados
+- Version actualizada a 1.1.3.
+- Filtro por tienda reescrito para usar primero metas de usuario:
+  - `extra_store_name`
+  - `tienda_asignada` (fallback)
+- Se forzo que usuarios con rol `multistore_user` no sean tratados como supervisor.
+- Estados visibles del panel reducidos al flujo operativo y agrupados en 2 columnas:
+  - `processing`/`prep`
+  - `lpr`/`rtp`
+- Polling de frontend reforzado quitando `AbortController` con timeout agresivo.
+- Fetch ahora maneja respuestas no JSON y reintenta sin bloquear la operacion.
+
+### Archivos tocados
+- dlp-paneles.php
+- includes/rest.php
+- assets/js/panel.js
+- README.md
+
+### Estado
+- Version 1.1.3 lista para validacion en usuarios `multistore_user` de tienda.

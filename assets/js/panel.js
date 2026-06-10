@@ -7,7 +7,7 @@
   var state = {
     orders: [],
     selectedOrderId: null,
-    counts: { processing: 0, dlv: 0, rtp: 0 },
+    counts: { processing: 0, shipped: 0 },
     stores: [],
     networkWarning: '',
     firstLoadDone: false,
@@ -30,35 +30,32 @@
   }
 
   function statusLabel(status) {
-    if (status === 'processing') return 'Preparando';
-    if (status === 'dlv') return 'Listo';
-    if (status === 'rtp') return 'Para completar';
+    if (status === 'processing') return 'Procesando';
+    if (status === 'prep') return 'Preparacion';
+    if (status === 'lpr') return 'Enviada / LPR';
+    if (status === 'rtp') return 'Enviada / LPR';
     return status;
   }
 
   function nextStatus(status) {
-    if (status === 'processing') return 'dlv';
-    if (status === 'dlv') return 'rtp';
+    if (status === 'processing') return 'prep';
+    if (status === 'prep') return 'lpr';
+    if (status === 'lpr') return 'completed';
     if (status === 'rtp') return 'completed';
     return null;
   }
 
   function nextLabel(status) {
-    if (status === 'processing') return 'Mover a Listo';
-    if (status === 'dlv') return 'Mover a Para completar';
-    if (status === 'rtp') return 'Completar pedido';
+    if (status === 'processing') return 'Mover a Preparacion';
+    if (status === 'prep') return 'Marcar Enviada / LPR';
+    if (status === 'lpr' || status === 'rtp') return 'Completar pedido';
     return 'Sin accion';
   }
 
   function api(path, method, payload, opts) {
     var options = opts || {};
     var retries = typeof options.retries === 'number' ? options.retries : 0;
-    var timeoutMs = typeof options.timeoutMs === 'number' ? options.timeoutMs : 12000;
-
-    var controller = new AbortController();
-    var timeout = setTimeout(function () {
-      controller.abort();
-    }, timeoutMs);
+    var retryDelayMs = typeof options.retryDelayMs === 'number' ? options.retryDelayMs : 900;
 
     return fetch(window.DLP_PANELES_CONFIG.apiBase + path, {
       method: method || 'GET',
@@ -68,21 +65,33 @@
       },
       credentials: 'same-origin',
       body: payload ? JSON.stringify(payload) : undefined,
-      signal: controller.signal,
     }).then(function (res) {
-      clearTimeout(timeout);
-      return res.json().then(function (data) {
+      var contentType = res.headers.get('content-type') || '';
+
+      if (contentType.indexOf('application/json') !== -1) {
+        return res.json().then(function (data) {
+          if (!res.ok) {
+            throw new Error((data && data.message) || 'Error de API');
+          }
+          return data;
+        });
+      }
+
+      return res.text().then(function () {
         if (!res.ok) {
-          throw new Error((data && data.message) || 'Error de API');
+          throw new Error('Error de API (' + res.status + ')');
         }
-        return data;
+        return {};
       });
     }).catch(function (error) {
-      clearTimeout(timeout);
       if (retries > 0) {
-        return api(path, method, payload, {
-          retries: retries - 1,
-          timeoutMs: timeoutMs
+        return new Promise(function (resolve) {
+          setTimeout(resolve, retryDelayMs);
+        }).then(function () {
+          return api(path, method, payload, {
+            retries: retries - 1,
+            retryDelayMs: retryDelayMs
+          });
         });
       }
       throw error;
@@ -91,7 +100,9 @@
 
   function renderCards(status) {
     return state.orders
-      .filter(function (order) { return order.status === status; })
+      .filter(function (order) {
+        return status === 'processing' ? order.group === 'processing' : order.group === 'shipped';
+      })
       .map(function (order) {
         var active = order.id === state.selectedOrderId ? 'active' : '';
         return '' +
@@ -102,6 +113,7 @@
             '</header>' +
             '<p><strong>' + esc(order.store_name || 'Sin tienda') + '</strong></p>' +
             '<p>' + esc(order.customer_name || 'Consumidor final') + '</p>' +
+            '<p>Estado: ' + esc(statusLabel(order.status)) + '</p>' +
             '<p>Tiempo: ' + fmtElapsed(Number(order.elapsed_seconds || 0)) + '</p>' +
           '</article>';
       })
@@ -156,26 +168,25 @@
 
     root.innerHTML = '' +
       '<div class="dlp-toolbar">' +
-        '<h2>DLP Paneles v1.1.2</h2>' +
+        '<h2>DLP Paneles v1.1.3</h2>' +
         '<small>Refresco automatico cada ' + Number(window.DLP_PANELES_CONFIG.refreshSeconds || 30) + 's</small>' +
       '</div>' +
       (state.networkWarning ? '<div class="dlp-netwarn">' + esc(state.networkWarning) + '</div>' : '') +
       '<div class="dlp-layout">' +
         '<section class="dlp-board">' +
-          '<div class="dlp-column"><h3>Preparando <span>' + state.counts.processing + '</span></h3><div>' + renderCards('processing') + '</div></div>' +
-          '<div class="dlp-column"><h3>Listo <span>' + state.counts.dlv + '</span></h3><div>' + renderCards('dlv') + '</div></div>' +
-          '<div class="dlp-column"><h3>Para completar <span>' + state.counts.rtp + '</span></h3><div>' + renderCards('rtp') + '</div></div>' +
+          '<div class="dlp-column"><h3>Procesando / Preparacion <span>' + Number(state.counts.processing || 0) + '</span></h3><div>' + renderCards('processing') + '</div></div>' +
+          '<div class="dlp-column"><h3>Enviada / LPR <span>' + Number(state.counts.shipped || 0) + '</span></h3><div>' + renderCards('shipped') + '</div></div>' +
         '</section>' +
         renderDetail(selected) +
       '</div>';
   }
 
   function loadPanel() {
-    return api('/panel', 'GET', null, { retries: 1, timeoutMs: 10000 })
+    return api('/panel', 'GET', null, { retries: 2, retryDelayMs: 1200 })
       .then(function (data) {
         state.networkWarning = '';
         state.orders = Array.isArray(data.orders) ? data.orders : [];
-        state.counts = data.counts || { processing: 0, dlv: 0, rtp: 0 };
+        state.counts = data.counts || { processing: 0, shipped: 0 };
         state.stores = Array.isArray(data.stores) ? data.stores : [];
 
         if (!state.selectedOrderId && state.orders.length) {
@@ -198,7 +209,8 @@
         console.error(error);
 
         if (!state.firstLoadDone) {
-          alert('No se pudo cargar el panel: ' + error.message);
+          state.networkWarning = 'No se pudo cargar el panel. Revisa tu sesion o conexion e intenta recargar.';
+          render();
         } else {
           state.networkWarning = 'Conexion inestable. Reintentando refresco automatico...';
           render();

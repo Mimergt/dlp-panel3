@@ -5,6 +5,57 @@ if (!defined('ABSPATH')) {
 }
 
 class DLP_Paneles_REST {
+    public static function get_panel_statuses() {
+        return array('processing', 'prep', 'lpr', 'rtp');
+    }
+
+    public static function is_processing_status($status) {
+        return in_array($status, array('processing', 'prep'), true);
+    }
+
+    public static function is_shipped_status($status) {
+        return in_array($status, array('lpr', 'rtp'), true);
+    }
+
+    public static function parse_store_ids_from_value($value) {
+        $result = array();
+
+        if (is_array($value)) {
+            foreach ($value as $item) {
+                $result = array_merge($result, self::parse_store_ids_from_value($item));
+            }
+            return array_values(array_unique(array_filter(array_map('absint', $result))));
+        }
+
+        if (is_numeric($value)) {
+            $store_id = absint($value);
+            return $store_id ? array($store_id) : array();
+        }
+
+        if (is_string($value) && $value !== '') {
+            $tokens = preg_split('/[^0-9]+/', $value);
+            if (!is_array($tokens)) {
+                return array();
+            }
+
+            return array_values(array_unique(array_filter(array_map('absint', $tokens))));
+        }
+
+        return array();
+    }
+
+    public static function get_user_assigned_store_ids_from_meta($user_id) {
+        $store_ids = array();
+
+        $meta_keys = array('extra_store_name', 'tienda_asignada');
+        foreach ($meta_keys as $meta_key) {
+            $raw_value = get_user_meta($user_id, $meta_key, true);
+            $store_ids = array_merge($store_ids, self::parse_store_ids_from_value($raw_value));
+        }
+
+        return array_values(array_unique(array_filter(array_map('absint', $store_ids))));
+    }
+
     public static function init() {
         add_action('rest_api_init', array(__CLASS__, 'register_routes'));
     }
@@ -72,6 +123,16 @@ class DLP_Paneles_REST {
     }
 
     public static function is_supervisor_user($user_id) {
+        $user = get_user_by('id', $user_id);
+        if (!$user) {
+            return false;
+        }
+
+        $roles = (array) $user->roles;
+        if (in_array('multistore_user', $roles, true)) {
+            return false;
+        }
+
         if (user_can($user_id, 'manage_options')) {
             return true;
         }
@@ -81,6 +142,12 @@ class DLP_Paneles_REST {
     }
 
     public static function get_user_store_ids($user_id) {
+        $by_user_meta = self::get_user_assigned_store_ids_from_meta($user_id);
+        if (!empty($by_user_meta)) {
+            return $by_user_meta;
+        }
+
+        // Fallback legacy: tiendas asociadas por meta en post extra_store.
         $stores = get_posts(array(
             'post_type' => 'extra_store',
             'fields' => 'ids',
@@ -151,13 +218,13 @@ class DLP_Paneles_REST {
         $supervisor = self::is_supervisor_user($user_id);
         $accessible_store_ids = self::get_accessible_store_ids($user_id);
 
-        $statuses = array('processing', 'dlv', 'rtp');
+        $statuses = self::get_panel_statuses();
         $args = array(
-            'limit' => 250,
+            'limit' => 180,
             'orderby' => 'date',
             'order' => 'DESC',
             'status' => $statuses,
-            'return' => 'objects',
+            'return' => 'ids',
         );
 
         if (!$supervisor) {
@@ -165,7 +232,7 @@ class DLP_Paneles_REST {
                 return new WP_REST_Response(array(
                     'scope' => 'tienda',
                     'orders' => array(),
-                    'counts' => array('processing' => 0, 'dlv' => 0, 'rtp' => 0),
+                    'counts' => array('processing' => 0, 'shipped' => 0),
                     'stores' => array(),
                     'server_time' => current_time('mysql'),
                 ));
@@ -181,15 +248,20 @@ class DLP_Paneles_REST {
             );
         }
 
-        $orders = wc_get_orders($args);
+        $order_ids = wc_get_orders($args);
         $now_ts = current_time('timestamp');
-        $counts = array('processing' => 0, 'dlv' => 0, 'rtp' => 0);
+        $counts = array('processing' => 0, 'shipped' => 0);
         $result = array();
 
-        foreach ($orders as $order) {
-            $order_id = $order->get_id();
+        foreach ($order_ids as $order_id) {
+            $order = wc_get_order($order_id);
+            if (!$order) {
+                continue;
+            }
+
             $status = $order->get_status();
-            if (!isset($counts[$status])) {
+
+            if (!self::is_processing_status($status) && !self::is_shipped_status($status)) {
                 continue;
             }
 
@@ -197,11 +269,18 @@ class DLP_Paneles_REST {
             $created_ts = $created ? $created->getTimestamp() : $now_ts;
             $store_id = absint(get_post_meta($order_id, 'extra_store_name', true));
 
-            $counts[$status]++;
+            if (!$supervisor && !in_array($store_id, $accessible_store_ids, true)) {
+                continue;
+            }
+
+            $group = self::is_processing_status($status) ? 'processing' : 'shipped';
+
+            $counts[$group]++;
 
             $result[] = array(
                 'id' => $order_id,
                 'status' => $status,
+                'group' => $group,
                 'store_id' => $store_id,
                 'store_name' => $store_id ? get_the_title($store_id) : '',
                 'customer_name' => trim($order->get_billing_first_name() . ' ' . $order->get_billing_last_name()),
@@ -241,16 +320,18 @@ class DLP_Paneles_REST {
         $current_status = $order->get_status();
 
         $transitions = array(
-            'processing' => array('dlv'),
-            'dlv' => array('rtp'),
+            'processing' => array('prep', 'lpr', 'rtp'),
+            'prep' => array('lpr', 'rtp'),
+            'lpr' => array('completed'),
             'rtp' => array('completed'),
         );
 
         if (self::is_supervisor_user($user_id)) {
             $transitions = array(
-                'processing' => array('dlv', 'rtp'),
-                'dlv' => array('processing', 'rtp'),
-                'rtp' => array('dlv', 'completed'),
+                'processing' => array('prep', 'lpr', 'rtp'),
+                'prep' => array('processing', 'lpr', 'rtp'),
+                'lpr' => array('prep', 'processing', 'completed'),
+                'rtp' => array('prep', 'processing', 'completed'),
             );
         }
 
