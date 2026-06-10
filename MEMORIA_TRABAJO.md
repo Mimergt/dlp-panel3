@@ -37,3 +37,34 @@ Este archivo documenta el historial tecnico y resumen de conversaciones para ret
 - Agregar reasignacion de tienda, prioridad y notas internas.
 - Sustituir prompt de cancelacion por modal UI.
 - Preparar primer commit y push del repo nuevo.
+
+## 2026-06-09 (iteracion 1.1.1)
+
+### Resumen de conversacion
+- Se solicito continuar la implementacion del plugin nuevo en la carpeta dlp-paneles.
+- Se avanzaron los pendientes de fase 1.1 para operacion: reasignacion de tienda, prioridad y nota interna por pedido.
+
+### Cambios realizados
+- Version del plugin actualizada de 1.0.0 a 1.1.1.
+- API REST extendida con endpoints:
+  - POST /pedido/{id}/meta
+  - POST /pedido/{id}/tienda
+- Payload del panel enriquecido con:
+  - tiendas accesibles por usuario
+  - nota interna por pedido
+- UI del detalle del pedido actualizada para:
+  - cambiar tienda
+  - guardar prioridad
+  - guardar nota interna
+
+### Archivos tocados
+- dlp-paneles.php
+- includes/rest.php
+- assets/js/panel.js
+- assets/css/panel.css
+- README.md
+- PLAN_IMPLEMENTACION.md
+
+### Estado
+- Fase 1.1 completada en version 1.1.1.
+- Pendiente siguiente: mejorar UX de cancelacion (modal) y hardening adicional.

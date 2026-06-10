@@ -94,12 +94,43 @@
   gap: 8px;
 }
 
+.dlp-field {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.dlp-field span {
+  font-size: 13px;
+  color: #4a4f5d;
+}
+
+.dlp-field select,
+.dlp-field textarea {
+  width: 100%;
+  border: 1px solid #cbd3e6;
+  border-radius: 6px;
+  padding: 8px;
+  background: #fff;
+}
+
+.dlp-check {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+}
+
+.dlp-check .dlp-btn {
+  grid-column: 1 / -1;
+}
+
 .dlp-btn {
   border: 0;
   border-radius: 7px;
   padding: 10px;
   font-weight: 600;
   cursor: pointer;
+  background: #edf1f9;
+  color: #1e2025;
 }
 
 .dlp-btn-primary {

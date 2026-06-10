@@ -8,6 +8,7 @@
     orders: [],
     selectedOrderId: null,
     counts: { processing: 0, dlv: 0, rtp: 0 },
+    stores: [],
   };
 
   function fmtElapsed(seconds) {
@@ -90,6 +91,11 @@
       return '<section class="dlp-detail"><h2>Detalle</h2><p>Selecciona un pedido para operar.</p></section>';
     }
 
+    var storeOptions = (state.stores || []).map(function (store) {
+      var selected = Number(store.id) === Number(order.store_id) ? ' selected' : '';
+      return '<option value="' + Number(store.id) + '"' + selected + '>' + esc(store.name) + '</option>';
+    }).join('');
+
     return '' +
       '<section class="dlp-detail">' +
         '<h2>Pedido #' + order.id + '</h2>' +
@@ -99,6 +105,21 @@
         '<p><strong>Telefono:</strong> ' + esc(order.phone || '-') + '</p>' +
         '<p><strong>Direccion:</strong> ' + esc(order.address || '-') + '</p>' +
         '<p><strong>Tiempo:</strong> ' + fmtElapsed(Number(order.elapsed_seconds || 0)) + '</p>' +
+        '<label class="dlp-field">' +
+          '<span>Tienda asignada</span>' +
+          '<select data-field="store_id">' + storeOptions + '</select>' +
+          '<button class="dlp-btn" data-action="reassign" data-order-id="' + order.id + '">Reasignar tienda</button>' +
+        '</label>' +
+        '<label class="dlp-field dlp-check">' +
+          '<input type="checkbox" data-field="priority" ' + (order.priority ? 'checked' : '') + ' />' +
+          '<span>Marcar prioridad</span>' +
+          '<button class="dlp-btn" data-action="save-priority" data-order-id="' + order.id + '">Guardar prioridad</button>' +
+        '</label>' +
+        '<label class="dlp-field">' +
+          '<span>Nota interna</span>' +
+          '<textarea rows="4" data-field="internal_note" placeholder="Escribe nota interna para supervisor/tienda">' + esc(order.internal_note || '') + '</textarea>' +
+          '<button class="dlp-btn" data-action="save-note" data-order-id="' + order.id + '">Guardar nota</button>' +
+        '</label>' +
         '<div class="dlp-actions">' +
           '<button class="dlp-btn dlp-btn-primary" data-action="advance" data-order-id="' + order.id + '">' + esc(nextLabel(order.status)) + '</button>' +
           '<button class="dlp-btn dlp-btn-danger" data-action="cancel" data-order-id="' + order.id + '">Cancelar pedido</button>' +
@@ -113,7 +134,7 @@
 
     root.innerHTML = '' +
       '<div class="dlp-toolbar">' +
-        '<h2>DLP Paneles v1.0.0</h2>' +
+        '<h2>DLP Paneles v1.1.1</h2>' +
         '<small>Refresco automatico cada ' + Number(window.DLP_PANELES_CONFIG.refreshSeconds || 30) + 's</small>' +
       '</div>' +
       '<div class="dlp-layout">' +
@@ -131,6 +152,7 @@
       .then(function (data) {
         state.orders = Array.isArray(data.orders) ? data.orders : [];
         state.counts = data.counts || { processing: 0, dlv: 0, rtp: 0 };
+        state.stores = Array.isArray(data.stores) ? data.stores : [];
 
         if (!state.selectedOrderId && state.orders.length) {
           state.selectedOrderId = state.orders[0].id;
@@ -198,6 +220,54 @@
         .then(loadPanel)
         .catch(function (error) {
           alert('No se pudo cancelar: ' + error.message);
+        });
+      return;
+    }
+
+    if (action === 'save-priority') {
+      var detail = actionBtn.closest('.dlp-detail');
+      var check = detail ? detail.querySelector('[data-field="priority"]') : null;
+
+      api('/pedido/' + orderId + '/meta', 'POST', {
+        priority: !!(check && check.checked)
+      })
+        .then(loadPanel)
+        .catch(function (error) {
+          alert('No se pudo guardar prioridad: ' + error.message);
+        });
+      return;
+    }
+
+    if (action === 'save-note') {
+      var detailNote = actionBtn.closest('.dlp-detail');
+      var textarea = detailNote ? detailNote.querySelector('[data-field="internal_note"]') : null;
+
+      api('/pedido/' + orderId + '/meta', 'POST', {
+        internal_note: textarea ? textarea.value : ''
+      })
+        .then(loadPanel)
+        .catch(function (error) {
+          alert('No se pudo guardar nota: ' + error.message);
+        });
+      return;
+    }
+
+    if (action === 'reassign') {
+      var detailStore = actionBtn.closest('.dlp-detail');
+      var storeSelect = detailStore ? detailStore.querySelector('[data-field="store_id"]') : null;
+      var targetStoreId = storeSelect ? Number(storeSelect.value) : 0;
+
+      if (!targetStoreId) {
+        alert('Selecciona una tienda valida');
+        return;
+      }
+
+      api('/pedido/' + orderId + '/tienda', 'POST', {
+        store_id: targetStoreId
+      })
+        .then(loadPanel)
+        .catch(function (error) {
+          alert('No se pudo reasignar tienda: ' + error.message);
         });
     }
   });

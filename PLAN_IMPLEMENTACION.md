@@ -3,7 +3,7 @@
 ## Estado
 - Proyecto nuevo en repo limpio: dlp-panel3
 - Plugin: DLP Paneles
-- Version base inicial: 1.0.0
+- Version actual: 1.1.1
 
 ## Politica de versionado acordada
 - Publicaciones incrementales pequenas: 1.1.1, 1.1.2, 1.1.3
@@ -21,9 +21,10 @@
    - Shortcode nuevo [dlp_paneles]
    - API REST propia
    - SPA liviano sin dependencias pesadas
-2. Fase 2
+2. Fase 1.1 (completada en 1.1.1)
    - Reasignacion de tienda
    - Notas internas y prioridad
+3. Fase 2
    - Modal de cancelacion y UX de operacion mejorada
 3. Fase 3
    - Wallboard operativo
