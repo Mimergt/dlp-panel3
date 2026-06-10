@@ -206,3 +206,22 @@ Este archivo documenta el historial tecnico y resumen de conversaciones para ret
 
 ### Estado
 - Listo para validacion visual del header en desktop y mobile.
+
+## 2026-06-09 (iteracion 1.1.8)
+
+### Resumen de conversacion
+- Se solicito activar modo app para la pagina `/pedidos/` y aislarla de estilos/scripts del theme.
+
+### Cambios realizados
+- Version actualizada a 1.1.8.
+- Se implemento `includes/app_mode.php` con render directo HTML para `/pedidos/`.
+- En modo app se cargan solo assets del plugin y configuracion JS del panel.
+- No depende del contenido/shortcode de la pagina para dibujar el panel.
+
+### Archivos tocados
+- dlp-paneles.php
+- includes/app_mode.php
+- README.md
+
+### Estado
+- Listo para probar en `/pedidos/` con pagina publicada.

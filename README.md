@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.1.7
+- 1.1.8
 
 ## Shortcode
 - [dlp_paneles]
@@ -47,6 +47,11 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 - Header nuevo con logo/titulo `DEL PUENTE`.
 - Muestra nombre de tienda en header.
 - Muestra fecha/hora actual y boton `Cerrar Sesion`.
+
+## Incluido en 1.1.8
+- Modo app para `/pedidos/` renderizado desde plugin (sin layout del theme).
+- Carga exclusiva de assets del plugin en esa ruta (sin CSS/JS de Divi para esa vista).
+- Soporta cambio de slug via filtro `dlp_paneles_app_slug`.
 
 ## Versionado acordado
 - Ajustes pequenos: 1.1.1, 1.1.2, 1.1.3
