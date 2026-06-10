@@ -161,3 +161,24 @@ Este archivo documenta el historial tecnico y resumen de conversaciones para ret
 
 ### Estado
 - Listo para validar en tienda con pedidos en los 3 bloques de estado.
+
+## 2026-06-09 (iteracion 1.1.6)
+
+### Resumen de conversacion
+- Se reporto que no se veia aplicado el cambio en algunos entornos.
+- Se solicito micro ajuste de colores y revisar aplicacion real de cambios.
+
+### Cambios realizados
+- Version actualizada a 1.1.6.
+- Se agrego versionado de assets por `filemtime` en shortcode para evitar cache stale.
+- Se aplicaron colores diferenciados por columna para mejorar lectura operativa.
+
+### Archivos tocados
+- dlp-paneles.php
+- includes/shortcode.php
+- assets/js/panel.js
+- assets/css/panel.css
+- README.md
+
+### Estado
+- Cambio listo para validar visualmente con recarga normal del panel.

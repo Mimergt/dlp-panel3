@@ -37,6 +37,39 @@
   background: #f8faff;
 }
 
+.dlp-col-received {
+  border-color: #9ec5fe;
+  background: #eef5ff;
+}
+
+.dlp-col-received h3 {
+  background: #dce9ff;
+  border-bottom-color: #9ec5fe;
+  color: #123d78;
+}
+
+.dlp-col-prep {
+  border-color: #f6d78c;
+  background: #fff8e7;
+}
+
+.dlp-col-prep h3 {
+  background: #ffefc9;
+  border-bottom-color: #f6d78c;
+  color: #6b4f00;
+}
+
+.dlp-col-shipped {
+  border-color: #a3cfbb;
+  background: #ecf8f1;
+}
+
+.dlp-col-shipped h3 {
+  background: #daf0e3;
+  border-bottom-color: #a3cfbb;
+  color: #0e5330;
+}
+
 .dlp-column h3 {
   margin: 0;
   padding: 10px;

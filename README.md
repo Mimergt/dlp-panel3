@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.1.5
+- 1.1.6
 
 ## Shortcode
 - [dlp_paneles]
@@ -38,6 +38,10 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 - Columna 1 renombrada a `Recibidos` (solo estado `processing`).
 - Columna 2 renombrada a `En preparacion` (solo estado `prep`).
 - Columna 3 renombrada a `Enviado / LPR` (estados `lpr`/`rtp`, con flujo de completar).
+
+## Incluido en 1.1.6
+- Cache busting de assets por `filemtime` para reflejar cambios de JS/CSS en cada despliegue.
+- Micro ajuste visual: colores diferenciados por columna (`Recibidos`, `En preparacion`, `Enviado / LPR`).
 
 ## Versionado acordado
 - Ajustes pequenos: 1.1.1, 1.1.2, 1.1.3
