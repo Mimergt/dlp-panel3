@@ -245,12 +245,32 @@
   font-size: 13px;
 }
 
+/* #dlp2-app es un wrapper puramente estructural (ver ensureSkeleton en
+   panel.js): display:contents hace que sus hijos (header, aviso de red,
+   stage) se comporten como hijos directos del flex column de
+   #dlp-paneles-root, igual que antes de introducir el wrapper. */
+#dlp2-app {
+  display: contents;
+}
+
+/* El stage envuelve el tablero y el overlay del pedido expandido. Es
+   position:relative para que el overlay (position:absolute) se posicione
+   respecto a el, y flex:1 para ocupar el espacio igual que el tablero antes. */
+.dlp2-stage {
+  position: relative;
+  flex: 1;
+  margin: 14px;
+}
+
+#dlp2-board-slot {
+  height: 100%;
+}
+
 /* Layout */
 .dlp2-layout {
   display: flex;
-  flex: 1;
+  height: 100%;
   gap: 12px;
-  margin: 14px;
   padding: 14px;
   align-items: flex-start;
   background: #fff;
@@ -1271,24 +1291,65 @@
   color: #FCA5A5;
 }
 
-/* Vista expandida "Pedido" */
-.dlp2-expanded {
-  margin: 14px;
+/* Vista expandida "Pedido": overlay persistente que se anima con una
+   transicion de "left" (crece hacia la izquierda desde el tamano de la
+   columna de detalle hasta ocupar todo el tablero, y se reduce de vuelta
+   al cerrar en vez de desaparecer de golpe). El nodo nunca se destruye
+   mientras esta abierto/animandose (ver ensureSkeleton/render en panel.js),
+   condicion necesaria para que la transicion de CSS pueda reproducirse. */
+.dlp2-expanded-overlay {
+  position: absolute;
+  top: 14px;
+  bottom: 14px;
+  right: 14px;
+  left: calc(100% - 560px - 14px);
   background: var(--dlp-dark-bg);
   border: 1px solid var(--dlp-dark-border);
   border-radius: 14px;
-  box-shadow: 0 4px 14px rgba(10, 20, 35, 0.15);
+  box-shadow: 0 8px 24px rgba(10, 20, 35, 0.2), 0 2px 6px rgba(10, 20, 35, 0.12);
   overflow: hidden;
   color: #fff;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transition: left 0.9s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.15s ease;
+}
+
+/* Solo tiene caja visible mientras hay contenido (abriendo, abierto o
+   cerrando); en reposo esta invisible para no tapar el panel de detalle
+   real del tablero, que ocupa el mismo espacio cuando esta colapsado. */
+.dlp2-expanded-overlay.is-visible {
+  opacity: 1;
+}
+
+.dlp2-expanded-overlay.is-open {
+  left: 14px;
+  pointer-events: auto;
+}
+
+/* El contenido interno se desvanece mientras el panel esta angosto (recien
+   abriendo o a punto de cerrar) y solo se ve nitido una vez que termino de
+   expandirse, para que no se vea el grid de 2 columnas comprimido a la
+   fuerza durante la animacion. */
+.dlp2-expanded-overlay > * {
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.dlp2-expanded-overlay.is-open > * {
+  opacity: 1;
+  transition-delay: 0.55s;
 }
 
 .dlp2-expanded-topbar {
-  padding: 14px 20px;
+  padding: 14px 66px 14px 20px;
   background: var(--dlp-dark-card-2);
   border-bottom: 1px solid var(--dlp-dark-border);
   display: flex;
   flex-direction: column;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .dlp2-expanded-top-row {
@@ -1304,31 +1365,6 @@
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-}
-
-.dlp2-expanded-back {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 12px;
-  background: var(--dlp-dark-card);
-  border: 1px solid var(--dlp-dark-border);
-  border-radius: 6px;
-  color: var(--dlp-dark-faint);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.dlp2-expanded-back:hover {
-  background: #33495F;
-  color: #fff;
-}
-
-.dlp2-expanded-divider {
-  width: 1px;
-  height: 20px;
-  background: var(--dlp-dark-border);
 }
 
 .dlp2-expanded-title {
@@ -1357,23 +1393,29 @@
   padding: 0 16px;
 }
 
+/* Flota por encima del contenido, en alto contraste con el fondo oscuro,
+   para que se lea claramente como "cerrar" sin depender de la barra superior. */
 .dlp2-expanded-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 5;
   width: 34px;
   height: 34px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--dlp-dark-card);
-  border: 1px solid var(--dlp-dark-border);
-  border-radius: 6px;
-  color: var(--dlp-dark-faint);
+  background: #fff;
+  border: 0;
+  border-radius: 8px;
+  color: var(--dlp-text);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
   cursor: pointer;
 }
 
 .dlp2-expanded-close:hover {
-  background: #33495F;
-  color: #fff;
+  background: #f0f0f0;
 }
 
 .dlp2-expanded-meta {
@@ -1412,6 +1454,8 @@
 .dlp2-expanded-grid {
   display: grid;
   grid-template-columns: 1fr 1.6fr;
+  flex: 1;
+  min-height: 0;
 }
 
 .dlp2-expanded-col {
@@ -1421,6 +1465,7 @@
   gap: 14px;
   background: var(--dlp-dark-card-2);
   border-right: 1px solid var(--dlp-dark-border);
+  overflow-y: auto;
 }
 
 .dlp2-expanded-col:last-child {
@@ -1673,6 +1718,34 @@
   .dlp2-expanded-col {
     border-right: 0;
     border-bottom: 1px solid var(--dlp-dark-border);
+    overflow-y: visible;
+  }
+
+  /* En pantallas angostas no hay una columna de detalle fija con la que
+     alinear el overlay, asi que se muestra como un bloque normal a pantalla
+     completa (sin la animacion de "crecer hacia la izquierda"). */
+  .dlp2-expanded-overlay {
+    position: relative;
+    inset: auto;
+    margin-top: 14px;
+    height: auto;
+    max-height: none;
+    opacity: 1;
+    transition: none;
+    display: none;
+  }
+
+  .dlp2-expanded-overlay.is-open {
+    display: flex;
+  }
+
+  .dlp2-expanded-overlay > * {
+    opacity: 1;
+    transition: none;
+  }
+
+  .dlp2-expanded-grid {
+    flex: none;
   }
 }
 

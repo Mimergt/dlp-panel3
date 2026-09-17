@@ -669,29 +669,27 @@
     }
 
     return '' +
-      '<div class="dlp2-expanded">' +
-        '<div class="dlp2-expanded-topbar">' +
-          '<div class="dlp2-expanded-top-row">' +
-            '<div class="dlp2-expanded-left">' +
-              '<button class="dlp2-expanded-back" data-action="collapse-order" type="button">' + ICON.back + '<span>Volver al tablero</span></button>' +
-              '<span class="dlp2-expanded-divider"></span>' +
-              '<h1 class="dlp2-expanded-title">Pedido #' + order.id + '</h1>' +
-              '<div class="dlp2-expanded-badges">' +
-                renderTypePill(order, false) +
-                '<span class="dlp2-status-pill dlp2-status-' + statusColor(order.status) + '"><span class="dlp2-status-dot"></span>' + esc(statusLabel(order.status)) + '</span>' +
-                (order.priority ? '<span class="dlp2-priority-pill">' + ICON.flag + '<span>Prioridad</span></span>' : '') +
-              '</div>' +
-            '</div>' +
-            '<div class="dlp2-expanded-right">' +
-              (isFinalStatus(order.status) ? '' :
-                '<button class="dlp2-flow-btn dlp2-expanded-flow-btn" data-action="advance" data-order-id="' + order.id + '">' + ICON.chevrons + '<span>' + esc(nextLabel(order.status)) + '</span></button>') +
-              '<button class="dlp2-expanded-close" data-action="collapse-order" title="Cerrar vista" type="button">' + ICON.close + '</button>' +
+      '<button class="dlp2-expanded-close" data-action="collapse-order" title="Cerrar vista" type="button">' + ICON.close + '</button>' +
+
+      '<div class="dlp2-expanded-topbar">' +
+        '<div class="dlp2-expanded-top-row">' +
+          '<div class="dlp2-expanded-left">' +
+            '<h1 class="dlp2-expanded-title">Pedido #' + order.id + '</h1>' +
+            '<div class="dlp2-expanded-badges">' +
+              renderTypePill(order, false) +
+              '<span class="dlp2-status-pill dlp2-status-' + statusColor(order.status) + '"><span class="dlp2-status-dot"></span>' + esc(statusLabel(order.status)) + '</span>' +
+              (order.priority ? '<span class="dlp2-priority-pill">' + ICON.flag + '<span>Prioridad</span></span>' : '') +
             '</div>' +
           '</div>' +
-          (metaParts.length ? '<div class="dlp2-expanded-meta">' + metaParts.join('<span class="dlp2-expanded-meta-sep">&bull;</span>') + '</div>' : '') +
+          '<div class="dlp2-expanded-right">' +
+            (isFinalStatus(order.status) ? '' :
+              '<button class="dlp2-flow-btn dlp2-expanded-flow-btn" data-action="advance" data-order-id="' + order.id + '">' + ICON.chevrons + '<span>' + esc(nextLabel(order.status)) + '</span></button>') +
+          '</div>' +
         '</div>' +
+        (metaParts.length ? '<div class="dlp2-expanded-meta">' + metaParts.join('<span class="dlp2-expanded-meta-sep">&bull;</span>') + '</div>' : '') +
+      '</div>' +
 
-        '<div class="dlp2-expanded-grid">' +
+      '<div class="dlp2-expanded-grid">' +
 
           '<div class="dlp2-expanded-col">' +
             renderTimeCard(order) +
@@ -727,11 +725,32 @@
             '<div class="dlp2-products dlp2-expanded-products">' + items.map(renderProductRow).join('') + '</div>' +
           '</div>' +
 
+      '</div>';
+  }
+
+  // El esqueleto se crea una sola vez: el overlay del pedido expandido debe
+  // ser un nodo estable (no recreado en cada render) para que la transicion
+  // CSS de abrir/cerrar pueda animarse. Los renders posteriores solo
+  // actualizan el contenido interno de cada slot.
+  function ensureSkeleton() {
+    if (root.querySelector('#dlp2-app')) {
+      return;
+    }
+
+    root.innerHTML = '' +
+      '<div id="dlp2-app">' +
+        '<div id="dlp2-header-slot"></div>' +
+        '<div id="dlp2-netwarn-slot"></div>' +
+        '<div class="dlp2-stage">' +
+          '<div id="dlp2-board-slot"></div>' +
+          '<div class="dlp2-expanded-overlay" id="dlp2-expanded-overlay"></div>' +
         '</div>' +
       '</div>';
   }
 
   function render() {
+    ensureSkeleton();
+
     var selected = state.orders.find(function (order) {
       return order.id === state.selectedOrderId;
     }) || null;
@@ -745,7 +764,27 @@
       return visible.filter(function (o) { return o.group === status; }).length;
     };
 
-    var mainHtml = expandedOrder ? renderExpandedOrder(expandedOrder) :
+    document.getElementById('dlp2-header-slot').innerHTML = '' +
+      '<div class="dlp2-header">' +
+        '<div class="dlp2-header-left">' +
+          '<span class="dlp2-brand">' + esc(window.DLP_PANELES_CONFIG.brandTitle || 'DEL PUENTE') + '</span>' +
+          '<span class="dlp2-location">' + ICON.pin + '<span>' + esc(getStoreLabel()) + '</span></span>' +
+        '</div>' +
+        renderTypeTabs() +
+        '<div class="dlp2-header-right">' +
+          '<div class="dlp2-datetime">' +
+            '<strong>' + esc(formatNowTime()) + '</strong>' +
+            '<span>' + esc(formatNowDate()) + '</span>' +
+          '</div>' +
+          '<button class="dlp2-btn-ghost" data-action="force-refresh" type="button">' + ICON.sync + '<span>Sincronizar</span></button>' +
+          '<a class="dlp2-btn-dark" href="' + esc(window.DLP_PANELES_CONFIG.logoutUrl || '#') + '">' + ICON.logout + '<span>Cerrar Sesion</span></a>' +
+        '</div>' +
+      '</div>';
+
+    document.getElementById('dlp2-netwarn-slot').innerHTML =
+      state.networkWarning ? '<div class="dlp-netwarn">' + esc(state.networkWarning) + '</div>' : '';
+
+    document.getElementById('dlp2-board-slot').innerHTML = '' +
       '<div class="dlp2-layout">' +
         '<section class="dlp2-board">' +
           '<div class="dlp2-column">' +
@@ -764,24 +803,40 @@
         renderDetail(selected) +
       '</div>';
 
-    root.innerHTML = '' +
-      '<div class="dlp2-header">' +
-        '<div class="dlp2-header-left">' +
-          '<span class="dlp2-brand">' + esc(window.DLP_PANELES_CONFIG.brandTitle || 'DEL PUENTE') + '</span>' +
-          '<span class="dlp2-location">' + ICON.pin + '<span>' + esc(getStoreLabel()) + '</span></span>' +
-        '</div>' +
-        renderTypeTabs() +
-        '<div class="dlp2-header-right">' +
-          '<div class="dlp2-datetime">' +
-            '<strong>' + esc(formatNowTime()) + '</strong>' +
-            '<span>' + esc(formatNowDate()) + '</span>' +
-          '</div>' +
-          '<button class="dlp2-btn-ghost" data-action="force-refresh" type="button">' + ICON.sync + '<span>Sincronizar</span></button>' +
-          '<a class="dlp2-btn-dark" href="' + esc(window.DLP_PANELES_CONFIG.logoutUrl || '#') + '">' + ICON.logout + '<span>Cerrar Sesion</span></a>' +
-        '</div>' +
-      '</div>' +
-      (state.networkWarning ? '<div class="dlp-netwarn">' + esc(state.networkWarning) + '</div>' : '') +
-      mainHtml;
+    // El overlay del pedido expandido es un nodo persistente: se anima con
+    // una transicion CSS de "left" (crece hacia la izquierda desde el ancho
+    // de la columna de detalle hasta ocupar todo el tablero, y viceversa al
+    // cerrar), en vez de destruirse y recrearse como el resto del panel.
+    var overlay = document.getElementById('dlp2-expanded-overlay');
+    var wasOpen = overlay.classList.contains('is-open');
+
+    if (expandedOrder) {
+      overlay.innerHTML = renderExpandedOrder(expandedOrder);
+      overlay.classList.add('is-visible');
+
+      if (!wasOpen) {
+        overlay.classList.remove('is-open');
+        void overlay.offsetWidth; // fuerza reflow para que el navegador registre el estado "cerrado" antes de animar
+        requestAnimationFrame(function () {
+          overlay.classList.add('is-open');
+        });
+      }
+    } else if (wasOpen) {
+      overlay.classList.remove('is-open');
+      overlay.addEventListener('transitionend', function clearOverlay(e) {
+        if (e.target !== overlay || e.propertyName !== 'left') {
+          return;
+        }
+        overlay.removeEventListener('transitionend', clearOverlay);
+        if (!overlay.classList.contains('is-open')) {
+          overlay.innerHTML = '';
+          overlay.classList.remove('is-visible');
+        }
+      });
+    } else {
+      overlay.innerHTML = '';
+      overlay.classList.remove('is-visible');
+    }
   }
 
   // Ticker en vivo: recalcula solo los nodos de tiempo (badges de tarjeta +
@@ -801,18 +856,25 @@
       badge.outerHTML = renderTimeBadge(order, liveElapsed(order), mini);
     });
 
-    // La tarjeta de tiempo vive dentro de .dlp2-detail (tablero) o dentro de
-    // .dlp2-expanded (vista "Pedido"), nunca ambas a la vez.
-    var timeCardEl = root.querySelector('.dlp2-time-card');
-    var timeCardOrderId = state.expandedOrderId || state.selectedOrderId;
-    if (timeCardEl && timeCardOrderId) {
-      var selected = state.orders.find(function (order) {
-        return order.id === timeCardOrderId;
-      });
-      if (selected) {
-        timeCardEl.outerHTML = renderTimeCard(selected, liveElapsed(selected));
+    // La tarjeta de tiempo del tablero (.dlp2-detail) y la del overlay
+    // expandido pueden coexistir en el DOM a la vez (el overlay ya no se
+    // destruye al abrir/cerrar), asi que se actualizan por separado.
+    function refreshTimeCard(containerEl, orderId) {
+      if (!containerEl || !orderId) {
+        return;
+      }
+      var timeCardEl = containerEl.querySelector('.dlp2-time-card');
+      if (!timeCardEl) {
+        return;
+      }
+      var order = state.orders.find(function (o) { return o.id === orderId; });
+      if (order) {
+        timeCardEl.outerHTML = renderTimeCard(order, liveElapsed(order));
       }
     }
+
+    refreshTimeCard(document.getElementById('dlp2-board-slot'), state.selectedOrderId);
+    refreshTimeCard(document.getElementById('dlp2-expanded-overlay'), state.expandedOrderId);
   }
 
   function loadPanel() {
@@ -981,7 +1043,7 @@
     }
 
     if (action === 'save-note') {
-      var detailNote = actionBtn.closest('.dlp2-detail, .dlp2-expanded');
+      var detailNote = actionBtn.closest('.dlp2-detail, .dlp2-expanded-overlay');
       var noteInput = detailNote ? detailNote.querySelector('[data-field="internal_note"]') : null;
 
       api('/pedido/' + orderId + '/meta', 'POST', {

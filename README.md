@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.4.7
+- 1.5.0
 
 ## Shortcode
 - [dlp_paneles]
@@ -143,6 +143,12 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 
 ## Incluido en 1.4.7
 - Textos de los totales aclarados: el total de cada producto ahora dice "Total del Producto" (antes solo "Total"), y el total del pedido completo dice "Total del Pedido" (antes solo "Total"). Aplica al detalle normal del tablero y a la vista expandida.
+
+## Incluido en 1.5.0 (animacion real de abrir/cerrar "Pedido")
+- Vista expandida "Pedido": ya no aparece/desaparece de golpe. Ahora se anima creciendo hacia la izquierda desde el tamano de la columna "Detalle del pedido" hasta ocupar todo el tablero (0.9s, curva suave), y al cerrar se reduce de vuelta a ese mismo tamano antes de volver al tablero normal.
+- Quitado el boton "Volver al tablero" de la vista expandida (solo queda el boton de cerrar).
+- El boton de cerrar (X) ahora flota por encima del contenido, en blanco/alto contraste con el fondo oscuro, en vez de integrarse en la barra superior.
+- Cambio tecnico interno: el panel ahora mantiene el tablero y el panel expandido en el DOM de forma persistente (en vez de reconstruir todo desde cero en cada actualizacion), necesario para que la animacion de abrir/cerrar funcione. En pantallas angostas (menos de 1100px) se mantiene el comportamiento simple anterior, sin la animacion, ya que no hay una columna de detalle fija con la que alinearla.
 
 ## Versionado acordado
 - Ajustes pequenos: 1.1.1, 1.1.2, 1.1.3

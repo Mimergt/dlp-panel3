@@ -751,3 +751,34 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
 - Cambios de texto listos para subir al hosting.
 - Pendiente: el usuario debe elegir una de las 4 variantes de transicion de la demo para implementarla en el codigo real del panel.
 - Sigue pendiente el resto de la lista previa (items 3, 5-15).
+
+## 2026-09-17 (iteracion 1.5.0 - animacion real de abrir/cerrar "Pedido")
+
+### Resumen de conversacion
+- Ninguna de las 4 variantes de la demo anterior le gusto al usuario. Pidio una quinta opcion especifica: que el panel se expanda hacia la izquierda (no muy rapido) para abrir, y que se reduzca de vuelta al tamano de la columna de detalle para cerrar.
+- Se genero una nueva demo (`demo_transicion_izquierda.html`) con ese concepto exacto (panel anclado al borde derecho, animando `left`, con selector de velocidad 0.4s/0.65s/0.9s) y se envio al usuario.
+- El usuario probo la demo y eligio la velocidad lenta (0.9s). Pidio implementarla en el codigo real.
+- De paso, en una captura de la vista expandida real, pidio quitar el boton "Volver al tablero" y que el boton de cerrar se vea "en una capa superior", en blanco o con contraste sobre el fondo oscuro (en vez de mezclarse con la barra superior oscura).
+
+### Cambios realizados (cambio arquitectonico, no solo visual)
+- Version actualizada a 1.5.0.
+- Causa raiz de por que no habia animacion real: `render()` hacia `root.innerHTML = ...` completo en cada actualizacion (poll cada 30s, cualquier click), destruyendo y recreando todos los nodos. Una transicion CSS no puede animarse si el elemento se destruye y se vuelve a crear; necesitaba un nodo estable que solo cambie de clase/posicion.
+- `assets/js/panel.js`: nueva funcion `ensureSkeleton()` que crea una sola vez un esqueleto persistente (`#dlp2-app` con `display:contents` para no romper el flex-column de `#dlp-paneles-root`, mas `#dlp2-header-slot`, `#dlp2-netwarn-slot`, `.dlp2-stage` con `#dlp2-board-slot` y `#dlp2-expanded-overlay`). `render()` ahora actualiza el `innerHTML` de cada slot por separado en vez de reemplazar todo `root`, dejando el nodo `#dlp2-expanded-overlay` intacto entre renders (nunca se destruye mientras esta abierto o animandose).
+- Logica de apertura/cierre en `render()`: al abrir, se actualiza el contenido del overlay, se fuerza un reflow (`overlay.offsetWidth`) y se agrega la clase `is-open` en el siguiente frame (`requestAnimationFrame`) para que el navegador anime desde la posicion "cerrada" (alineada con el ancho de la columna) hasta la posicion "abierta" (todo el ancho). Al cerrar, se quita `is-open` (dispara la animacion de reduccion) y solo se limpia el `innerHTML` del overlay cuando termina la transicion (`transitionend`), para que el contenido siga visible mientras se reduce en vez de desaparecer de golpe. Si el panel ya estaba abierto y solo llega un refresco de datos (polling), el contenido se actualiza sin reiniciar la animacion.
+- `renderExpandedOrder()`: se quito el boton "Volver al tablero" y el divisor que lo acompañaba; el boton de cerrar se movio fuera del flujo del topbar (ya no vive dentro de `.dlp2-expanded-right`).
+- `updateLiveTimes()`: como ahora el tablero y el overlay expandido pueden coexistir en el DOM al mismo tiempo (antes eran mutuamente excluyentes), se separo en dos busquedas independientes (`refreshTimeCard` para `#dlp2-board-slot` y para `#dlp2-expanded-overlay`) en vez de un solo `querySelector` que solo encontraba la primera coincidencia.
+- `assets/css/panel.css`: `.dlp2-expanded-overlay` es el nuevo elemento animado -- `position:absolute` dentro de `.dlp2-stage` (que ahora es `position:relative; flex:1` y carga el margen que antes tenia `.dlp2-layout`), ancho igual al de `.dlp2-detail` (560px) cuando esta cerrado (`left: calc(100% - 560px - 14px)`) y `left:14px` (todo el ancho) cuando tiene la clase `is-open`, con `transition: left 0.9s cubic-bezier(0.22,1,0.36,1)`. Tiene tambien `opacity:0` por defecto y solo se hace visible con la clase `is-visible` (que se agrega junto con el contenido y se quita recien cuando termina de cerrarse) -- esto evita que la caja oscura vacia tape el panel de Detalle del pedido real cuando esta "cerrada" pero sin contenido. El contenido interno (topbar + grid) se desvanece mientras el panel esta angosto y solo se ve nitido cuando termina de expandirse (`transition-delay: 0.55s` en los hijos directos), para que no se vea el grid de 2 columnas comprimido durante la animacion.
+- El boton de cerrar (`.dlp2-expanded-close`) se redisenio: `position:absolute` flotando arriba a la derecha del overlay, fondo blanco solido, sin borde, con sombra, en vez del boton oscuro integrado en la barra superior.
+- En pantallas angostas (`max-width:1100px`) se desactiva toda la animacion: el overlay vuelve a comportarse como un bloque normal (`position:relative`, sin transicion) que aparece debajo del tablero solo cuando esta abierto, igual que el comportamiento previo a este cambio, ya que ahi no existe una columna de detalle de ancho fijo con la que alinear la animacion.
+- Probado visualmente: abrir (crece hacia la izquierda en ~0.9s), cerrar (se reduce de vuelta a la columna, sin dejar residuo), refresco de datos con el panel ya abierto (no reinicia la animacion, no hace flicker), y el caso movil (aparece como bloque simple, boton de cerrar bien ubicado). Sin errores de consola en ningun caso.
+
+### Archivos tocados
+- dlp-paneles.php
+- README.md
+- MEMORIA_TRABAJO.md
+- assets/js/panel.js
+- assets/css/panel.css
+
+### Estado
+- Listo para subir al hosting y probar con datos reales, prestando atencion especial a la animacion en distintos anchos de pantalla y con el polling automatico de 30s activo mientras el pedido esta expandido.
+- Sigue pendiente el resto de la lista previa (items 3, 5-15).
