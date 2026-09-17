@@ -513,3 +513,43 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
 ### Estado
 - Listo para subir al hosting y validar con pedidos reales de ambos tipos.
 - Sigue pendiente el resto de la lista de 1.2.0 (items 3, 5-13) mas los nuevos items 14-15.
+
+## 2026-09-17 (iteracion 1.4.0 - vista expandida "Pedido")
+
+### Resumen de conversacion
+- El usuario pidio un boton de "expandir" en el titulo "Detalle del pedido" (icono tipo flechas diagonales) que abre una nueva vista "Pedido": una version ampliada de la columna de detalle, con mas espacio y detalle.
+- Trajo un tercer boceto (`stitch_panel_dlp.zip`, distinto de los dos anteriores con el mismo nombre de carpeta) con el diseno de referencia: una "super-tarjeta" oscura a todo el ancho, con 3 columnas (Reloj KDS + Resumen de Cocina | Detalle de Productos + Totales | Datos de Entrega/Cliente + Gestion).
+
+### Cambios realizados
+- Version actualizada a 1.4.0.
+- `includes/rest.php`: nuevo campo `shipping_total` en el payload (via `$order->get_shipping_total()`).
+- `assets/js/panel.js`:
+  - Nuevos iconos `expand`, `back`, `close`, `kitchen`, `check`.
+  - `state.expandedOrderId`. Boton "Abrir pedido" agregado al header del detalle (`.dlp2-detail-header-actions`).
+  - `renderExpandedOrder(order)`: la vista completa de 3 columnas. Reutiliza `renderTimeCard()` (reloj), `renderProductRow()` (ahora extraida de `renderProducts()` para compartirla), y la estructura de "Datos de Entrega y Cliente"/"Gestion de Tienda y Supervisor" del detalle normal.
+  - `renderKitchenSummary()` + `aggregateKitchenItems()`: agrupa los modificadores de todos los productos del pedido (por categoria+valor), sumando cantidades. Detecta "(xN)" en el valor del modificador (formato que ya usa WooCommerce cuando el modificador aplica a un producto con cantidad >1) o usa `item.quantity` si no hay sufijo. **Heuristica provisional, no validada con datos reales.**
+  - `renderPrepProgress()`: indicador visual de 3 pasos basado en `flowStep()`/`isFinalStatus()`.
+  - `render()` ahora bifurca: si `state.expandedOrderId` apunta a un pedido existente, el `<main>` muestra `renderExpandedOrder()` en vez del tablero+detalle. El header (marca, filtro tipo, reloj, botones) se mantiene igual en ambos modos.
+  - `updateLiveTimes()` generalizado: ya no busca `.dlp2-time-card` solo dentro de `.dlp2-detail`, sino en todo `root` (funciona tanto en el tablero como en la vista expandida).
+  - Botones "Volver al tablero" y "X" usan `data-action="collapse-order"` (sin `data-order-id`, se maneja como caso especial antes del chequeo generico de acciones).
+  - `save-note` ahora busca el input dentro de `.dlp2-detail` o `.dlp2-expanded` (antes solo buscaba en `.dlp2-detail`, lo que habria roto la nota interna dentro de la vista expandida).
+  - `loadPanel()` limpia `state.expandedOrderId` si el pedido expandido deja de existir en la respuesta (ej. se completo y salio del rango del dia).
+- `assets/css/panel.css`: bloque completo de estilos nuevos para `.dlp2-expanded*`, `.dlp2-kitchen-*`, `.dlp2-prep-*`, mas responsive para colapsar a 1 columna en pantallas chicas.
+- Probado visualmente en navegador: boton "Abrir pedido" funciona, la vista expandida se ve muy cercana al boceto (resumen de cocina agrupa correctamente 3 productos con carne/complemento/bebida compartidos, ej. "Bebidas Frezka Rosa de Jamaica x5 unidades" = 1+3+1 de los 3 combos), "Volver al tablero" regresa correctamente, sin errores de consola.
+
+### Notas / decisiones tomadas sin preguntar (documentar por si hay que ajustar)
+- El boceto mostraba "Cliente frecuente - 12 pedidos previos" y "Canal: E-Commerce Web" en la vista expandida. **No se implementaron** porque no hay datos reales para eso (ver pendiente #3 de la lista de 1.2.0 sobre "cliente frecuente"). Se omitieron esas lineas en vez de inventar datos falsos.
+- El boceto tenia un boton de accion primario distinto para cada paso ("Pasar a Enviar/LPR"), lo cual ya existe via `nextLabel()`/`data-action="advance"` - se reutilizo tal cual, ahora ubicado en la barra superior de la vista expandida en vez de en una tarjeta separada.
+- "Cancelar pedido" se mantuvo como link secundario al final de la tercera columna (el boceto no lo mostraba, igual que en iteraciones anteriores).
+
+### Archivos tocados
+- dlp-paneles.php
+- README.md
+- MEMORIA_TRABAJO.md
+- includes/rest.php
+- assets/js/panel.js
+- assets/css/panel.css
+
+### Estado
+- Listo para subir al hosting y validar con datos reales, especialmente el Resumen de Cocina (la heuristica de agrupacion es lo mas incierto de esta iteracion).
+- Sigue pendiente el resto de la lista de 1.2.0/1.3.0 (items 3, 5-15).

@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.3.0
+- 1.4.0
 
 ## Shortcode
 - [dlp_paneles]
@@ -103,7 +103,15 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 - Etiqueta de la direccion en el detalle cambia segun el tipo: "Entrega a domicilio (Delivery)" o "Retiro en tienda (Pickup)".
 - Metodo de pago mucho mas visible: nuevo banner destacado en el detalle (icono + texto grande) en vez de una linea de texto pequena. Distingue con color pago ya realizado (verde) de pago pendiente en efectivo/contra entrega (amber) con una heuristica por texto del metodo de pago (pendiente confirmar si hay una forma mas confiable de saberlo).
 
+## Incluido en 1.4.0 (vista expandida "Pedido")
+- Nuevo boton "Abrir pedido" (icono expandir) en el header del detalle del pedido.
+- Nueva vista "Pedido" a pantalla completa: reemplaza el tablero + detalle por una tarjeta unica de 3 columnas (Reloj KDS + Resumen de Cocina | Detalle de Productos + Totales | Datos de Entrega/Cliente + Gestion), con boton "Volver al tablero" y boton de cerrar (X).
+- "Resumen de Cocina": agrupa automaticamente los modificadores de todos los productos del pedido (carne, complemento, bebida, upgrades) sumando cantidades. Heuristica provisional (detecta "(xN)" en el valor o usa la cantidad del producto) - pendiente validar con datos reales.
+- "Progreso de preparacion": indicador visual de 3 pasos (Cocina / Enviar-LPR / Entregado) segun el estado del pedido.
+- Desglose de totales: Subtotal, Tarifa de envio (nuevo dato `shipping_total` de la API) y Total.
+- Todas las acciones (avanzar estado, prioridad, nota interna, reasignar tienda, cancelar) funcionan igual dentro de la vista expandida.
+
 ## Versionado acordado
 - Ajustes pequenos: 1.1.1, 1.1.2, 1.1.3
-- Cambios medianos: 1.2.0, 1.3.0
+- Cambios medianos: 1.2.0, 1.3.0, 1.4.0
 - Cambios mayores: 2.0.0

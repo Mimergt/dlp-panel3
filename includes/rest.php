@@ -368,6 +368,7 @@ class DLP_Paneles_REST {
                 'internal_note' => get_post_meta($order_id, '_dlp_internal_note', true),
                 'payment_method_title' => $order->get_payment_method_title(),
                 'total' => (float) $order->get_total(),
+                'shipping_total' => (float) $order->get_shipping_total(),
                 'items' => self::get_order_items_payload($order),
                 'items_count' => count($order->get_items()),
             );

@@ -19,6 +19,7 @@
     firstLoadDone: false,
     loadedAt: 0,
     typeFilter: 'all',
+    expandedOrderId: null,
   };
 
   var ICON = {
@@ -37,6 +38,11 @@
     bag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>',
     card: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" x2="23" y1="10" y2="10"></line></svg>',
     cash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="3"></circle><path d="M6 12h.01M18 12h.01"></path></svg>',
+    expand: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" x2="14" y1="3" y2="10"></line><line x1="3" x2="10" y1="21" y2="14"></line></svg>',
+    back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" x2="5" y1="12" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>',
+    close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" x2="6" y1="6" y2="18"></line><line x1="6" x2="18" y1="6" y2="18"></line></svg>',
+    kitchen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" x2="6" y1="1" y2="4"></line><line x1="10" x2="10" y1="1" y2="4"></line><line x1="14" x2="14" y1="1" y2="4"></line></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>',
   };
 
   function esc(str) {
@@ -350,6 +356,25 @@
       .join('');
   }
 
+  function renderProductRow(item) {
+    var metaRows = (item.meta || []).map(function (m) {
+      var isUpgrade = /upgrade/i.test(m.label);
+      var rowClass = isUpgrade ? ' dlp2-product-meta-upgrade' : '';
+      var label = isUpgrade ? '&#9733; ' + esc(m.label) + ': ' + esc(m.value) : '&bull; ' + esc(m.label) + ': <strong>' + esc(m.value) + '</strong>';
+      return '<div class="dlp2-product-meta-row' + rowClass + '"><span>' + label + '</span></div>';
+    }).join('');
+
+    return '' +
+      '<div class="dlp2-product">' +
+        '<div class="dlp2-product-top">' +
+          '<span class="dlp2-product-qty">' + Number(item.quantity || 1) + '</span>' +
+          '<span class="dlp2-product-name">' + esc(item.name) + '</span>' +
+          '<span class="dlp2-product-price">' + esc(formatMoney(item.total)) + '</span>' +
+        '</div>' +
+        (metaRows ? '<div class="dlp2-product-meta">' + metaRows + '</div>' : '') +
+      '</div>';
+  }
+
   function renderProducts(order) {
     var items = Array.isArray(order.items) ? order.items : [];
 
@@ -357,21 +382,7 @@
       return '';
     }
 
-    var rows = items.map(function (item) {
-      var metaRows = (item.meta || []).map(function (m) {
-        return '<div class="dlp2-product-meta-row"><span>&bull; ' + esc(m.label) + ': <strong>' + esc(m.value) + '</strong></span></div>';
-      }).join('');
-
-      return '' +
-        '<div class="dlp2-product">' +
-          '<div class="dlp2-product-top">' +
-            '<span class="dlp2-product-qty">' + Number(item.quantity || 1) + '</span>' +
-            '<span class="dlp2-product-name">' + esc(item.name) + '</span>' +
-            '<span class="dlp2-product-price">' + esc(formatMoney(item.total)) + '</span>' +
-          '</div>' +
-          (metaRows ? '<div class="dlp2-product-meta">' + metaRows + '</div>' : '') +
-        '</div>';
-    }).join('');
+    var rows = items.map(renderProductRow).join('');
 
     return '' +
       '<div class="dlp2-section">' +
@@ -381,6 +392,108 @@
         '</div>' +
         '<div class="dlp2-products">' + rows + '</div>' +
         '<div class="dlp2-total-row"><span>Total</span><span class="dlp2-total-amount">' + esc(formatMoney(order.total)) + '</span></div>' +
+      '</div>';
+  }
+
+  // Agrupa los modificadores de todos los productos (carne, complemento,
+  // bebida, upgrades) para el "Resumen de Cocina". Heuristica provisional:
+  // detecta cantidad explicita "(xN)" en el valor del modificador, o usa la
+  // cantidad del producto si no hay una. Pendiente validar con datos reales.
+  function aggregateKitchenItems(order) {
+    var map = {};
+    var order_list = [];
+
+    (order.items || []).forEach(function (item) {
+      (item.meta || []).forEach(function (m) {
+        var match = /\(x(\d+)\)/i.exec(m.value);
+        var qty = match ? parseInt(match[1], 10) : Number(item.quantity || 1);
+        var cleanValue = String(m.value || '').replace(/\s*\(x\d+\)/i, '').trim();
+        var isUpgrade = /upgrade/i.test(m.label);
+        var key = m.label + '|' + cleanValue;
+
+        if (!map[key]) {
+          map[key] = { category: m.label, value: cleanValue, qty: 0, upgrade: isUpgrade };
+          order_list.push(key);
+        }
+        map[key].qty += qty;
+      });
+    });
+
+    return order_list.map(function (key) { return map[key]; });
+  }
+
+  function kitchenCategoryPlural(category) {
+    var key = (category || '').toLowerCase();
+    if (key.indexOf('carne') !== -1) return 'Carnes';
+    if (key.indexOf('complemento') !== -1) return 'Complementos';
+    if (key.indexOf('bebida') !== -1) return 'Bebidas';
+    return category;
+  }
+
+  function kitchenUnitLabel(category, qty) {
+    var key = (category || '').toLowerCase();
+    var plural = qty !== 1;
+    if (key.indexOf('carne') !== -1) return plural ? 'porciones' : 'porcion';
+    if (key.indexOf('complemento') !== -1) return plural ? 'raciones' : 'racion';
+    if (key.indexOf('bebida') !== -1) return plural ? 'unidades' : 'unidad';
+    if (key.indexOf('upgrade') !== -1) return plural ? 'raciones' : 'racion';
+    return plural ? 'unidades' : 'unidad';
+  }
+
+  function renderKitchenSummary(order) {
+    var rows = aggregateKitchenItems(order);
+    var items = Array.isArray(order.items) ? order.items : [];
+
+    var rowsHtml = rows.map(function (row) {
+      var displayName = row.upgrade ?
+        ('&#9733; Upgrade: ' + esc(row.value)) :
+        (esc(kitchenCategoryPlural(row.category)) + ' ' + esc(row.value));
+      var unit = kitchenUnitLabel(row.category, row.qty);
+      var cls = row.upgrade ? ' dlp2-kitchen-item-upgrade' : '';
+
+      return '' +
+        '<div class="dlp2-kitchen-item' + cls + '">' +
+          '<span class="dlp2-kitchen-item-name">' + displayName + '</span>' +
+          '<span class="dlp2-kitchen-item-qty">x' + row.qty + ' ' + esc(unit) + '</span>' +
+        '</div>';
+    }).join('');
+
+    return '' +
+      '<div class="dlp2-kitchen-card">' +
+        '<div class="dlp2-kitchen-header">' +
+          '<div class="dlp2-kitchen-header-left">' + ICON.kitchen + '<span>Resumen de Cocina</span></div>' +
+          '<span class="dlp2-kitchen-total">Total ' + Number(order.items_count || items.length) + ' items</span>' +
+        '</div>' +
+        '<div class="dlp2-kitchen-list">' + (rowsHtml || '<p class="dlp2-empty">Sin modificadores registrados.</p>') + '</div>' +
+      '</div>';
+  }
+
+  function renderPrepProgress(order) {
+    var step = flowStep(order.status);
+    var final = isFinalStatus(order.status);
+    var labels = ['1. Cocina', '2. Enviar/LPR', '3. Entregado'];
+
+    var stepsHtml = labels.map(function (label, idx) {
+      var stepNum = idx + 1;
+      var done = final || stepNum <= step;
+      var current = !final && stepNum === step;
+      var barClass = !done ? 'dlp2-prep-bar-pending' : (current ? 'dlp2-prep-bar-current' : 'dlp2-prep-bar-done');
+      var labelClass = done ? 'dlp2-prep-label-done' : 'dlp2-prep-label-pending';
+
+      return '' +
+        '<div class="dlp2-prep-step">' +
+          '<div class="dlp2-prep-bar ' + barClass + '"></div>' +
+          '<span class="' + labelClass + '">' + label + '</span>' +
+        '</div>';
+    }).join('');
+
+    return '' +
+      '<div class="dlp2-prep-progress">' +
+        '<div class="dlp2-prep-top">' +
+          '<span>Progreso de preparacion</span>' +
+          '<span class="dlp2-prep-step-text">' + (final ? 'Completado' : 'Paso ' + step + ' de 3 en curso') + '</span>' +
+        '</div>' +
+        '<div class="dlp2-prep-steps">' + stepsHtml + '</div>' +
       '</div>';
   }
 
@@ -431,7 +544,12 @@
 
     return '' +
       '<aside class="dlp2-detail">' +
-        '<div class="dlp2-detail-header">' + ICON.file + '<span>Detalle del pedido</span>' + renderTypePill(order, false) + '</div>' +
+        '<div class="dlp2-detail-header">' + ICON.file + '<span>Detalle del pedido</span>' +
+          '<div class="dlp2-detail-header-actions">' +
+            renderTypePill(order, false) +
+            '<button class="dlp2-expand-btn" data-action="expand-order" data-order-id="' + order.id + '" title="Abrir pedido" type="button">' + ICON.expand + '</button>' +
+          '</div>' +
+        '</div>' +
         '<div class="dlp2-detail-body">' +
 
           '<div class="dlp2-detail-top">' +
@@ -493,15 +611,148 @@
       '</aside>';
   }
 
+  function renderExpandedOrder(order) {
+    var storeOptions = (state.stores || []).map(function (store) {
+      var selected = Number(store.id) === Number(order.store_id) ? ' selected' : '';
+      return '<option value="' + Number(store.id) + '"' + selected + '>' + esc(store.name) + '</option>';
+    }).join('');
+
+    var pickup = isPickup(order);
+    var addressLabel = pickup ? 'Retiro en tienda (Pickup)' : 'Entrega a domicilio (Delivery)';
+    var items = Array.isArray(order.items) ? order.items : [];
+    var comboCount = items.length;
+    var subtotal = items.reduce(function (sum, item) { return sum + Number(item.total || 0); }, 0);
+    var shipping = Number(order.shipping_total || 0);
+
+    var metaParts = [];
+    if (order.entry_time) {
+      metaParts.push('<span><strong>Ingreso:</strong> ' + esc(order.entry_time) + '</span>');
+    }
+    if (order.payment_method_title) {
+      metaParts.push('<span class="dlp2-expanded-paid">' + ICON.check + '<span>' + esc(order.payment_method_title) + '</span></span>');
+    }
+    if (order.store_name) {
+      metaParts.push('<span><strong>Tienda asignada:</strong> ' + esc(order.store_name) + '</span>');
+    }
+
+    return '' +
+      '<div class="dlp2-expanded">' +
+        '<div class="dlp2-expanded-topbar">' +
+          '<div class="dlp2-expanded-top-row">' +
+            '<div class="dlp2-expanded-left">' +
+              '<button class="dlp2-expanded-back" data-action="collapse-order" type="button">' + ICON.back + '<span>Volver al tablero</span></button>' +
+              '<span class="dlp2-expanded-divider"></span>' +
+              '<h1 class="dlp2-expanded-title">Pedido #' + order.id + '</h1>' +
+              '<div class="dlp2-expanded-badges">' +
+                '<span class="dlp2-status-pill dlp2-status-' + statusColor(order.status) + '"><span class="dlp2-status-dot"></span>' + esc(statusLabel(order.status)) + '</span>' +
+                renderTypePill(order, false) +
+                (order.priority ? '<span class="dlp2-priority-pill">' + ICON.flag + '<span>Prioridad</span></span>' : '') +
+              '</div>' +
+            '</div>' +
+            '<div class="dlp2-expanded-right">' +
+              (isFinalStatus(order.status) ? '' :
+                '<button class="dlp2-flow-btn dlp2-expanded-flow-btn" data-action="advance" data-order-id="' + order.id + '">' + ICON.chevrons + '<span>' + esc(nextLabel(order.status)) + '</span></button>') +
+              '<button class="dlp2-expanded-close" data-action="collapse-order" title="Cerrar vista" type="button">' + ICON.close + '</button>' +
+            '</div>' +
+          '</div>' +
+          (metaParts.length ? '<div class="dlp2-expanded-meta">' + metaParts.join('<span class="dlp2-expanded-meta-sep">&bull;</span>') + '</div>' : '') +
+        '</div>' +
+
+        '<div class="dlp2-expanded-grid">' +
+
+          '<div class="dlp2-expanded-col">' +
+            renderTimeCard(order) +
+            renderPrepProgress(order) +
+            renderKitchenSummary(order) +
+          '</div>' +
+
+          '<div class="dlp2-expanded-col dlp2-expanded-col-mid">' +
+            '<div class="dlp2-section-title-row dlp2-expanded-products-title">' +
+              '<div class="dlp2-section-title-row">' +
+                '<span class="dlp2-section-title">Detalle de Productos</span>' +
+                '<span class="dlp2-items-count">' + Number(order.items_count || items.length) + ' items</span>' +
+              '</div>' +
+              '<span class="dlp2-expanded-combo-count">' + comboCount + ' combos</span>' +
+            '</div>' +
+            '<div class="dlp2-products dlp2-expanded-products">' + items.map(renderProductRow).join('') + '</div>' +
+            '<div class="dlp2-expanded-totals">' +
+              '<div class="dlp2-expanded-totals-row"><span>Subtotal (' + Number(order.items_count || items.length) + ' items)</span><span>' + esc(formatMoney(subtotal)) + '</span></div>' +
+              '<div class="dlp2-expanded-totals-row"><span>Tarifa de envio (' + esc(orderTypeLabel(order)) + ')</span><span class="dlp2-expanded-shipping">' + (shipping > 0 ? esc(formatMoney(shipping)) : esc(formatMoney(0)) + ' (Gratis)') + '</span></div>' +
+              '<div class="dlp2-expanded-totals-divider"></div>' +
+              '<div class="dlp2-expanded-totals-row dlp2-expanded-totals-final"><span>Total</span><span class="dlp2-total-amount">' + esc(formatMoney(order.total)) + '</span></div>' +
+            '</div>' +
+          '</div>' +
+
+          '<div class="dlp2-expanded-col">' +
+            '<div class="dlp2-customer-card">' +
+              '<div class="dlp2-section-title-row">' +
+                '<span class="dlp2-section-title">Datos de Entrega y Cliente</span>' +
+                renderTypePill(order, false) +
+              '</div>' +
+              '<div class="dlp2-customer-top">' +
+                '<div class="dlp2-customer-name">' + ICON.user + '<span>' + esc(order.customer_name || 'Consumidor final') + '</span></div>' +
+                (order.phone ? '<a class="dlp2-phone-link" href="tel:' + esc(order.phone) + '">' + ICON.phone + '<span>' + esc(order.phone) + '</span></a>' : '') +
+              '</div>' +
+              (order.full_address ? '<div class="dlp2-customer-address">' + ICON.pin + '<div><span class="dlp2-address-label">' + esc(addressLabel) + '</span><span class="dlp2-address-value">' + esc(order.full_address) + '</span></div></div>' : '') +
+              (order.notes ? '<div class="dlp2-customer-note">' + ICON.alert + '<span>Nota: ' + esc(order.notes) + '</span></div>' : '') +
+            '</div>' +
+            '<div class="dlp2-section">' +
+              '<span class="dlp2-section-title">Gestion de Tienda y Supervisor</span>' +
+              '<div class="dlp2-management-grid">' +
+                '<label class="dlp2-field">' +
+                  '<span>Tienda asignada</span>' +
+                  '<select data-field="store_id" data-action="reassign" data-order-id="' + order.id + '">' + storeOptions + '</select>' +
+                '</label>' +
+                '<label class="dlp2-field">' +
+                  '<span>Prioridad de orden</span>' +
+                  '<button class="dlp2-toggle-btn" data-action="toggle-priority" data-order-id="' + order.id + '">' + ICON.flag + '<span>' + (order.priority ? 'Quitar Prioridad' : 'Marcar Prioridad') + '</span></button>' +
+                '</label>' +
+              '</div>' +
+              '<div class="dlp2-note-row">' +
+                '<input type="text" data-field="internal_note" placeholder="Agregar nota interna rapida..." value="' + esc(order.internal_note || '') + '" />' +
+                '<button class="dlp2-note-save" data-action="save-note" data-order-id="' + order.id + '">Guardar</button>' +
+              '</div>' +
+            '</div>' +
+            (isFinalStatus(order.status) ? '' :
+              '<button class="dlp2-cancel-link" data-action="cancel" data-order-id="' + order.id + '">Cancelar pedido</button>') +
+          '</div>' +
+
+        '</div>' +
+      '</div>';
+  }
+
   function render() {
     var selected = state.orders.find(function (order) {
       return order.id === state.selectedOrderId;
     }) || null;
 
+    var expandedOrder = state.expandedOrderId ? (state.orders.find(function (order) {
+      return order.id === state.expandedOrderId;
+    }) || null) : null;
+
     var visible = filteredOrders();
     var countFor = function (status) {
       return visible.filter(function (o) { return o.group === status; }).length;
     };
+
+    var mainHtml = expandedOrder ? renderExpandedOrder(expandedOrder) :
+      '<div class="dlp2-layout">' +
+        '<section class="dlp2-board">' +
+          '<div class="dlp2-column">' +
+            '<div class="dlp2-column-header"><span class="dlp2-dot dlp2-dot-amber"></span><span class="dlp2-column-title">Procesando</span><span class="dlp2-column-count dlp2-count-amber">' + countFor('processing') + '</span></div>' +
+            '<div class="dlp2-column-cards">' + renderCards('processing') + '</div>' +
+          '</div>' +
+          '<div class="dlp2-column">' +
+            '<div class="dlp2-column-header"><span class="dlp2-dot dlp2-dot-blue"></span><span class="dlp2-column-title">Enviada / LPR</span><span class="dlp2-column-count dlp2-count-blue">' + countFor('shipped') + '</span></div>' +
+            '<div class="dlp2-column-cards">' + renderCards('shipped') + '</div>' +
+          '</div>' +
+          '<div class="dlp2-column dlp2-column-narrow">' +
+            '<div class="dlp2-column-header"><span class="dlp2-dot dlp2-dot-green"></span><span class="dlp2-column-title">Completada</span><span class="dlp2-column-count dlp2-count-green">' + countFor('completed') + '</span></div>' +
+            '<div class="dlp2-column-cards">' + renderCards('completed') + '</div>' +
+          '</div>' +
+        '</section>' +
+        renderDetail(selected) +
+      '</div>';
 
     root.innerHTML = '' +
       '<div class="dlp2-header">' +
@@ -520,23 +771,7 @@
         '</div>' +
       '</div>' +
       (state.networkWarning ? '<div class="dlp-netwarn">' + esc(state.networkWarning) + '</div>' : '') +
-      '<div class="dlp2-layout">' +
-        '<section class="dlp2-board">' +
-          '<div class="dlp2-column">' +
-            '<div class="dlp2-column-header"><span class="dlp2-dot dlp2-dot-amber"></span><span class="dlp2-column-title">Procesando</span><span class="dlp2-column-count dlp2-count-amber">' + countFor('processing') + '</span></div>' +
-            '<div class="dlp2-column-cards">' + renderCards('processing') + '</div>' +
-          '</div>' +
-          '<div class="dlp2-column">' +
-            '<div class="dlp2-column-header"><span class="dlp2-dot dlp2-dot-blue"></span><span class="dlp2-column-title">Enviada / LPR</span><span class="dlp2-column-count dlp2-count-blue">' + countFor('shipped') + '</span></div>' +
-            '<div class="dlp2-column-cards">' + renderCards('shipped') + '</div>' +
-          '</div>' +
-          '<div class="dlp2-column dlp2-column-narrow">' +
-            '<div class="dlp2-column-header"><span class="dlp2-dot dlp2-dot-green"></span><span class="dlp2-column-title">Completada</span><span class="dlp2-column-count dlp2-count-green">' + countFor('completed') + '</span></div>' +
-            '<div class="dlp2-column-cards">' + renderCards('completed') + '</div>' +
-          '</div>' +
-        '</section>' +
-        renderDetail(selected) +
-      '</div>';
+      mainHtml;
   }
 
   // Ticker en vivo: recalcula solo los nodos de tiempo (badges de tarjeta +
@@ -556,11 +791,13 @@
       badge.outerHTML = renderTimeBadge(order, liveElapsed(order), mini);
     });
 
-    var detailEl = root.querySelector('.dlp2-detail');
-    var timeCardEl = detailEl ? detailEl.querySelector('.dlp2-time-card') : null;
-    if (timeCardEl && state.selectedOrderId) {
+    // La tarjeta de tiempo vive dentro de .dlp2-detail (tablero) o dentro de
+    // .dlp2-expanded (vista "Pedido"), nunca ambas a la vez.
+    var timeCardEl = root.querySelector('.dlp2-time-card');
+    var timeCardOrderId = state.expandedOrderId || state.selectedOrderId;
+    if (timeCardEl && timeCardOrderId) {
       var selected = state.orders.find(function (order) {
-        return order.id === state.selectedOrderId;
+        return order.id === timeCardOrderId;
       });
       if (selected) {
         timeCardEl.outerHTML = renderTimeCard(selected, liveElapsed(selected));
@@ -587,6 +824,15 @@
           });
           if (!exists) {
             state.selectedOrderId = state.orders.length ? state.orders[0].id : null;
+          }
+        }
+
+        if (state.expandedOrderId) {
+          var expandedExists = state.orders.some(function (order) {
+            return order.id === state.expandedOrderId;
+          });
+          if (!expandedExists) {
+            state.expandedOrderId = null;
           }
         }
 
@@ -647,6 +893,20 @@
       return;
     }
 
+    var expandBtn = event.target.closest('[data-action="expand-order"]');
+    if (expandBtn && expandBtn.dataset.orderId) {
+      state.expandedOrderId = Number(expandBtn.dataset.orderId);
+      render();
+      return;
+    }
+
+    var collapseBtn = event.target.closest('[data-action="collapse-order"]');
+    if (collapseBtn) {
+      state.expandedOrderId = null;
+      render();
+      return;
+    }
+
     var actionBtn = event.target.closest('[data-action]');
     if (!actionBtn || !actionBtn.dataset.orderId) {
       return;
@@ -703,7 +963,7 @@
     }
 
     if (action === 'save-note') {
-      var detailNote = actionBtn.closest('.dlp2-detail');
+      var detailNote = actionBtn.closest('.dlp2-detail, .dlp2-expanded');
       var noteInput = detailNote ? detailNote.querySelector('[data-field="internal_note"]') : null;
 
       api('/pedido/' + orderId + '/meta', 'POST', {
