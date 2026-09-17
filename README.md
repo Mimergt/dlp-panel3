@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.4.6
+- 1.4.7
 
 ## Shortcode
 - [dlp_paneles]
@@ -140,6 +140,9 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 ## Incluido en 1.4.6
 - Corregido bug: el precio mostrado junto al nombre del producto era el total de linea de WooCommerce (que ya incluye los extras/modificadores), asi que un combo de Q75 con un extra de Q5 se mostraba como "Q80.00 x 1" arriba y luego el extra de Q5 aparecia otra vez abajo, sumando visualmente mal. Ahora se calcula y muestra el precio base del producto (total de linea menos la suma de los extras), y el total final se movio a una fila separada al final de la tarjeta, con una linea divisoria, para que quede claro que es la suma de todo lo de arriba.
 - Boton "Descargar Pedidos" del header renombrado a "Sincronizar" (su funcion no cambio: sigue forzando un refresh manual del panel).
+
+## Incluido en 1.4.7
+- Textos de los totales aclarados: el total de cada producto ahora dice "Total del Producto" (antes solo "Total"), y el total del pedido completo dice "Total del Pedido" (antes solo "Total"). Aplica al detalle normal del tablero y a la vista expandida.
 
 ## Versionado acordado
 - Ajustes pequenos: 1.1.1, 1.1.2, 1.1.3

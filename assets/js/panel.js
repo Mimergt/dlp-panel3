@@ -449,7 +449,7 @@
           '<span class="dlp2-product-baseprice">' + esc(formatMoney(baseUnit)) + ' x ' + qty + '</span>' +
         '</div>' +
         (metaResult.html ? '<div class="dlp2-product-meta">' + metaResult.html + '</div>' : '') +
-        '<div class="dlp2-product-linetotal"><span>Total</span><span class="dlp2-product-price">' + esc(formatMoney(lineTotal)) + '</span></div>' +
+        '<div class="dlp2-product-linetotal"><span>Total del Producto</span><span class="dlp2-product-price">' + esc(formatMoney(lineTotal)) + '</span></div>' +
       '</div>';
   }
 
@@ -469,7 +469,7 @@
           '<span class="dlp2-items-count">' + Number(order.items_count || items.length) + ' items</span>' +
         '</div>' +
         '<div class="dlp2-products">' + rows + '</div>' +
-        '<div class="dlp2-total-row"><span>Total</span><span class="dlp2-total-amount">' + esc(formatMoney(order.total)) + '</span></div>' +
+        '<div class="dlp2-total-row"><span>Total del Pedido</span><span class="dlp2-total-amount">' + esc(formatMoney(order.total)) + '</span></div>' +
       '</div>';
   }
 
@@ -711,7 +711,7 @@
             '<div class="dlp2-expanded-totals">' +
               '<div class="dlp2-expanded-totals-row"><span>Cantidad de items</span><span>' + Number(order.items_count || items.length) + '</span></div>' +
               '<div class="dlp2-expanded-totals-divider"></div>' +
-              '<div class="dlp2-expanded-totals-row dlp2-expanded-totals-final"><span>Total</span><span class="dlp2-total-amount">' + esc(formatMoney(order.total)) + '</span></div>' +
+              '<div class="dlp2-expanded-totals-row dlp2-expanded-totals-final"><span>Total del Pedido</span><span class="dlp2-total-amount">' + esc(formatMoney(order.total)) + '</span></div>' +
             '</div>' +
             renderActionsCard(order) +
           '</div>' +

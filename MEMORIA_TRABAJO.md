@@ -729,3 +729,25 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
 ### Estado
 - Listo para subir al hosting y validar con datos reales, en especial pedidos con varios extras para confirmar que el precio base calculado coincide con el precio real del combo en el catalogo.
 - Sigue pendiente el resto de la lista previa (items 3, 5-15).
+
+## 2026-09-17 (iteracion 1.4.7 - aclarar textos de "Total", demo de transiciones)
+
+### Resumen de conversacion
+- El usuario reviso 1.4.6 y pidio aclarar los textos: el "Total" de cada producto individual debe decir "Total del Producto", y el "Total" general del pedido debe decir "Total del Pedido". Aplica tanto al detalle normal como a la vista expandida.
+- Pidio ademas 4 opciones de animacion para abrir/cerrar el panel expandido "Pedido", mas lentas o distintas a la actual (que hoy es un swap instantaneo de innerHTML sin transicion real), para probarlas antes de decidir cual implementar.
+
+### Cambios realizados
+- Version actualizada a 1.4.7.
+- `assets/js/panel.js`: texto "Total" -> "Total del Producto" en `.dlp2-product-linetotal` (dentro de cada tarjeta de producto, compartido por el detalle normal y la vista expandida); "Total" -> "Total del Pedido" en `.dlp2-total-row` (detalle normal) y en `.dlp2-expanded-totals-row.dlp2-expanded-totals-final` (vista expandida).
+- Se genero un archivo HTML de demo (fuera del plugin, no se toco codigo de produccion) con 4 variantes de transicion para abrir/cerrar un panel tipo "Pedido expandido", seleccionables con botones: (1) deslizar desde la derecha, (2) zoom suave desde el centro con rebote leve, (3) deslizar desde abajo tipo hoja modal, (4) crossfade con el tablero desenfocandose de fondo. Se envio el archivo al usuario para que pruebe cada una y elija; falta implementar la elegida en el codigo real (`renderExpandedOrder`/`render()` actualmente hacen swap instantaneo del HTML sin transicion).
+
+### Archivos tocados
+- dlp-paneles.php
+- README.md
+- MEMORIA_TRABAJO.md
+- assets/js/panel.js
+
+### Estado
+- Cambios de texto listos para subir al hosting.
+- Pendiente: el usuario debe elegir una de las 4 variantes de transicion de la demo para implementarla en el codigo real del panel.
+- Sigue pendiente el resto de la lista previa (items 3, 5-15).
