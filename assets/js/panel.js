@@ -4,10 +4,11 @@
     return;
   }
 
-  // Meta de tiempo operativo (minutos) usada para la barra de progreso del
-  // detalle. Pendiente: hacerla configurable por tienda/pedido (ver
-  // MEMORIA_TRABAJO.md, seccion "Pendientes diseno nuevo").
-  var SLA_GOAL_MINUTES = 30;
+  // Umbrales de tiempo operativo (minutos), acordados con el usuario:
+  // 45 min = primera alerta ("Por vencer" / warning), 60 min = "Atrasado".
+  // Pendiente: evaluar si deben variar por tienda/tipo de pedido.
+  var TIME_WARNING_MINUTES = 45;
+  var TIME_LATE_MINUTES = 60;
 
   var state = {
     orders: [],
@@ -16,6 +17,7 @@
     stores: [],
     networkWarning: '',
     firstLoadDone: false,
+    loadedAt: 0,
   };
 
   var ICON = {
@@ -72,13 +74,25 @@
     return 'Q' + Number(amount || 0).toFixed(2);
   }
 
-  // Umbrales de color/formato provisionales para el badge de tiempo de las
-  // tarjetas. Pendiente: confirmar con el usuario los minutos exactos.
+  // Elapsed en vivo: el servidor manda elapsed_seconds al momento del ultimo
+  // fetch (state.loadedAt); entre refrescos se le suma el tiempo real
+  // transcurrido en el navegador para que el reloj corra sin esperar el
+  // siguiente polling.
+  function liveElapsed(order) {
+    var base = Number(order.elapsed_seconds || 0);
+    if (!state.loadedAt) {
+      return base;
+    }
+    return base + Math.max(0, Math.floor((Date.now() - state.loadedAt) / 1000));
+  }
+
   function timeTier(seconds) {
-    if (seconds >= 3600) return 'critical';
-    if (seconds >= 1800) return 'warning';
+    if (seconds >= TIME_LATE_MINUTES * 60) return 'critical';
+    if (seconds >= TIME_WARNING_MINUTES * 60) return 'warning';
     return 'neutral';
   }
+
+  var BLINK_COLON = '<span class="dlp2-colon">:</span>';
 
   function fmtCardTime(seconds) {
     seconds = Number(seconds || 0);
@@ -89,10 +103,10 @@
     if (h > 0) {
       return h + 'h ' + String(m).padStart(2, '0') + 'm';
     }
-    if (seconds >= 1800) {
+    if (seconds >= TIME_WARNING_MINUTES * 60) {
       return m + 'm ' + s + 's';
     }
-    return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    return String(m).padStart(2, '0') + BLINK_COLON + String(s).padStart(2, '0');
   }
 
   function fmtBigTime(seconds) {
@@ -102,9 +116,9 @@
     var s = seconds % 60;
 
     if (h > 0) {
-      return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+      return String(h).padStart(2, '0') + BLINK_COLON + String(m).padStart(2, '0');
     }
-    return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    return String(m).padStart(2, '0') + BLINK_COLON + String(s).padStart(2, '0');
   }
 
   function statusLabel(status) {
@@ -206,7 +220,16 @@
     });
   }
 
+  function renderTimeBadge(order, seconds, mini) {
+    var tier = timeTier(seconds);
+    var sizeClass = mini ? ' dlp2-time-badge-mini' : '';
+    return '<span class="dlp2-time-badge' + sizeClass + ' dlp2-time-' + tier + '" data-time-badge="' + order.id + '">' +
+      ICON.clock + '<span>' + fmtCardTime(seconds) + '</span></span>';
+  }
+
   function renderCards(status) {
+    var isMini = status === 'completed';
+
     return state.orders
       .filter(function (order) {
         return order.group === status;
@@ -214,13 +237,27 @@
       .map(function (order) {
         var active = order.id === state.selectedOrderId ? ' dlp2-card-active' : '';
         var priorityClass = order.priority ? ' dlp2-card-priority' : '';
-        var tier = timeTier(order.elapsed_seconds);
+        var seconds = liveElapsed(order);
+
+        if (isMini) {
+          return '' +
+            '<article class="dlp2-card dlp2-card-mini' + active + priorityClass + '" data-order-id="' + order.id + '">' +
+              '<div class="dlp2-card-top">' +
+                '<span class="dlp2-card-id dlp2-card-id-mini">#' + order.id + '</span>' +
+                renderTimeBadge(order, seconds, true) +
+              '</div>' +
+              '<div class="dlp2-card-mini-row">' +
+                '<span>' + ICON.user + '<span>' + esc(order.customer_name || 'Consumidor final') + '</span></span>' +
+                '<span>' + ICON.phone + '<span>' + esc(order.phone || '-') + '</span></span>' +
+              '</div>' +
+            '</article>';
+        }
 
         return '' +
           '<article class="dlp2-card' + active + priorityClass + '" data-order-id="' + order.id + '">' +
             '<div class="dlp2-card-top">' +
               '<span class="dlp2-card-id">#' + order.id + '</span>' +
-              '<span class="dlp2-time-badge dlp2-time-' + tier + '">' + ICON.clock + '<span>' + esc(fmtCardTime(order.elapsed_seconds)) + '</span></span>' +
+              renderTimeBadge(order, seconds, false) +
             '</div>' +
             '<div class="dlp2-card-row">' + ICON.user + '<span>' + esc(order.customer_name || 'Consumidor final') + '</span></div>' +
             '<div class="dlp2-card-row">' + ICON.phone + '<span>' + esc(order.phone || '-') + '</span></div>' +
@@ -267,16 +304,17 @@
       '</div>';
   }
 
-  function renderTimeCard(order) {
-    var elapsedMinutes = Number(order.elapsed_seconds || 0) / 60;
-    var pct = Math.min(100, Math.round((elapsedMinutes / SLA_GOAL_MINUTES) * 100));
+  function renderTimeCard(order, secondsOverride) {
+    var seconds = typeof secondsOverride === 'number' ? secondsOverride : liveElapsed(order);
+    var elapsedMinutes = seconds / 60;
+    var pct = Math.min(100, Math.round((elapsedMinutes / TIME_LATE_MINUTES) * 100));
     var slaState = 'ok';
     var slaLabel = 'En tiempo';
 
-    if (elapsedMinutes >= SLA_GOAL_MINUTES) {
+    if (elapsedMinutes >= TIME_LATE_MINUTES) {
       slaState = 'late';
       slaLabel = 'Atrasado';
-    } else if (elapsedMinutes >= SLA_GOAL_MINUTES * 0.8) {
+    } else if (elapsedMinutes >= TIME_WARNING_MINUTES) {
       slaState = 'warning';
       slaLabel = 'Por vencer';
     }
@@ -286,12 +324,12 @@
         '<div class="dlp2-time-card-top">' +
           '<div class="dlp2-time-card-value">' +
             '<span class="dlp2-time-icon">' + ICON.clock + '</span>' +
-            '<span class="dlp2-time-digits">' + esc(fmtBigTime(order.elapsed_seconds)) + '</span>' +
+            '<span class="dlp2-time-digits">' + fmtBigTime(seconds) + '</span>' +
             '<span class="dlp2-time-unit">min</span>' +
           '</div>' +
           '<div class="dlp2-time-tags">' +
             '<span class="dlp2-sla-pill dlp2-sla-' + slaState + '">' + esc(slaLabel) + '</span>' +
-            '<div class="dlp2-goal-pill"><span>Meta</span><strong>' + SLA_GOAL_MINUTES + ' min</strong></div>' +
+            '<div class="dlp2-goal-pill"><span>Atrasado a los</span><strong>' + TIME_LATE_MINUTES + ' min</strong></div>' +
           '</div>' +
         '</div>' +
         '<div class="dlp2-time-progress"><div class="dlp2-time-progress-fill dlp2-sla-fill-' + slaState + '" style="width:' + pct + '%"></div></div>' +
@@ -418,6 +456,35 @@
       '</div>';
   }
 
+  // Ticker en vivo: recalcula solo los nodos de tiempo (badges de tarjeta +
+  // tarjeta de tiempo del detalle) cada segundo, sin re-renderizar todo el
+  // panel (evita perder foco en inputs y es mas barato que un render() completo).
+  function updateLiveTimes() {
+    if (!state.orders.length) {
+      return;
+    }
+
+    state.orders.forEach(function (order) {
+      var badge = root.querySelector('[data-time-badge="' + order.id + '"]');
+      if (!badge) {
+        return;
+      }
+      var mini = badge.classList.contains('dlp2-time-badge-mini');
+      badge.outerHTML = renderTimeBadge(order, liveElapsed(order), mini);
+    });
+
+    var detailEl = root.querySelector('.dlp2-detail');
+    var timeCardEl = detailEl ? detailEl.querySelector('.dlp2-time-card') : null;
+    if (timeCardEl && state.selectedOrderId) {
+      var selected = state.orders.find(function (order) {
+        return order.id === state.selectedOrderId;
+      });
+      if (selected) {
+        timeCardEl.outerHTML = renderTimeCard(selected, liveElapsed(selected));
+      }
+    }
+  }
+
   function loadPanel() {
     return api('/panel', 'GET', null, { retries: 2, retryDelayMs: 1200 })
       .then(function (data) {
@@ -425,6 +492,7 @@
         state.orders = Array.isArray(data.orders) ? data.orders : [];
         state.counts = data.counts || { processing: 0, shipped: 0, completed: 0 };
         state.stores = Array.isArray(data.stores) ? data.stores : [];
+        state.loadedAt = Date.now();
 
         if (!state.selectedOrderId && state.orders.length) {
           state.selectedOrderId = state.orders[0].id;
@@ -560,4 +628,5 @@
 
   loadPanel();
   setInterval(loadPanel, Number(window.DLP_PANELES_CONFIG.refreshSeconds || 30) * 1000);
+  setInterval(updateLiveTimes, 1000);
 })();

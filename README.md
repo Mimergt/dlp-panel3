@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.2.1
+- 1.2.2
 
 ## Shortcode
 - [dlp_paneles]
@@ -84,6 +84,12 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 
 ## Incluido en 1.2.1
 - Corregido boton "Descargar Pedidos": ya no exporta CSV. Ahora es un refresh forzado del panel (icono de sincronizar, gira mientras carga) para "forzar" manualmente una actualizacion de los pedidos sin esperar el polling automatico de 30s.
+
+## Incluido en 1.2.2
+- Umbrales de tiempo acordados: 45 min = primera alerta ("Por vencer"), 60 min = "Atrasado" (antes 30/60 provisionales). Aplican tanto al color del badge de tiempo en tarjetas como a la tarjeta de tiempo/SLA del detalle.
+- Reloj en vivo: el tiempo transcurrido (tarjetas y detalle) ahora corre en tiempo real, segundo a segundo, sin esperar el refresco automatico de 30s. Los `:` de los formatos `mm:ss`/`hh:mm` parpadean.
+- Tarjetas de pedido mas compactas (menos espacio interno entre elementos).
+- Nueva variante "mini" para las tarjetas de la columna `Completada`: id + tiempo en una fila, nombre + telefono en una sola fila (sin badge de tienda ni prioridad), siguiendo el boceto original.
 
 ## Versionado acordado
 - Ajustes pequenos: 1.1.1, 1.1.2, 1.1.3

@@ -364,8 +364,8 @@ Este archivo documenta el historial tecnico y resumen de conversaciones para ret
 ### Pendientes diseno nuevo (1.2.0) - accion o decision requerida
 Esta lista se debe mantener actualizada a medida que se van resolviendo items. Marcar cada uno al completarlo.
 
-1. **Meta de tiempo (SLA)**: `SLA_GOAL_MINUTES = 30` esta hardcodeado en `panel.js`. Falta decidir si debe ser configurable por tienda/pedido/tipo de pedido, y confirmar que 30 min es el valor correcto.
-2. **Umbrales de color del badge de tiempo en tarjetas**: provisional en `timeTier()` (`panel.js`): neutral <30min, amber 30-60min, rojo >=60min. Confirmar con el usuario si son los umbrales reales de operacion.
+1. ~~**Meta de tiempo (SLA)**~~ RESUELTO en 1.2.2: umbrales confirmados 45min (alerta) / 60min (atrasado). Siguen hardcodeados en `panel.js` (`TIME_WARNING_MINUTES`/`TIME_LATE_MINUTES`) - pendiente evaluar si deben ser configurables por tienda/tipo de pedido (el usuario aclaro que estos numeros "pueden cambiar" tras revision con el cliente).
+2. ~~**Umbrales de color del badge de tiempo en tarjetas**~~ RESUELTO en 1.2.2: mismos umbrales que el SLA (45min/60min), unificados en una sola fuente (`timeTier()`).
 3. **"Cliente frecuente"**: el boceto muestra un badge de cliente frecuente bajo el nombre. No implementado - requiere logica para contar pedidos previos por telefono/cliente. Pendiente de decidir criterio (cuantos pedidos, en que periodo).
 4. ~~**"Descargar Pedidos"**~~ RESUELTO en 1.2.1: no era exportar, es un refresh forzado manual del panel (icono de sincronizar).
 5. **"Cancelar pedido"**: se reubico como link secundario debajo de "Gestion de Tienda y Supervisor". Sigue usando `prompt()` nativo del navegador (Fase 2 original, aun sin modal propio). Confirmar si la ubicacion/estilo nuevo es la deseada.
@@ -412,3 +412,38 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
 ### Estado
 - Pendiente #4 de la lista de 1.2.0 resuelto.
 - El usuario esta revisando el resto de pendientes empezando por el header; continuar con los siguientes ajustes que indique.
+
+## 2026-09-17 (iteracion 1.2.2 - umbrales de tiempo, reloj en vivo, tarjetas compactas)
+
+### Resumen de conversacion
+- El usuario envio screenshots del panel real en produccion (con pedidos reales) y del ejemplo HTML de referencia.
+- Confirmo los umbrales de tiempo (pendientes #1 y #2 de 1.2.0): 45 min para la primera alerta, 60 min para "Atrasado". Aclaro que estos numeros "pueden cambiar" cuando el cliente los revise.
+- Pidio que los tiempos (tarjetas y detalle) corran en vivo segundo a segundo (hasta ahora solo se actualizaban al recargar el panel cada 30s), con los `:` de los segundos parpadeando.
+- Señalo que las tarjetas de pedido tienen demasiado espacio interno entre elementos, y que las tarjetas de la columna "Completada" deberian tener un diseno "mini" (mas compacto), como en el HTML de ejemplo original.
+
+### Cambios realizados
+- Version actualizada a 1.2.2.
+- `assets/js/panel.js`:
+  - Nuevas constantes `TIME_WARNING_MINUTES = 45` y `TIME_LATE_MINUTES = 60`, usadas tanto en `timeTier()` (color del badge de tarjeta) como en `renderTimeCard()` (SLA del detalle) - una sola fuente de verdad.
+  - Reloj en vivo: `state.loadedAt` guarda el momento del ultimo fetch exitoso; `liveElapsed(order)` suma el tiempo real transcurrido en el navegador al `elapsed_seconds` que mando el servidor. Nuevo `setInterval(updateLiveTimes, 1000)` que actualiza solo los badges de tiempo de las tarjetas (`[data-time-badge]`) y la tarjeta de tiempo del detalle (`.dlp2-time-card`) via `outerHTML`, sin re-renderizar todo el panel (se probo que no interrumpe la edicion de la nota interna).
+  - `fmtCardTime()`/`fmtBigTime()` ahora envuelven el separador `:` en `<span class="dlp2-colon">` para el parpadeo CSS. El formato `mm:ss` (con colon) solo se usa por debajo del umbral de alerta (45min) en las tarjetas; el reloj grande del detalle siempre usa formato con colon.
+  - Nueva variante "mini" de tarjeta para la columna `Completada`: `renderCards()` detecta `status === 'completed'` y genera un markup compacto (id + tiempo en una fila, nombre + telefono en una sola fila, sin badge de tienda ni prioridad), replicando el HTML de ejemplo original (`stitch_panel_dlp/code.html`).
+  - Refactor: `renderTimeBadge()` y `renderTimeCard()` ahora aceptan segundos explicitos para poder reusarse tanto en el render inicial como en el ticker en vivo.
+- `assets/css/panel.css`:
+  - `.dlp2-card`: padding y gap reducidos (14px/10px -> 10-12px/6px) para tarjetas mas compactas.
+  - Nuevas clases `.dlp2-card-mini`, `.dlp2-card-id-mini`, `.dlp2-time-badge-mini`, `.dlp2-card-mini-row` para la tarjeta compacta.
+  - Nueva animacion `@keyframes dlp2-blink` aplicada a `.dlp2-colon` para el parpadeo de los `:`.
+  - Pill "Meta" del detalle renombrada a "Atrasado a los" (ahora siempre muestra el umbral de 60min en vez de una meta separada de 30min).
+- Probado visualmente en navegador: se confirmo que el tiempo de las tarjetas y del detalle avanza solo (sin recargar), que el input de nota interna no pierde el valor mientras el ticker corre, y que la tarjeta "mini" de Completada se ve compacta (id+tiempo arriba, nombre+telefono en una fila).
+
+### Archivos tocados
+- dlp-paneles.php
+- README.md
+- MEMORIA_TRABAJO.md
+- assets/js/panel.js
+- assets/css/panel.css
+
+### Estado
+- Pendientes #1 y #2 de la lista de 1.2.0 resueltos (umbrales 45/60 confirmados, aunque el usuario indico que pueden ajustarse mas adelante).
+- Pendiente subir a hosting y validar con datos reales que el parpadeo/ticking se vea bien y que la tarjeta mini luzca correctamente con pedidos reales de la columna Completada.
+- Sigue pendiente el resto de la lista de 1.2.0 (items 3, 5-13).
