@@ -344,10 +344,16 @@ class DLP_Paneles_REST {
 
             $counts[$group]++;
 
+            $order_type = get_post_meta($order_id, 'woofood_order_type', true);
+            if ($order_type !== 'pickup') {
+                $order_type = 'delivery';
+            }
+
             $result[] = array(
                 'id' => $order_id,
                 'status' => $status,
                 'group' => $group,
+                'order_type' => $order_type,
                 'store_id' => $store_id,
                 'store_name' => $store_id ? get_the_title($store_id) : '',
                 'customer_name' => trim($order->get_billing_first_name() . ' ' . $order->get_billing_last_name()),

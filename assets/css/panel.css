@@ -65,6 +65,73 @@
   gap: 14px;
 }
 
+.dlp2-type-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  background: var(--dlp-bg);
+  border: 1px solid var(--dlp-border);
+  border-radius: 8px;
+}
+
+.dlp2-type-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dlp-text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.dlp2-type-tab svg {
+  width: 14px;
+  height: 14px;
+}
+
+.dlp2-type-tab:hover {
+  color: var(--dlp-text);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.dlp2-type-tab-active {
+  background: #fff;
+  color: var(--dlp-text);
+  font-weight: 700;
+  border-color: var(--dlp-border);
+  box-shadow: 0 1px 2px rgba(20, 30, 45, 0.06);
+}
+
+.dlp2-type-tab-count {
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 999px;
+  background: var(--dlp-bg);
+  color: var(--dlp-text-muted);
+}
+
+.dlp2-type-tab-count-all {
+  background: var(--dlp-text);
+  color: #fff;
+}
+
+.dlp2-type-tab-count-delivery {
+  background: var(--dlp-blue-bg);
+  color: var(--dlp-blue-text);
+}
+
+.dlp2-type-tab-count-pickup {
+  background: var(--dlp-amber-bg);
+  color: var(--dlp-amber-text);
+}
+
 .dlp2-brand {
   font-size: 22px;
   font-weight: 800;
@@ -424,6 +491,46 @@
   padding: 16px;
 }
 
+/* Tipo de pedido: Delivery / Pickup */
+.dlp2-type-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid;
+  white-space: nowrap;
+}
+
+.dlp2-type-pill svg {
+  width: 12px;
+  height: 12px;
+}
+
+.dlp2-type-pill-mini {
+  padding: 1px 6px;
+  font-size: 10px;
+}
+
+.dlp2-type-pill-mini svg {
+  width: 10px;
+  height: 10px;
+}
+
+.dlp2-type-delivery {
+  background: var(--dlp-blue-bg);
+  border-color: var(--dlp-blue-border);
+  color: var(--dlp-blue-text);
+}
+
+.dlp2-type-pickup {
+  background: var(--dlp-amber-bg);
+  border-color: var(--dlp-amber-border);
+  color: var(--dlp-amber-text);
+}
+
 /* Detail panel (dark) */
 .dlp2-detail {
   flex-shrink: 0;
@@ -449,6 +556,10 @@
   color: #fff;
   font-size: 14px;
   font-weight: 600;
+}
+
+.dlp2-detail-header .dlp2-type-pill {
+  margin-left: auto;
 }
 
 .dlp2-detail-header svg {
@@ -527,6 +638,50 @@
 .dlp2-detail-meta {
   font-size: 11px;
   color: var(--dlp-dark-muted);
+}
+
+/* Metodo de pago: banner destacado */
+.dlp2-payment-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid;
+}
+
+.dlp2-payment-banner svg {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.dlp2-payment-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.dlp2-payment-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.dlp2-payment-caption {
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+.dlp2-payment-paid {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #6EE7B7;
+}
+
+.dlp2-payment-cash {
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.45);
+  color: var(--dlp-amber-border);
 }
 
 /* Time card */
@@ -1033,6 +1188,11 @@
   }
 
   .dlp2-header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .dlp2-type-tabs {
     width: 100%;
     justify-content: space-between;
   }

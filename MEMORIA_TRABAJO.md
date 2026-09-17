@@ -472,3 +472,44 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
 ### Estado
 - Listo para subir al hosting y validar en produccion.
 - Sigue pendiente el resto de la lista de 1.2.0 (items 3, 5-13).
+
+## 2026-09-17 (iteracion 1.3.0 - tipo de pedido Delivery / Pickup)
+
+### Resumen de conversacion
+- El usuario senalo que faltaba algo "super importante" desde el inicio: los pedidos son Delivery o Pickup, y eso no estaba reflejado en ningun lado del panel.
+- Pidio: filtro "Todos / Delivery / Pickup" en el header, el mismo dato visible en las tarjetas de pedido, y en el detalle del pedido.
+- Trajo un segundo boceto (`stitch_panel_dlp2222.zip`) mostrando como se veria.
+- Aprovecho para pedir que el metodo de pago sea "mucho mas visible" en el detalle.
+
+### Investigacion
+- El tipo de pedido ya existe en el sitio real: meta `woofood_order_type` (WooFood), valores `delivery` (default) / `pickup`. Confirmado en `woofood-plugin/inc/func/order_type.php` (`woofood_get_order_types()`) y en el uso real del panel v2 (`manejodepedidos2/archivos/pedidos21.php`, variable `$order_type_text`).
+- Nota: el boceto (code.html) tenia un bug visual en el ejemplo (el numero de item de producto se reemplazo por el texto completo "Entrega a domicilio (Delivery)", causando texto superpuesto en el screenshot). Se ignoro ese detalle por ser un error del generador del boceto, no un diseno intencional - se mantuvieron los numeros de item normales.
+
+### Cambios realizados
+- Version actualizada a 1.3.0.
+- `includes/rest.php`: nuevo campo `order_type` en el payload de cada pedido (leido de `woofood_order_type`, normalizado a `delivery`/`pickup`).
+- `assets/js/panel.js`:
+  - Nuevos iconos `truck`, `bag`, `card`, `cash`.
+  - `state.typeFilter` (`all`/`delivery`/`pickup`), `filteredOrders()`, `renderTypeTabs()` (tabs "Todos/Delivery/Pickup" con contador, 100% client-side, sin recargar el panel).
+  - `renderTypePill()` (badge Delivery/Pickup) agregado a tarjetas normales, tarjetas mini, y detalle (header + titulo).
+  - Columnas del tablero ahora cuentan solo los pedidos visibles segun el filtro activo (`countFor()` en `render()`), no el total del servidor.
+  - `renderPaymentBanner()`: banner destacado con icono grande, reemplaza la mencion pequena de metodo de pago en la linea de meta. Heuristica `isCashPayment()` colorea verde (pago ya realizado) vs amber (cobrar en efectivo) segun el texto del metodo de pago - **provisional**, ver pendientes.
+  - Etiqueta de direccion en el detalle cambia segun tipo (`Entrega a domicilio (Delivery)` / `Retiro en tienda (Pickup)`).
+- `assets/css/panel.css`: estilos nuevos `.dlp2-type-tabs`, `.dlp2-type-tab*`, `.dlp2-type-pill*`, `.dlp2-payment-banner` y variantes.
+- Probado visualmente en navegador con datos simulados (delivery + pickup mezclados): filtro funciona, contadores de columna se recalculan, badges se ven en tarjetas normales/mini/detalle, banner de pago visible y con color segun tipo, sin errores de consola.
+
+### Pendientes nuevos (agregados a la lista de diseno)
+14. **Heuristica de pago en efectivo**: `isCashPayment()` detecta "efectivo"/"contra entrega"/"cash" en el titulo del metodo de pago para decidir el color del banner. Confirmar con el usuario si esto es confiable o si hace falta un dato mas explicito (ej. meta especifica de WooCommerce/WooFood para "pago pendiente de cobro").
+15. **Pickup sin direccion**: cuando un pedido pickup no tiene `full_address`, el bloque de direccion simplemente no se muestra. Evaluar si en su lugar se deberia mostrar algo como "Retirar en: {nombre de tienda}".
+
+### Archivos tocados
+- dlp-paneles.php
+- README.md
+- MEMORIA_TRABAJO.md
+- includes/rest.php
+- assets/js/panel.js
+- assets/css/panel.css
+
+### Estado
+- Listo para subir al hosting y validar con pedidos reales de ambos tipos.
+- Sigue pendiente el resto de la lista de 1.2.0 (items 3, 5-13) mas los nuevos items 14-15.

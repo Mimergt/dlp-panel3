@@ -18,6 +18,7 @@
     networkWarning: '',
     firstLoadDone: false,
     loadedAt: 0,
+    typeFilter: 'all',
   };
 
   var ICON = {
@@ -32,6 +33,10 @@
     sync: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>',
     logout: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" x2="9" y1="12" y2="12"></line></svg>',
     alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" x2="12" y1="8" y2="12"></line><line x1="12" x2="12.01" y1="16" y2="16"></line></svg>',
+    truck: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 18H3c-.6 0-1-.4-1-1V9c0-.6.4-1 1-1h10c.6 0 1 .4 1 1v8c0 .6-.4 1-1 1H9"></path><circle cx="7" cy="18" r="2"></circle><circle cx="17" cy="18" r="2"></circle><path d="M14 9h4l4 4v4c0 .6-.4 1-1 1h-2"></path></svg>',
+    bag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>',
+    card: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" x2="23" y1="10" y2="10"></line></svg>',
+    cash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="3"></circle><path d="M6 12h.01M18 12h.01"></path></svg>',
   };
 
   function esc(str) {
@@ -159,6 +164,81 @@
     return status === 'completed';
   }
 
+  function isPickup(order) {
+    return order.order_type === 'pickup';
+  }
+
+  function orderTypeLabel(order) {
+    return isPickup(order) ? 'Pickup' : 'Delivery';
+  }
+
+  function renderTypePill(order, mini) {
+    var pickup = isPickup(order);
+    var cls = pickup ? 'dlp2-type-pickup' : 'dlp2-type-delivery';
+    var sizeClass = mini ? ' dlp2-type-pill-mini' : '';
+    var icon = pickup ? ICON.bag : ICON.truck;
+    return '<span class="dlp2-type-pill' + sizeClass + ' ' + cls + '">' + icon + '<span>' + orderTypeLabel(order) + '</span></span>';
+  }
+
+  // Heuristica provisional para distinguir pago ya cobrado (en linea/tarjeta)
+  // de pago pendiente de cobrar en mano (efectivo/contra entrega). Pendiente
+  // confirmar con el usuario si hay una forma mas confiable de saberlo.
+  function isCashPayment(order) {
+    var title = (order.payment_method_title || '').toLowerCase();
+    return title.indexOf('efectivo') !== -1 ||
+      title.indexOf('contra entrega') !== -1 ||
+      title.indexOf('cash') !== -1;
+  }
+
+  function renderPaymentBanner(order) {
+    var title = order.payment_method_title || 'Forma de pago no especificada';
+    var cash = isCashPayment(order);
+    var cls = cash ? 'dlp2-payment-cash' : 'dlp2-payment-paid';
+    var icon = cash ? ICON.cash : ICON.card;
+    var caption = cash ? 'Cobrar en efectivo' : 'Pago ya realizado';
+
+    return '' +
+      '<div class="dlp2-payment-banner ' + cls + '">' +
+        icon +
+        '<div class="dlp2-payment-text">' +
+          '<span class="dlp2-payment-title">' + esc(title) + '</span>' +
+          '<span class="dlp2-payment-caption">' + caption + '</span>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function filteredOrders() {
+    if (state.typeFilter === 'all') {
+      return state.orders;
+    }
+    return state.orders.filter(function (order) {
+      return order.order_type === state.typeFilter;
+    });
+  }
+
+  function renderTypeTabs() {
+    var all = state.orders.length;
+    var deliveryCount = state.orders.filter(function (o) { return o.order_type !== 'pickup'; }).length;
+    var pickupCount = state.orders.filter(function (o) { return o.order_type === 'pickup'; }).length;
+
+    function tab(key, label, icon, count, countClass) {
+      var active = state.typeFilter === key ? ' dlp2-type-tab-active' : '';
+      return '' +
+        '<button class="dlp2-type-tab' + active + '" data-type-filter="' + key + '" type="button">' +
+          (icon || '') +
+          '<span>' + label + '</span>' +
+          '<span class="dlp2-type-tab-count ' + countClass + '">' + count + '</span>' +
+        '</button>';
+    }
+
+    return '' +
+      '<div class="dlp2-type-tabs">' +
+        tab('all', 'Todos', '', all, 'dlp2-type-tab-count-all') +
+        tab('delivery', 'Delivery', ICON.truck, deliveryCount, 'dlp2-type-tab-count-delivery') +
+        tab('pickup', 'Pickup', ICON.bag, pickupCount, 'dlp2-type-tab-count-pickup') +
+      '</div>';
+  }
+
   function api(path, method, payload, opts) {
     var options = opts || {};
     var retries = typeof options.retries === 'number' ? options.retries : 0;
@@ -228,7 +308,7 @@
   function renderCards(status) {
     var isMini = status === 'completed';
 
-    return state.orders
+    return filteredOrders()
       .filter(function (order) {
         return order.group === status;
       })
@@ -242,6 +322,7 @@
             '<article class="dlp2-card dlp2-card-mini' + active + priorityClass + '" data-order-id="' + order.id + '">' +
               '<div class="dlp2-card-top">' +
                 '<span class="dlp2-card-id dlp2-card-id-mini">#' + order.id + '</span>' +
+                renderTypePill(order, true) +
                 renderTimeBadge(order, seconds, true) +
               '</div>' +
               '<div class="dlp2-card-mini-row">' +
@@ -255,6 +336,7 @@
           '<article class="dlp2-card' + active + priorityClass + '" data-order-id="' + order.id + '">' +
             '<div class="dlp2-card-top">' +
               '<span class="dlp2-card-id">#' + order.id + '</span>' +
+              renderTypePill(order, false) +
               renderTimeBadge(order, seconds, false) +
             '</div>' +
             '<div class="dlp2-card-row">' + ICON.user + '<span>' + esc(order.customer_name || 'Consumidor final') + '</span></div>' +
@@ -344,17 +426,12 @@
       return '<option value="' + Number(store.id) + '"' + selected + '>' + esc(store.name) + '</option>';
     }).join('');
 
-    var metaLine = [];
-    if (order.entry_time) {
-      metaLine.push('Ingreso: ' + esc(order.entry_time));
-    }
-    if (order.payment_method_title) {
-      metaLine.push(esc(order.payment_method_title));
-    }
+    var pickup = isPickup(order);
+    var addressLabel = pickup ? 'Retiro en tienda (Pickup)' : 'Entrega a domicilio (Delivery)';
 
     return '' +
       '<aside class="dlp2-detail">' +
-        '<div class="dlp2-detail-header">' + ICON.file + '<span>Detalle del pedido</span></div>' +
+        '<div class="dlp2-detail-header">' + ICON.file + '<span>Detalle del pedido</span>' + renderTypePill(order, false) + '</div>' +
         '<div class="dlp2-detail-body">' +
 
           '<div class="dlp2-detail-top">' +
@@ -363,8 +440,10 @@
               '<span class="dlp2-status-pill dlp2-status-' + statusColor(order.status) + '"><span class="dlp2-status-dot"></span>' + esc(statusLabel(order.status)) + '</span>' +
               (order.priority ? '<span class="dlp2-priority-pill">' + ICON.flag + '<span>Prioridad</span></span>' : '') +
             '</div>' +
-            (metaLine.length ? '<div class="dlp2-detail-meta">' + metaLine.join(' &bull; ') + '</div>' : '') +
+            (order.entry_time ? '<div class="dlp2-detail-meta">Ingreso: ' + esc(order.entry_time) + '</div>' : '') +
           '</div>' +
+
+          renderPaymentBanner(order) +
 
           renderTimeCard(order) +
 
@@ -384,7 +463,7 @@
                 '<div class="dlp2-customer-name">' + ICON.user + '<span>' + esc(order.customer_name || 'Consumidor final') + '</span></div>' +
                 (order.phone ? '<a class="dlp2-phone-link" href="tel:' + esc(order.phone) + '">' + ICON.phone + '<span>' + esc(order.phone) + '</span></a>' : '') +
               '</div>' +
-              (order.full_address ? '<div class="dlp2-customer-address">' + ICON.pin + '<div><span class="dlp2-address-label">Direccion de entrega</span><span class="dlp2-address-value">' + esc(order.full_address) + '</span></div></div>' : '') +
+              (order.full_address ? '<div class="dlp2-customer-address">' + ICON.pin + '<div><span class="dlp2-address-label">' + esc(addressLabel) + '</span><span class="dlp2-address-value">' + esc(order.full_address) + '</span></div></div>' : '') +
               (order.notes ? '<div class="dlp2-customer-note">' + ICON.alert + '<span>Nota: ' + esc(order.notes) + '</span></div>' : '') +
             '</div>' +
           '</div>' +
@@ -419,12 +498,18 @@
       return order.id === state.selectedOrderId;
     }) || null;
 
+    var visible = filteredOrders();
+    var countFor = function (status) {
+      return visible.filter(function (o) { return o.group === status; }).length;
+    };
+
     root.innerHTML = '' +
       '<div class="dlp2-header">' +
         '<div class="dlp2-header-left">' +
           '<span class="dlp2-brand">' + esc(window.DLP_PANELES_CONFIG.brandTitle || 'DEL PUENTE') + '</span>' +
           '<span class="dlp2-location">' + ICON.pin + '<span>' + esc(getStoreLabel()) + '</span></span>' +
         '</div>' +
+        renderTypeTabs() +
         '<div class="dlp2-header-right">' +
           '<div class="dlp2-datetime">' +
             '<strong>' + esc(formatNowTime()) + '</strong>' +
@@ -438,15 +523,15 @@
       '<div class="dlp2-layout">' +
         '<section class="dlp2-board">' +
           '<div class="dlp2-column">' +
-            '<div class="dlp2-column-header"><span class="dlp2-dot dlp2-dot-amber"></span><span class="dlp2-column-title">Procesando</span><span class="dlp2-column-count dlp2-count-amber">' + Number(state.counts.processing || 0) + '</span></div>' +
+            '<div class="dlp2-column-header"><span class="dlp2-dot dlp2-dot-amber"></span><span class="dlp2-column-title">Procesando</span><span class="dlp2-column-count dlp2-count-amber">' + countFor('processing') + '</span></div>' +
             '<div class="dlp2-column-cards">' + renderCards('processing') + '</div>' +
           '</div>' +
           '<div class="dlp2-column">' +
-            '<div class="dlp2-column-header"><span class="dlp2-dot dlp2-dot-blue"></span><span class="dlp2-column-title">Enviada / LPR</span><span class="dlp2-column-count dlp2-count-blue">' + Number(state.counts.shipped || 0) + '</span></div>' +
+            '<div class="dlp2-column-header"><span class="dlp2-dot dlp2-dot-blue"></span><span class="dlp2-column-title">Enviada / LPR</span><span class="dlp2-column-count dlp2-count-blue">' + countFor('shipped') + '</span></div>' +
             '<div class="dlp2-column-cards">' + renderCards('shipped') + '</div>' +
           '</div>' +
           '<div class="dlp2-column dlp2-column-narrow">' +
-            '<div class="dlp2-column-header"><span class="dlp2-dot dlp2-dot-green"></span><span class="dlp2-column-title">Completada</span><span class="dlp2-column-count dlp2-count-green">' + Number(state.counts.completed || 0) + '</span></div>' +
+            '<div class="dlp2-column-header"><span class="dlp2-dot dlp2-dot-green"></span><span class="dlp2-column-title">Completada</span><span class="dlp2-column-count dlp2-count-green">' + countFor('completed') + '</span></div>' +
             '<div class="dlp2-column-cards">' + renderCards('completed') + '</div>' +
           '</div>' +
         '</section>' +
@@ -542,6 +627,13 @@
   });
 
   root.addEventListener('click', function (event) {
+    var typeTab = event.target.closest('[data-type-filter]');
+    if (typeTab) {
+      state.typeFilter = typeTab.dataset.typeFilter;
+      render();
+      return;
+    }
+
     var card = event.target.closest('.dlp2-card');
     if (card && card.dataset.orderId) {
       state.selectedOrderId = Number(card.dataset.orderId);

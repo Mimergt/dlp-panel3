@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.2.3
+- 1.3.0
 
 ## Shortcode
 - [dlp_paneles]
@@ -96,7 +96,14 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 - Quitado el parpadeo de los `:` en los tiempos: con el reloj corriendo en vivo el parpadeo era redundante y distraia.
 - Texto "Total a Cobrar" cambiado a "Total" en el detalle de productos.
 
+## Incluido en 1.3.0 (tipo de pedido: Delivery / Pickup)
+- Nuevo dato `order_type` en la API (`processing`/etc. no cambian, es independiente del estado): leido de la meta `woofood_order_type` de WooFood (`delivery` por defecto, `pickup` si aplica).
+- Filtro "Todos / Delivery / Pickup" en el header, con contador por tipo. Es 100% client-side (no recarga el panel), y recalcula los contadores de cada columna segun el filtro activo.
+- Badge de tipo (Delivery en azul, Pickup en amber) en las tarjetas (normales y mini) y en el detalle del pedido (header y titulo).
+- Etiqueta de la direccion en el detalle cambia segun el tipo: "Entrega a domicilio (Delivery)" o "Retiro en tienda (Pickup)".
+- Metodo de pago mucho mas visible: nuevo banner destacado en el detalle (icono + texto grande) en vez de una linea de texto pequena. Distingue con color pago ya realizado (verde) de pago pendiente en efectivo/contra entrega (amber) con una heuristica por texto del metodo de pago (pendiente confirmar si hay una forma mas confiable de saberlo).
+
 ## Versionado acordado
 - Ajustes pequenos: 1.1.1, 1.1.2, 1.1.3
-- Cambios medianos: 1.2.0
+- Cambios medianos: 1.2.0, 1.3.0
 - Cambios mayores: 2.0.0
