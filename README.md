@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.4.3
+- 1.4.4
 
 ## Shortcode
 - [dlp_paneles]
@@ -124,6 +124,14 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 - Columna `Completada` un poco mas ancha; columna `Detalle del pedido` un poco mas angosta (620px -> 560px).
 - Corregido bug: en pedidos Completados el contador de tiempo seguia corriendo en el panel. Ahora el backend congela `elapsed_seconds` usando la fecha de finalizacion que WooCommerce ya guarda (`_date_completed`), y el frontend deja de sumarle tiempo en vivo a los pedidos del grupo `completed`.
 - Vista expandida "Pedido": rediseñada a 2 columnas -- una columna agrupa todo lo demas (tiempo, progreso, acciones, datos de cliente/entrega, totales) y la otra columna muestra el Detalle de Productos en una grilla de 2 columnas.
+
+## Incluido en 1.4.4
+- Detalle de Productos (tablero, detalle y vista expandida): cada producto ahora muestra precio unitario x cantidad y, aparte, el `Total` de esa linea (antes solo se mostraba el total de linea, sin desglose).
+- Vista expandida "Pedido": la tarjeta "Acciones" se movio al final de la primera columna (despues de Datos de Entrega/Cliente y Totales), en vez de ir justo despues del progreso de preparacion.
+- Corregido: la indicacion de "Prioridad" en las tarjetas del tablero ya no usa un borde grueso completo (que se confundia visualmente con el resaltado de la tarjeta seleccionada); ahora es una barra lateral sutil, y el badge "Prioridad" en la tarjeta sigue indicando el estado.
+- Nueva linea divisoria sutil (efecto emboss) entre las columnas del tablero (Procesando / Enviada-LPR / Completada) para separarlas visualmente sin usar fondos de color.
+- Paginacion por columna: cada columna del tablero muestra inicialmente solo 12 pedidos, con boton "Cargar mas" que suma 20 a la vez, para no sobrecargar el render cuando una columna acumula muchos pedidos.
+- Confirmado (sin cambios de codigo): la columna `Completada` ya solo trae pedidos completados del dia operativo actual (implementado desde antes), asi que no se acumula historico de dias anteriores.
 
 ## Versionado acordado
 - Ajustes pequenos: 1.1.1, 1.1.2, 1.1.3

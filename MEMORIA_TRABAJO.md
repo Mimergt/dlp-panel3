@@ -647,3 +647,34 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
 ### Estado
 - Listo para subir al hosting y validar con datos reales, en especial el bug del contador (`_date_completed` depende de que WooCommerce lo haya seteado correctamente en pedidos existentes; pedidos ya completados antes de este fix podrian no tener esa meta y usarian la hora actual como fallback).
 - Sigue pendiente el resto de la lista previa (items 3, 5-15).
+
+## 2026-09-17 (iteracion 1.4.4 - precio unitario, orden de Acciones, bug de prioridad, divisor, paginacion)
+
+### Resumen de conversacion
+- El usuario reviso 1.4.3 y pidio, en el Detalle de Productos (tablero y vista expandida), mostrar precio unitario x cantidad y luego el Total de esa linea, en vez de solo el total.
+- Pidio mover la tarjeta "Acciones" al final de la primera columna de la vista expandida (en vez de ir justo despues del progreso de preparacion).
+- Reporto un bug de UX: una tarjeta con prioridad se ve resaltada con un borde grueso que se confunde con la tarjeta seleccionada (la que esta en el panel de Detalle), como se ve en captura adjunta.
+- Pidio una linea divisoria sutil (estilo emboss/sombra interna) entre las columnas del tablero.
+- Pidio pensar en paginacion: que cada columna cargue solo ~10-12 pedidos inicialmente con un boton "Cargar mas" que traiga 20 mas, para que el sistema no se sature si una columna acumula muchos pedidos. Tambien confirmo que la columna Completada debe seguir mostrando solo los pedidos del dia operativo actual (ya implementado desde 1.1.11/version inicial del rediseno, sin cambios necesarios).
+
+### Cambios realizados
+- Version actualizada a 1.4.4.
+- `assets/js/panel.js`: `renderProductRow()` ahora calcula `unitPrice = item.total / item.quantity` y muestra una fila `Q[unitario] x [cantidad]` junto con `Total: Q[total de linea]` (antes solo mostraba el total de linea en el encabezado del producto). Aplica tanto al detalle normal del tablero como a la vista expandida, ya que ambas comparten la misma funcion.
+- `assets/js/panel.js`: `renderExpandedOrder()` reordenado -- la tarjeta "Acciones" ahora se renderiza al final de la primera columna, despues de Datos de Entrega/Cliente y Totales.
+- `assets/js/panel.js` + `assets/css/panel.css`: `.dlp2-card-priority` paso de `border: 2px solid` (las 4 caras) a solo `border-left: 3px solid` con ajuste de padding, para que la prioridad se note pero no compita visualmente con `.dlp2-card-active` (el resaltado de seleccion).
+- `assets/css/panel.css`: nueva regla `.dlp2-column + .dlp2-column` con `border-left` sutil + `box-shadow: inset` (efecto emboss) para separar las columnas del tablero.
+- `assets/js/panel.js`: agregada paginacion client-side por columna (`state.columnLimits`, `COLUMN_INITIAL_LIMIT = 12`, `COLUMN_LOAD_MORE = 20`). `renderCards()` corta la lista al limite vigente de esa columna y agrega un boton "Cargar mas" (`data-action="load-more"`) cuando quedan pedidos por mostrar; el click handler incrementa el limite de esa columna y vuelve a renderizar. No requirio cambios en el backend (los datos ya vienen completos en cada `/panel`, solo se limita cuanto se pinta).
+- Se confirmo que `includes/rest.php` ya filtra los pedidos completados por `date_created >= today_start_ts` (dia operativo actual) desde una iteracion anterior; no se toco.
+- Probado visualmente con un dataset simulado de 25 pedidos completados: se muestran 12 + boton "Cargar 13 mas (13 restantes)"; al hacer click carga el resto y el boton desaparece. Prioridad ahora se ve como barra lateral, sin confundirse con la seleccion. Sin errores de consola.
+
+### Archivos tocados
+- dlp-paneles.php
+- README.md
+- MEMORIA_TRABAJO.md
+- assets/js/panel.js
+- assets/css/panel.css
+
+### Estado
+- Listo para subir al hosting y validar con datos reales.
+- La paginacion es solo de render (client-side); si en el futuro el volumen de pedidos crece mucho tambien podria valer la pena paginar la llamada a la API (`/panel`) en vez de traer todo de una vez -- no fue necesario para este pedido concreto.
+- Sigue pendiente el resto de la lista previa (items 3, 5-15).

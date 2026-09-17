@@ -10,6 +10,12 @@
   var TIME_WARNING_MINUTES = 45;
   var TIME_LATE_MINUTES = 60;
 
+  // Paginacion por columna: se muestran solo los primeros N pedidos para no
+  // saturar el render cuando una columna acumula muchos pedidos; "Cargar mas"
+  // suma de a COLUMN_LOAD_MORE.
+  var COLUMN_INITIAL_LIMIT = 12;
+  var COLUMN_LOAD_MORE = 20;
+
   var state = {
     orders: [],
     selectedOrderId: null,
@@ -20,6 +26,7 @@
     loadedAt: 0,
     typeFilter: 'all',
     expandedOrderId: null,
+    columnLimits: { processing: COLUMN_INITIAL_LIMIT, shipped: COLUMN_INITIAL_LIMIT, completed: COLUMN_INITIAL_LIMIT },
   };
 
   var ICON = {
@@ -316,11 +323,15 @@
   function renderCards(status) {
     var isMini = status === 'completed';
 
-    return filteredOrders()
-      .filter(function (order) {
-        return order.group === status;
-      })
-      .map(function (order) {
+    var all = filteredOrders().filter(function (order) {
+      return order.group === status;
+    });
+
+    var limit = state.columnLimits[status] || COLUMN_INITIAL_LIMIT;
+    var visible = all.slice(0, limit);
+    var remaining = all.length - visible.length;
+
+    var cardsHtml = visible.map(function (order) {
         var active = order.id === state.selectedOrderId ? ' dlp2-card-active' : '';
         var priorityClass = order.priority ? ' dlp2-card-priority' : '';
         var seconds = liveElapsed(order);
@@ -356,6 +367,12 @@
           '</article>';
       })
       .join('');
+
+    var loadMoreHtml = remaining > 0 ?
+      '<button class="dlp2-load-more" data-action="load-more" data-column="' + status + '" type="button">Cargar ' + Math.min(remaining, COLUMN_LOAD_MORE) + ' mas (' + remaining + ' restantes)</button>' :
+      '';
+
+    return cardsHtml + loadMoreHtml;
   }
 
   function renderProductRow(item) {
@@ -366,12 +383,19 @@
       return '<div class="dlp2-product-meta-row' + rowClass + '"><span>' + label + '</span></div>';
     }).join('');
 
+    var qty = Number(item.quantity || 1);
+    var lineTotal = Number(item.total || 0);
+    var unitPrice = qty > 0 ? lineTotal / qty : lineTotal;
+
     return '' +
       '<div class="dlp2-product">' +
         '<div class="dlp2-product-top">' +
-          '<span class="dlp2-product-qty">' + Number(item.quantity || 1) + '</span>' +
+          '<span class="dlp2-product-qty">' + qty + '</span>' +
           '<span class="dlp2-product-name">' + esc(item.name) + '</span>' +
-          '<span class="dlp2-product-price">' + esc(formatMoney(item.total)) + '</span>' +
+        '</div>' +
+        '<div class="dlp2-product-pricing">' +
+          '<span class="dlp2-product-unit">' + esc(formatMoney(unitPrice)) + ' x ' + qty + '</span>' +
+          '<span class="dlp2-product-price">Total: ' + esc(formatMoney(lineTotal)) + '</span>' +
         '</div>' +
         (metaRows ? '<div class="dlp2-product-meta">' + metaRows + '</div>' : '') +
       '</div>';
@@ -620,7 +644,6 @@
           '<div class="dlp2-expanded-col">' +
             renderTimeCard(order) +
             renderPrepProgress(order) +
-            renderActionsCard(order) +
             '<div class="dlp2-customer-card">' +
               '<div class="dlp2-section-title-row">' +
                 '<span class="dlp2-section-title">Datos de Entrega y Cliente</span>' +
@@ -638,6 +661,7 @@
               '<div class="dlp2-expanded-totals-divider"></div>' +
               '<div class="dlp2-expanded-totals-row dlp2-expanded-totals-final"><span>Total</span><span class="dlp2-total-amount">' + esc(formatMoney(order.total)) + '</span></div>' +
             '</div>' +
+            renderActionsCard(order) +
           '</div>' +
 
           '<div class="dlp2-expanded-col dlp2-expanded-col-mid">' +
@@ -817,6 +841,14 @@
     var card = event.target.closest('.dlp2-card');
     if (card && card.dataset.orderId) {
       state.selectedOrderId = Number(card.dataset.orderId);
+      render();
+      return;
+    }
+
+    var loadMoreBtn = event.target.closest('[data-action="load-more"]');
+    if (loadMoreBtn && loadMoreBtn.dataset.column) {
+      var column = loadMoreBtn.dataset.column;
+      state.columnLimits[column] = (state.columnLimits[column] || COLUMN_INITIAL_LIMIT) + COLUMN_LOAD_MORE;
       render();
       return;
     }
