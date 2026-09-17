@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.1.9
+- 1.1.10
 
 ## Shortcode
 - [dlp_paneles]
@@ -55,6 +55,11 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 
 ## Incluido en 1.1.9
 - Slug del modo app cambiado de `/pedidos/` a `/orders/` (el sitio ya usa `/pedidos/` para el panel v2 anterior). Sigue siendo configurable via filtro `dlp_paneles_app_slug`.
+
+## Incluido en 1.1.10
+- Flujo operativo simplificado a 2 columnas: `Procesando` (estados `processing`/`prep` fusionados) -> `Enviada / LPR` (`lpr`/`rtp`) -> Completada (sale del panel).
+- Boton de accion unico por columna: "Marcar Enviada / LPR" y "Completar pedido".
+- Corregido calculo de `Tiempo` en las tarjetas: desalineaba zonas horarias (`current_time('timestamp')` vs `WC_DateTime::getTimestamp()`) y mostraba valores desbordados tipo `1891:06:28`. Ahora usa el mismo calculo que el panel v2 (`manejoPedidos.php`).
 
 ## Versionado acordado
 - Ajustes pequenos: 1.1.1, 1.1.2, 1.1.3

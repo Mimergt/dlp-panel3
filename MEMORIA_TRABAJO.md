@@ -245,3 +245,39 @@ Este archivo documenta el historial tecnico y resumen de conversaciones para ret
 ### Estado
 - Pendiente: en WordPress, crear/publicar pagina con slug `orders` (o renombrar la pagina existente que apuntaba a `pedidos`) para que el modo app quede activo en la nueva ruta.
 - El panel v2 (`manejodepedidos2`) sigue intacto en `/pedidos/`, sin cambios.
+
+## 2026-09-16 (iteracion 1.1.10)
+
+### Resumen de conversacion
+- Ambos paneles (v2 y v3) ya conviven en el mismo WordPress (v2 en `/pedidos/`, v3 en `/orders/`).
+- Se pidio simplificar el flujo operativo a: Procesando -> Enviada/LPR -> Completada (sin paso intermedio de preparacion).
+- Se reporto que la tarjeta de pedido mostraba `Tiempo: 1891:06:28` (valor desbordado), mientras el panel v2 mostraba el tiempo correcto (`Tiempo Total 00:00:39`) para el mismo pedido.
+
+### Diagnostico del bug de tiempo
+- El panel v2 (`archivos/pedidos21.php`, `pedidos2.php`, `monitoreoDelivery/panelMonitoreo.php`) calcula el elapsed con:
+  `strtotime(date('Y-m-d H:i:s')) - (3600 * 6)` contra `strtotime($order->get_date_created()->format('Y-m-d H:i:s'))`.
+- El panel v3 (`includes/rest.php`) usaba `current_time('timestamp')` contra `WC_DateTime::getTimestamp()`, que no son directamente comparables (desalineacion de zona horaria) y producian un elapsed_seconds desbordado.
+- Se replico exactamente el calculo del panel v2 en `rest.php` para mantener consistencia entre ambos paneles en el mismo sitio.
+
+### Cambios realizados
+- Version actualizada a 1.1.10.
+- `includes/rest.php`:
+  - Columnas fusionadas: `processing`/`prep` ahora se agrupan como `processing` (Procesando); se elimino el grupo `prep` de `counts`.
+  - Transiciones de estado simplificadas: `processing`/`prep` -> `lpr`/`rtp`; `lpr`/`rtp` -> `completed`. Supervisor conserva reversas (`-> processing`) para casos excepcionales.
+  - Corregido calculo de `elapsed_seconds` para igualar al panel v2.
+- `assets/js/panel.js`:
+  - Tablero reducido a 2 columnas: `Procesando` y `Enviada / LPR`.
+  - `statusLabel`, `nextStatus` y `nextLabel` actualizados al flujo de 2 pasos.
+- `assets/css/panel.css`:
+  - Grid del tablero a 2 columnas; eliminados los estilos de la columna `prep`.
+
+### Archivos tocados
+- dlp-paneles.php
+- includes/rest.php
+- assets/js/panel.js
+- assets/css/panel.css
+- README.md
+
+### Estado
+- Listo para validar en `/orders/`: verificar que el tiempo de las tarjetas coincida con el panel v2 y que el flujo de botones sea Procesando -> Enviada/LPR -> Completar.
+- Pendiente evaluar si se sigue avanzando hoy (modal de cancelacion, Fase 2) o se retoma en otra sesion.

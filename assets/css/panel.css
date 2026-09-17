@@ -88,7 +88,7 @@
 
 .dlp-board {
   display: grid;
-  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
   gap: 12px;
 }
 
@@ -107,17 +107,6 @@
   background: #dce9ff;
   border-bottom-color: #9ec5fe;
   color: #123d78;
-}
-
-.dlp-col-prep {
-  border-color: #f6d78c;
-  background: #fff8e7;
-}
-
-.dlp-col-prep h3 {
-  background: #ffefc9;
-  border-bottom-color: #f6d78c;
-  color: #6b4f00;
 }
 
 .dlp-col-shipped {

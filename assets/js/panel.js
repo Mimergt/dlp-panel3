@@ -7,7 +7,7 @@
   var state = {
     orders: [],
     selectedOrderId: null,
-    counts: { processing: 0, prep: 0, shipped: 0 },
+    counts: { processing: 0, shipped: 0 },
     stores: [],
     networkWarning: '',
     firstLoadDone: false,
@@ -58,14 +58,14 @@
 
   function statusLabel(status) {
     if (status === 'processing') return 'Procesando';
-    if (status === 'prep') return 'Preparando';
+    if (status === 'prep') return 'Procesando';
     if (status === 'lpr') return 'Enviada / LPR';
     if (status === 'rtp') return 'Enviada / LPR';
     return status;
   }
 
   function nextStatus(status) {
-    if (status === 'processing') return 'prep';
+    if (status === 'processing') return 'lpr';
     if (status === 'prep') return 'lpr';
     if (status === 'lpr') return 'completed';
     if (status === 'rtp') return 'completed';
@@ -73,8 +73,7 @@
   }
 
   function nextLabel(status) {
-    if (status === 'processing') return 'Mover a Preparacion';
-    if (status === 'prep') return 'Marcar Enviada / LPR';
+    if (status === 'processing' || status === 'prep') return 'Marcar Enviada / LPR';
     if (status === 'lpr' || status === 'rtp') return 'Completar pedido';
     return 'Sin accion';
   }
@@ -129,7 +128,6 @@
     return state.orders
       .filter(function (order) {
         if (status === 'processing') return order.group === 'processing';
-        if (status === 'prep') return order.group === 'prep';
         return order.group === 'shipped';
       })
       .map(function (order) {
@@ -215,9 +213,8 @@
       (state.networkWarning ? '<div class="dlp-netwarn">' + esc(state.networkWarning) + '</div>' : '') +
       '<div class="dlp-layout">' +
         '<section class="dlp-board">' +
-          '<div class="dlp-column dlp-col-received"><h3>Recibidos (' + Number(state.counts.processing || 0) + ')</h3><div>' + renderCards('processing') + '</div></div>' +
-          '<div class="dlp-column dlp-col-prep"><h3>En preparacion (' + Number(state.counts.prep || 0) + ')</h3><div>' + renderCards('prep') + '</div></div>' +
-          '<div class="dlp-column dlp-col-shipped"><h3>Enviado / LPR (' + Number(state.counts.shipped || 0) + ')</h3><div>' + renderCards('shipped') + '</div></div>' +
+          '<div class="dlp-column dlp-col-received"><h3>Procesando (' + Number(state.counts.processing || 0) + ')</h3><div>' + renderCards('processing') + '</div></div>' +
+          '<div class="dlp-column dlp-col-shipped"><h3>Enviada / LPR (' + Number(state.counts.shipped || 0) + ')</h3><div>' + renderCards('shipped') + '</div></div>' +
         '</section>' +
         renderDetail(selected) +
       '</div>';
@@ -228,7 +225,7 @@
       .then(function (data) {
         state.networkWarning = '';
         state.orders = Array.isArray(data.orders) ? data.orders : [];
-        state.counts = data.counts || { processing: 0, prep: 0, shipped: 0 };
+        state.counts = data.counts || { processing: 0, shipped: 0 };
         state.stores = Array.isArray(data.stores) ? data.stores : [];
 
         if (!state.selectedOrderId && state.orders.length) {

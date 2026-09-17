@@ -232,7 +232,7 @@ class DLP_Paneles_REST {
                 return new WP_REST_Response(array(
                     'scope' => 'tienda',
                     'orders' => array(),
-                    'counts' => array('processing' => 0, 'prep' => 0, 'shipped' => 0),
+                    'counts' => array('processing' => 0, 'shipped' => 0),
                     'stores' => array(),
                     'server_time' => current_time('mysql'),
                 ));
@@ -249,8 +249,12 @@ class DLP_Paneles_REST {
         }
 
         $order_ids = wc_get_orders($args);
-        $now_ts = current_time('timestamp');
-        $counts = array('processing' => 0, 'prep' => 0, 'shipped' => 0);
+        // Mismo calculo que el panel v2 (manejoPedidos.php): current_time('timestamp')
+        // vs WC_DateTime::getTimestamp() desalinea zonas horarias y produce elapsed_seconds
+        // desbordado. Se usa hora local de servidor comparada contra el string formateado
+        // de la fecha de creacion, igual que el panel v2, para mantener consistencia.
+        $now_ts = strtotime(date('Y-m-d H:i:s')) - (3600 * 6);
+        $counts = array('processing' => 0, 'shipped' => 0);
         $result = array();
 
         foreach ($order_ids as $order_id) {
@@ -266,20 +270,16 @@ class DLP_Paneles_REST {
             }
 
             $created = $order->get_date_created();
-            $created_ts = $created ? $created->getTimestamp() : $now_ts;
+            $created_ts = $created ? strtotime($created->format('Y-m-d H:i:s')) : $now_ts;
             $store_id = absint(get_post_meta($order_id, 'extra_store_name', true));
 
             if (!$supervisor && !in_array($store_id, $accessible_store_ids, true)) {
                 continue;
             }
 
-            if ($status === 'processing') {
-                $group = 'processing';
-            } elseif ($status === 'prep') {
-                $group = 'prep';
-            } else {
-                $group = 'shipped';
-            }
+            // Procesando incluye 'processing' y 'prep' (legacy): el panel ya no
+            // distingue un paso intermedio de preparacion.
+            $group = self::is_processing_status($status) ? 'processing' : 'shipped';
 
             $counts[$group]++;
 
@@ -325,8 +325,11 @@ class DLP_Paneles_REST {
 
         $current_status = $order->get_status();
 
+        // Flujo operativo: Procesando -> Enviada/LPR -> Completada.
+        // 'prep' se mantiene como origen valido solo por compatibilidad con
+        // pedidos legacy que hayan quedado en ese estado.
         $transitions = array(
-            'processing' => array('prep', 'lpr', 'rtp'),
+            'processing' => array('lpr', 'rtp'),
             'prep' => array('lpr', 'rtp'),
             'lpr' => array('completed'),
             'rtp' => array('completed'),
@@ -334,10 +337,10 @@ class DLP_Paneles_REST {
 
         if (self::is_supervisor_user($user_id)) {
             $transitions = array(
-                'processing' => array('prep', 'lpr', 'rtp'),
+                'processing' => array('lpr', 'rtp'),
                 'prep' => array('processing', 'lpr', 'rtp'),
-                'lpr' => array('prep', 'processing', 'completed'),
-                'rtp' => array('prep', 'processing', 'completed'),
+                'lpr' => array('processing', 'completed'),
+                'rtp' => array('processing', 'completed'),
             );
         }
 
