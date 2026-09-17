@@ -59,23 +59,23 @@
   function statusLabel(status) {
     if (status === 'processing') return 'Procesando';
     if (status === 'prep') return 'Procesando';
-    if (status === 'lpr') return 'Enviada / LPR';
+    if (status === 'dlv') return 'Enviada / LPR';
     if (status === 'rtp') return 'Enviada / LPR';
     if (status === 'completed') return 'Completada';
     return status;
   }
 
   function nextStatus(status) {
-    if (status === 'processing') return 'lpr';
-    if (status === 'prep') return 'lpr';
-    if (status === 'lpr') return 'completed';
+    if (status === 'processing') return 'dlv';
+    if (status === 'prep') return 'dlv';
+    if (status === 'dlv') return 'completed';
     if (status === 'rtp') return 'completed';
     return null;
   }
 
   function nextLabel(status) {
     if (status === 'processing' || status === 'prep') return 'Marcar Enviada / LPR';
-    if (status === 'lpr' || status === 'rtp') return 'Completar pedido';
+    if (status === 'dlv' || status === 'rtp') return 'Completar pedido';
     return 'Sin accion';
   }
 

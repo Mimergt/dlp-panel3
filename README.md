@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.1.11
+- 1.1.12
 
 ## Shortcode
 - [dlp_paneles]
@@ -64,10 +64,13 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 ## Incluido en 1.1.11
 - Corregido: el tablero se mantiene en 3 columnas (no se reduce a 2). Flujo final:
   1. `Procesando` (`processing`/`prep`)
-  2. `Enviada / LPR` (`lpr`/`rtp`)
+  2. `Enviada / LPR`
   3. `Completada` (`completed`) - antes desaparecia del panel al completarse, ahora se muestra.
 - La columna `Completada` solo incluye pedidos completados en el dia operativo actual (para no acumular historico ni desplazar pedidos activos del listado).
 - El detalle de un pedido completado ya no muestra botones de accion (no hay mas transiciones posibles).
+
+## Incluido en 1.1.12
+- Corregido bug critico: la columna `Enviada / LPR` no mostraba pedidos porque el plugin usaba el estado inventado `lpr`, que nunca existe en WooCommerce. El estado real registrado en el sitio es `dlv` (visto en `dlp-26-functions.php` y `hora_envio_ajax.php`). Se reemplazo `lpr` por `dlv` en todo el plugin (consultas, transiciones, frontend). La etiqueta visible sigue siendo "Enviada / LPR", solo cambio el estado interno que se consulta.
 
 ## Versionado acordado
 - Ajustes pequenos: 1.1.1, 1.1.2, 1.1.3

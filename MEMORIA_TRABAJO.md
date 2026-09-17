@@ -315,3 +315,33 @@ Este archivo documenta el historial tecnico y resumen de conversaciones para ret
 - Listo para subir al hosting (aun no se habia desplegado 1.1.10/1.1.11 al momento de esta correccion).
 - Pendiente validar en `/orders/`: que aparezcan 3 columnas, que los pedidos completados hoy se vean en `Completada`, y que el tiempo ya no muestre valores desbordados.
 - Pendiente evaluar si se sigue avanzando hoy (modal de cancelacion, Fase 2) o se retoma en otra sesion.
+
+## 2026-09-17 (iteracion 1.1.12 - bug critico de estado)
+
+### Resumen de conversacion
+- El usuario reporto que la columna `Enviada / LPR` no mostraba ningun pedido en el sitio real.
+- Indico que el estado real en WooCommerce es `wc-dlv` (visto en `post_status=wc-dlv&post_type=shop_order`), no `lpr`.
+
+### Diagnostico
+- Se confirmo via grep en todo `dlp_funciones` que el estado `lpr` NUNCA se usa en el codigo real del sitio.
+- El estado real del flujo operativo es `dlv` (usado en `dlp-26-functions.php` y `manejodepedidos2/hora_envio/hora_envio_ajax.php` via `$order->update_status('dlv')` / `has_status('dlv')`).
+- El estado `prep` tampoco existe en ningun flujo real (nunca se asigna a un pedido) - se mantiene igual por compatibilidad pero nunca tendra pedidos.
+- El error se origino en la iteracion 1.1.3 (ver changelog), donde se asumio incorrectamente que el estado se llamaba `lpr` en vez de `dlv`. Este bug estuvo presente desde 1.1.3 hasta 1.1.11.
+
+### Cambios realizados
+- Version actualizada a 1.1.12.
+- Reemplazado `'lpr'` por `'dlv'` en:
+  - `includes/rest.php`: `get_panel_statuses()`, `is_shipped_status()`, consulta de pedidos activos, transiciones de estado (tienda y supervisor).
+  - `assets/js/panel.js`: `statusLabel()`, `nextStatus()`, `nextLabel()`.
+- La etiqueta visible "Enviada / LPR" no cambio, solo el estado interno que se consulta/compara.
+- Nota: `cancel_order()` en `rest.php` ya usaba `'dlv'` correctamente desde el inicio (linea suelta que quedo bien por casualidad, no por diseno).
+
+### Archivos tocados
+- dlp-paneles.php
+- includes/rest.php
+- assets/js/panel.js
+- README.md
+
+### Estado
+- Listo para subir al hosting y validar que los pedidos en estado `dlv`/`rtp` ahora aparezcan en la columna `Enviada / LPR`.
+- Pendiente: el usuario va a concretar una lista extendida de cambios de UX para agrupar en la Fase 2 antes de seguir.

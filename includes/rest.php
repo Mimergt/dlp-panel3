@@ -6,7 +6,7 @@ if (!defined('ABSPATH')) {
 
 class DLP_Paneles_REST {
     public static function get_panel_statuses() {
-        return array('processing', 'prep', 'lpr', 'rtp', 'completed');
+        return array('processing', 'prep', 'dlv', 'rtp', 'completed');
     }
 
     public static function is_processing_status($status) {
@@ -14,7 +14,7 @@ class DLP_Paneles_REST {
     }
 
     public static function is_shipped_status($status) {
-        return in_array($status, array('lpr', 'rtp'), true);
+        return in_array($status, array('dlv', 'rtp'), true);
     }
 
     public static function is_completed_status($status) {
@@ -258,7 +258,7 @@ class DLP_Paneles_REST {
         // Pedidos activos (Procesando / Enviada-LPR): sin limite de fecha, hasta 180 recientes.
         $active_args = array_merge($base_args, array(
             'limit' => 180,
-            'status' => array('processing', 'prep', 'lpr', 'rtp'),
+            'status' => array('processing', 'prep', 'dlv', 'rtp'),
         ));
         $active_ids = wc_get_orders($active_args);
 
@@ -354,17 +354,17 @@ class DLP_Paneles_REST {
         // 'prep' se mantiene como origen valido solo por compatibilidad con
         // pedidos legacy que hayan quedado en ese estado.
         $transitions = array(
-            'processing' => array('lpr', 'rtp'),
-            'prep' => array('lpr', 'rtp'),
-            'lpr' => array('completed'),
+            'processing' => array('dlv', 'rtp'),
+            'prep' => array('dlv', 'rtp'),
+            'dlv' => array('completed'),
             'rtp' => array('completed'),
         );
 
         if (self::is_supervisor_user($user_id)) {
             $transitions = array(
-                'processing' => array('lpr', 'rtp'),
-                'prep' => array('processing', 'lpr', 'rtp'),
-                'lpr' => array('processing', 'completed'),
+                'processing' => array('dlv', 'rtp'),
+                'prep' => array('processing', 'dlv', 'rtp'),
+                'dlv' => array('processing', 'completed'),
                 'rtp' => array('processing', 'completed'),
             );
         }
