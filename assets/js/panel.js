@@ -629,9 +629,6 @@
               '<span class="dlp2-expanded-combo-count">' + comboCount + ' combos</span>' +
             '</div>' +
             '<div class="dlp2-products dlp2-expanded-products">' + items.map(renderProductRow).join('') + '</div>' +
-            '<div class="dlp2-expanded-totals">' +
-              '<div class="dlp2-expanded-totals-row dlp2-expanded-totals-final"><span>Total</span><span class="dlp2-total-amount">' + esc(formatMoney(order.total)) + '</span></div>' +
-            '</div>' +
           '</div>' +
 
           '<div class="dlp2-expanded-col">' +
@@ -646,6 +643,11 @@
               '</div>' +
               (order.full_address ? '<div class="dlp2-customer-address">' + ICON.pin + '<div><span class="dlp2-address-label">' + esc(addressLabel) + '</span><span class="dlp2-address-value">' + esc(order.full_address) + '</span></div></div>' : '') +
               (order.notes ? '<div class="dlp2-customer-note">' + ICON.alert + '<span>Nota: ' + esc(order.notes) + '</span></div>' : '') +
+            '</div>' +
+            '<div class="dlp2-expanded-totals">' +
+              '<div class="dlp2-expanded-totals-row"><span>Cantidad de items</span><span>' + Number(order.items_count || items.length) + '</span></div>' +
+              '<div class="dlp2-expanded-totals-divider"></div>' +
+              '<div class="dlp2-expanded-totals-row dlp2-expanded-totals-final"><span>Total</span><span class="dlp2-total-amount">' + esc(formatMoney(order.total)) + '</span></div>' +
             '</div>' +
           '</div>' +
 

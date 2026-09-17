@@ -596,3 +596,26 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
 ### Estado
 - Listo para subir al hosting y validar con datos reales.
 - Pendiente resolver el item 16 (diseno de productos) segun lo que elija el usuario, y el resto de la lista previa (items 3, 5-15).
+
+## 2026-09-17 (iteracion 1.4.2 - resuelto item 16: diseno de productos)
+
+### Resumen de conversacion
+- Se le presentaron al usuario 4 opciones para el item 16 (diseno de "Detalle de Productos" en la vista expandida): tarjetas grandes, grid de 2 columnas, estilo comanda/recibo, o combinacion de tarjetas grandes + usar el espacio de la columna 3.
+- El usuario eligio la combinacion: tarjetas grandes + usar el espacio de la columna 3.
+
+### Cambios realizados
+- Version actualizada a 1.4.2.
+- `assets/js/panel.js`: el bloque de totales (`dlp2-expanded-totals`) se movio de la columna de productos (columna 2) a la columna de "Datos de Entrega y Cliente" (columna 3), debajo de la tarjeta de cliente. Ahora incluye "Cantidad de items" ademas del "Total".
+- `assets/css/panel.css`: nuevos estilos escopados a `.dlp2-expanded-products .dlp2-product*` (padding 16px, `border-radius:10px`, nombre/precio a 16px, modificadores a 13px con mas indentacion) para que las tarjetas de producto se vean notablemente mas grandes solo en la vista expandida (el tablero/detalle normal no cambia).
+- Probado visualmente: tarjetas de producto mas grandes y legibles, columna 3 ahora usa el espacio libre con el resumen de items+total, sin errores de consola.
+
+### Archivos tocados
+- dlp-paneles.php
+- README.md
+- MEMORIA_TRABAJO.md
+- assets/js/panel.js
+- assets/css/panel.css
+
+### Estado
+- Item 16 resuelto. Listo para subir al hosting y validar con datos reales.
+- Sigue pendiente el resto de la lista previa (items 3, 5-15).

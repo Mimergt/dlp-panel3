@@ -1376,6 +1376,39 @@
 
 .dlp2-expanded-products {
   flex: 1;
+  gap: 12px;
+}
+
+/* Tarjetas de producto mas grandes, solo en la vista expandida */
+.dlp2-expanded-products .dlp2-product {
+  padding: 16px;
+  gap: 10px;
+  border-radius: 10px;
+}
+
+.dlp2-expanded-products .dlp2-product-top {
+  gap: 12px;
+}
+
+.dlp2-expanded-products .dlp2-product-qty {
+  width: 26px;
+  height: 26px;
+  font-size: 13px;
+  border-radius: 6px;
+}
+
+.dlp2-expanded-products .dlp2-product-name {
+  font-size: 16px;
+}
+
+.dlp2-expanded-products .dlp2-product-price {
+  font-size: 16px;
+}
+
+.dlp2-expanded-products .dlp2-product-meta {
+  padding-left: 38px;
+  gap: 5px;
+  font-size: 13px;
 }
 
 .dlp2-expanded-totals {

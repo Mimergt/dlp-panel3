@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.4.1
+- 1.4.2
 
 ## Shortcode
 - [dlp_paneles]
@@ -114,6 +114,10 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 - Quitado el bloque "Resumen de Cocina" de la vista expandida (no se usa en la operacion real). En su lugar, la primera columna ahora tiene una tarjeta "Acciones" con: tienda asignada, prioridad, bitacora interna y cancelar pedido (antes estaban en la tercera columna). La tercera columna queda solo con "Datos de Entrega y Cliente".
 - Rediseno del tablero principal: las 4 columnas (Procesando, Enviada/LPR, Completada, Detalle del pedido) ahora viven dentro de un unico contenedor con bordes redondeados y sombra minimalista. Las columnas del tablero perdieron su borde/sombra individual y en cambio tienen un fondo tenue del color de su categoria (amber/azul/verde). La columna de Detalle del pedido se mantiene con su color oscuro de siempre, pero con un borde y sombra sutiles para que se sienta como una "capa" que se puede expandir.
 - Procesando y Enviada/LPR mas angostas, Completada aun mas angosta, Detalle del pedido mas ancha (500px -> 620px).
+
+## Incluido en 1.4.2
+- Detalle de Productos en la vista expandida con tarjetas mas grandes (mas padding, tipografia mas grande en nombre/precio/modificadores).
+- El bloque de totales se movio de la columna de productos a la columna de "Datos de Entrega y Cliente" (ahora incluye tambien cantidad de items y total), aprovechando el espacio libre que dejo el bloque de cocina.
 
 ## Versionado acordado
 - Ajustes pequenos: 1.1.1, 1.1.2, 1.1.3
