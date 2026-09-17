@@ -329,14 +329,6 @@
   height: 12px;
 }
 
-.dlp2-colon {
-  animation: dlp2-blink 1s steps(1) infinite;
-}
-
-@keyframes dlp2-blink {
-  50% { opacity: 0; }
-}
-
 .dlp2-time-warning {
   background: #FFEDD5;
   color: #C2410C;
@@ -435,7 +427,7 @@
 /* Detail panel (dark) */
 .dlp2-detail {
   flex-shrink: 0;
-  width: 420px;
+  width: 500px;
   display: flex;
   flex-direction: column;
   background: var(--dlp-dark-bg);

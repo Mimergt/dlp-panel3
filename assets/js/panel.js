@@ -92,8 +92,6 @@
     return 'neutral';
   }
 
-  var BLINK_COLON = '<span class="dlp2-colon">:</span>';
-
   function fmtCardTime(seconds) {
     seconds = Number(seconds || 0);
     var h = Math.floor(seconds / 3600);
@@ -106,7 +104,7 @@
     if (seconds >= TIME_WARNING_MINUTES * 60) {
       return m + 'm ' + s + 's';
     }
-    return String(m).padStart(2, '0') + BLINK_COLON + String(s).padStart(2, '0');
+    return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
   }
 
   function fmtBigTime(seconds) {
@@ -116,9 +114,9 @@
     var s = seconds % 60;
 
     if (h > 0) {
-      return String(h).padStart(2, '0') + BLINK_COLON + String(m).padStart(2, '0');
+      return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
     }
-    return String(m).padStart(2, '0') + BLINK_COLON + String(s).padStart(2, '0');
+    return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
   }
 
   function statusLabel(status) {
@@ -300,7 +298,7 @@
           '<span class="dlp2-items-count">' + Number(order.items_count || items.length) + ' items</span>' +
         '</div>' +
         '<div class="dlp2-products">' + rows + '</div>' +
-        '<div class="dlp2-total-row"><span>Total a Cobrar</span><span class="dlp2-total-amount">' + esc(formatMoney(order.total)) + '</span></div>' +
+        '<div class="dlp2-total-row"><span>Total</span><span class="dlp2-total-amount">' + esc(formatMoney(order.total)) + '</span></div>' +
       '</div>';
   }
 

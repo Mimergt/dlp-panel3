@@ -447,3 +447,28 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
 - Pendientes #1 y #2 de la lista de 1.2.0 resueltos (umbrales 45/60 confirmados, aunque el usuario indico que pueden ajustarse mas adelante).
 - Pendiente subir a hosting y validar con datos reales que el parpadeo/ticking se vea bien y que la tarjeta mini luzca correctamente con pedidos reales de la columna Completada.
 - Sigue pendiente el resto de la lista de 1.2.0 (items 3, 5-13).
+
+## 2026-09-17 (iteracion 1.2.3 - ajustes UX: detalle mas ancho, sin parpadeo, texto Total)
+
+### Resumen de conversacion
+- El usuario confirmo que la columna de "Completada" (tarjetas mini) esta bien como quedo en 1.2.2.
+- Pidio que la columna de detalle del pedido sea mas grande/ancha.
+- El parpadeo de los `:` no le gusto: con el reloj ya corriendo en vivo segundo a segundo, el parpadeo es redundante ("como esta live los segundos ya con ese movimiento esta bien").
+- Pidio cambiar el texto "Total a Cobrar" por solo "Total" en el detalle de productos.
+
+### Cambios realizados
+- Version actualizada a 1.2.3.
+- `assets/css/panel.css`: `.dlp2-detail` de `420px` a `500px` de ancho. Eliminada la clase `.dlp2-colon` y el `@keyframes dlp2-blink` (ya no se usan).
+- `assets/js/panel.js`: `fmtCardTime()`/`fmtBigTime()` vuelven a devolver un `:` literal (sin el span de parpadeo). Texto "Total a Cobrar" cambiado a "Total" en `renderProducts()`.
+- Probado visualmente en navegador: detalle mas ancho, tiempos siguen corriendo en vivo (sin parpadeo), texto "Total" correcto, sin errores de consola.
+
+### Archivos tocados
+- dlp-paneles.php
+- README.md
+- MEMORIA_TRABAJO.md
+- assets/js/panel.js
+- assets/css/panel.css
+
+### Estado
+- Listo para subir al hosting y validar en produccion.
+- Sigue pendiente el resto de la lista de 1.2.0 (items 3, 5-13).
