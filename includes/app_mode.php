@@ -52,7 +52,10 @@ class DLP_Paneles_App_Mode {
         echo '<meta charset="' . esc_attr(get_bloginfo('charset')) . '">';
         echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
         echo '<title>DLP Paneles</title>';
-        echo '<style>html,body{margin:0;padding:0;background:#f3f5f9;}#dlp-paneles-root{padding:14px;}@media (max-width:980px){#dlp-paneles-root{padding:10px;}}</style>';
+        echo '<link rel="preconnect" href="https://fonts.googleapis.com">';
+        echo '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>';
+        echo '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">';
+        echo '<style>html,body{margin:0;padding:0;background:#F5F8FA;}</style>';
         echo '<link rel="stylesheet" href="' . esc_url($css_url) . '">';
         echo '<script>window.DLP_PANELES_CONFIG=' . wp_json_encode($config) . ';</script>';
         echo '</head>';

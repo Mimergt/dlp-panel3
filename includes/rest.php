@@ -21,6 +21,42 @@ class DLP_Paneles_REST {
         return $status === 'completed';
     }
 
+    // Mismo dato que usa el panel v2 via wc_display_item_meta(): WooCommerce ya
+    // trae los modificadores (carne, complemento, bebida, upgrades) formateados
+    // por producto en get_formatted_meta_data().
+    public static function get_order_items_payload($order) {
+        $items = array();
+
+        foreach ($order->get_items() as $item) {
+            $meta = array();
+            foreach ($item->get_formatted_meta_data() as $meta_item) {
+                $meta[] = array(
+                    'label' => wp_strip_all_tags($meta_item->display_key),
+                    'value' => wp_strip_all_tags($meta_item->display_value),
+                );
+            }
+
+            $items[] = array(
+                'name' => $item->get_name(),
+                'quantity' => $item->get_quantity(),
+                'total' => (float) $item->get_total(),
+                'meta' => $meta,
+            );
+        }
+
+        return $items;
+    }
+
+    public static function format_full_address($order) {
+        $parts = array(
+            $order->get_billing_address_1(),
+            $order->get_billing_address_2(),
+            $order->get_billing_city(),
+        );
+
+        return implode(', ', array_filter(array_map('trim', $parts)));
+    }
+
     public static function parse_store_ids_from_value($value) {
         $result = array();
 
@@ -317,11 +353,17 @@ class DLP_Paneles_REST {
                 'customer_name' => trim($order->get_billing_first_name() . ' ' . $order->get_billing_last_name()),
                 'phone' => $order->get_billing_phone(),
                 'address' => $order->get_billing_address_2(),
+                'full_address' => self::format_full_address($order),
                 'city' => $order->get_billing_city(),
                 'elapsed_seconds' => max(0, $now_ts - $created_ts),
+                'entry_time' => $created ? $created->format('H:i:s') : '',
                 'priority' => get_post_meta($order_id, '_dlp_priority', true) === '1',
                 'notes' => $order->get_customer_note(),
                 'internal_note' => get_post_meta($order_id, '_dlp_internal_note', true),
+                'payment_method_title' => $order->get_payment_method_title(),
+                'total' => (float) $order->get_total(),
+                'items' => self::get_order_items_payload($order),
+                'items_count' => count($order->get_items()),
             );
         }
 

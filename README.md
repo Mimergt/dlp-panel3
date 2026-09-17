@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.1.12
+- 1.2.0
 
 ## Shortcode
 - [dlp_paneles]
@@ -71,6 +71,16 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 
 ## Incluido en 1.1.12
 - Corregido bug critico: la columna `Enviada / LPR` no mostraba pedidos porque el plugin usaba el estado inventado `lpr`, que nunca existe en WooCommerce. El estado real registrado en el sitio es `dlv` (visto en `dlp-26-functions.php` y `hora_envio_ajax.php`). Se reemplazo `lpr` por `dlv` en todo el plugin (consultas, transiciones, frontend). La etiqueta visible sigue siendo "Enviada / LPR", solo cambio el estado interno que se consulta.
+
+## Incluido en 1.2.0 (diseno nuevo, base)
+- Rediseno completo del tablero y detalle de pedido siguiendo el boceto en `stitch_panel_dlp` (Stitch): tablero claro con columnas por color + panel de detalle oscuro.
+- API REST ampliada con datos nuevos: `items[]` (productos con modificadores via `WC_Order_Item::get_formatted_meta_data()`), `total`, `payment_method_title`, `full_address`, `entry_time`.
+- Detalle de pedido: tarjeta de tiempo con barra de progreso vs. meta operativa, tarjeta "Flujo operativo" con boton unico de siguiente paso, seccion de "Detalle de Productos" con modificadores y total a cobrar, datos de entrega con telefono como link `tel:`.
+- "Marcar/Quitar Prioridad" pasa de checkbox+boton a un boton toggle que aplica el cambio de inmediato.
+- Reasignar tienda pasa a aplicarse automaticamente al cambiar el `<select>` (sin boton "Reasignar" aparte).
+- Nuevo boton "Descargar Pedidos" en el header: exporta a CSV (client-side, sin endpoint nuevo) los pedidos visibles actualmente (id, estado, cliente, telefono, tienda, tiempo).
+- "Cancelar pedido" se reubico como link secundario al final del detalle (sigue usando `prompt()` nativo, ver pendientes).
+- Ver `MEMORIA_TRABAJO.md` seccion "Pendientes diseno nuevo (1.2.0)" para la lista completa de decisiones/acciones que aun faltan definir o activar.
 
 ## Versionado acordado
 - Ajustes pequenos: 1.1.1, 1.1.2, 1.1.3

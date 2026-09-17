@@ -345,3 +345,47 @@ Este archivo documenta el historial tecnico y resumen de conversaciones para ret
 ### Estado
 - Listo para subir al hosting y validar que los pedidos en estado `dlv`/`rtp` ahora aparezcan en la columna `Enviada / LPR`.
 - Pendiente: el usuario va a concretar una lista extendida de cambios de UX para agrupar en la Fase 2 antes de seguir.
+
+## 2026-09-17 (iteracion 1.2.0 - diseno nuevo, base)
+
+### Resumen de conversacion
+- El usuario trajo un boceto de diseno (Stitch) en `/Users/mimer/Downloads/stitch_panel_dlp/` (`code.html`, `screen.png`, `manifest.json`, `recursos_web.md`) con un rediseno completo del panel: tablero claro de 3 columnas con colores por estado + panel de detalle oscuro con tarjeta de tiempo/SLA, flujo operativo, detalle de productos con modificadores, datos de entrega y gestion de tienda/supervisor.
+- Objetivo acordado: implementar primero el diseno base con los datos ya disponibles, y despues ir definiendo/activando botones y acciones nuevas una por una.
+- Se pidio explicitamente registrar en esta memoria cada cosa identificada que le falta activar una accion real, para poder completarlas una por una despues del diseno base.
+
+### Cambios realizados
+- Version actualizada a 1.2.0.
+- `includes/rest.php`: nuevos campos en el payload de `/panel`: `items[]` (via `WC_Order_Item::get_formatted_meta_data()`, mismo dato que usa el panel v2 con `wc_display_item_meta()`), `total`, `payment_method_title`, `full_address`, `entry_time`. Nuevos helpers `get_order_items_payload()` y `format_full_address()`.
+- `assets/js/panel.js`: reescritura completa de `renderCards()`/`renderDetail()`/`render()` para el nuevo markup (tarjetas con badges de tiempo por color, columna de detalle oscura con tarjeta SLA, flujo operativo, productos, cliente). Nueva funcion `downloadOrdersCsv()` para el boton "Descargar Pedidos".
+- `assets/css/panel.css`: reescritura completa con tokens de color del boceto (`#C4372B`, `#16273A`, `#F5F8FA`, etc.), tablero claro + detalle oscuro, responsive.
+- `includes/app_mode.php`: se agrego carga de Google Fonts (Inter) y se limpio el reset de `html,body`.
+- Probado visualmente en navegador con datos simulados (servidor HTTP local temporal en `scratchpad`) antes de subir: layout, tarjetas, seleccion, pedido completado sin acciones, y sin errores de consola.
+
+### Pendientes diseno nuevo (1.2.0) - accion o decision requerida
+Esta lista se debe mantener actualizada a medida que se van resolviendo items. Marcar cada uno al completarlo.
+
+1. **Meta de tiempo (SLA)**: `SLA_GOAL_MINUTES = 30` esta hardcodeado en `panel.js`. Falta decidir si debe ser configurable por tienda/pedido/tipo de pedido, y confirmar que 30 min es el valor correcto.
+2. **Umbrales de color del badge de tiempo en tarjetas**: provisional en `timeTier()` (`panel.js`): neutral <30min, amber 30-60min, rojo >=60min. Confirmar con el usuario si son los umbrales reales de operacion.
+3. **"Cliente frecuente"**: el boceto muestra un badge de cliente frecuente bajo el nombre. No implementado - requiere logica para contar pedidos previos por telefono/cliente. Pendiente de decidir criterio (cuantos pedidos, en que periodo).
+4. **"Descargar Pedidos"**: implementado como exportacion CSV simple, 100% client-side (id, estado, cliente, telefono, tienda, tiempo) de los pedidos visibles en ese momento. Pendiente confirmar si se necesita: rango de fechas/historico, mas columnas (productos, total, forma de pago), o formato Excel real (no solo CSV).
+5. **"Cancelar pedido"**: se reubico como link secundario debajo de "Gestion de Tienda y Supervisor". Sigue usando `prompt()` nativo del navegador (Fase 2 original, aun sin modal propio). Confirmar si la ubicacion/estilo nuevo es la deseada.
+6. **Reasignar tienda**: cambio de boton explicito "Reasignar tienda" a autosave al cambiar el `<select>`. Confirmar que este comportamiento (sin paso de confirmacion) es el deseado, ya que un clic accidental en el dropdown reasigna sin aviso.
+7. **Marcar/Quitar Prioridad**: cambio de checkbox + boton "Guardar prioridad" a un boton toggle que aplica el cambio de inmediato al hacer clic. Confirmar que este comportamiento es el deseado.
+8. **Costo extra de "upgrade"**: el boceto resalta en amarillo el precio adicional de un upgrade (`+Q10.00`) por separado de los demas modificadores. La implementacion actual muestra todos los modificadores (Carne/Complemento/Bebida/Upgrade) igual, porque no hay certeza de como WooFood expone ese extra de forma aislada en `get_formatted_meta_data()`. Pendiente revisar con un pedido real que tenga upgrades para ver el dato exacto.
+9. **Columna "Completada" - formato de tiempo**: el boceto muestra la hora de ingreso (ej. `18:12`) en las tarjetas de esa columna; la implementacion actual muestra tiempo transcurrido (elapsed) igual que las demas columnas. Decidir si se prefiere mostrar hora de entrega/completado en vez de elapsed para pedidos completados.
+10. **Logo de marca**: el boceto usa solo texto "DEL PUENTE" en rojo (sin imagen). Se quito el `<img>` del logo del header nuevo. Confirmar si se debe reincorporar el logo grafico en algun lugar.
+11. **Validacion en sitio real**: falta probar en `/orders/` con datos reales, en particular que `get_formatted_meta_data()` devuelva las mismas etiquetas ("Carne", "Complemento", "Bebida") que se ven en el boceto - depende de como WooFood registra esos metadatos por producto. Si los labels salen distintos (ej. en ingles, o con prefijos raros), hay que ajustar `get_order_items_payload()`.
+12. **Modal de cancelacion** (Fase 2 original, ver iteraciones previas): sigue sin resolverse, solo se reubico el boton.
+13. **Wallboard, auditoria de cambios, hardening de permisos** (Fase 3 original): sin tocar en esta iteracion.
+
+### Archivos tocados
+- dlp-paneles.php
+- includes/rest.php
+- includes/app_mode.php
+- assets/js/panel.js
+- assets/css/panel.css
+- README.md
+
+### Estado
+- Diseno base implementado y probado visualmente con datos simulados. Listo para subir al hosting y validar con datos reales.
+- Pendiente ir resolviendo uno por uno los items de la lista de pendientes arriba, segun prioridad que defina el usuario.
