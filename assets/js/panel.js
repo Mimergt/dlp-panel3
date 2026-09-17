@@ -7,7 +7,7 @@
   var state = {
     orders: [],
     selectedOrderId: null,
-    counts: { processing: 0, shipped: 0 },
+    counts: { processing: 0, shipped: 0, completed: 0 },
     stores: [],
     networkWarning: '',
     firstLoadDone: false,
@@ -61,6 +61,7 @@
     if (status === 'prep') return 'Procesando';
     if (status === 'lpr') return 'Enviada / LPR';
     if (status === 'rtp') return 'Enviada / LPR';
+    if (status === 'completed') return 'Completada';
     return status;
   }
 
@@ -76,6 +77,10 @@
     if (status === 'processing' || status === 'prep') return 'Marcar Enviada / LPR';
     if (status === 'lpr' || status === 'rtp') return 'Completar pedido';
     return 'Sin accion';
+  }
+
+  function isFinalStatus(status) {
+    return status === 'completed';
   }
 
   function api(path, method, payload, opts) {
@@ -127,8 +132,7 @@
   function renderCards(status) {
     return state.orders
       .filter(function (order) {
-        if (status === 'processing') return order.group === 'processing';
-        return order.group === 'shipped';
+        return order.group === status;
       })
       .map(function (order) {
         var active = order.id === state.selectedOrderId ? 'active' : '';
@@ -181,10 +185,12 @@
           '<textarea rows="4" data-field="internal_note" placeholder="Escribe nota interna para supervisor/tienda">' + esc(order.internal_note || '') + '</textarea>' +
           '<button class="dlp-btn" data-action="save-note" data-order-id="' + order.id + '">Guardar nota</button>' +
         '</label>' +
-        '<div class="dlp-actions">' +
-          '<button class="dlp-btn dlp-btn-primary" data-action="advance" data-order-id="' + order.id + '">' + esc(nextLabel(order.status)) + '</button>' +
-          '<button class="dlp-btn dlp-btn-danger" data-action="cancel" data-order-id="' + order.id + '">Cancelar pedido</button>' +
-        '</div>' +
+        (isFinalStatus(order.status) ?
+          '<p class="dlp-final-note">Pedido completado. No requiere mas acciones.</p>' :
+          '<div class="dlp-actions">' +
+            '<button class="dlp-btn dlp-btn-primary" data-action="advance" data-order-id="' + order.id + '">' + esc(nextLabel(order.status)) + '</button>' +
+            '<button class="dlp-btn dlp-btn-danger" data-action="cancel" data-order-id="' + order.id + '">Cancelar pedido</button>' +
+          '</div>') +
       '</section>';
   }
 
@@ -215,6 +221,7 @@
         '<section class="dlp-board">' +
           '<div class="dlp-column dlp-col-received"><h3>Procesando (' + Number(state.counts.processing || 0) + ')</h3><div>' + renderCards('processing') + '</div></div>' +
           '<div class="dlp-column dlp-col-shipped"><h3>Enviada / LPR (' + Number(state.counts.shipped || 0) + ')</h3><div>' + renderCards('shipped') + '</div></div>' +
+          '<div class="dlp-column dlp-col-completed"><h3>Completada (' + Number(state.counts.completed || 0) + ')</h3><div>' + renderCards('completed') + '</div></div>' +
         '</section>' +
         renderDetail(selected) +
       '</div>';
@@ -225,7 +232,7 @@
       .then(function (data) {
         state.networkWarning = '';
         state.orders = Array.isArray(data.orders) ? data.orders : [];
-        state.counts = data.counts || { processing: 0, shipped: 0 };
+        state.counts = data.counts || { processing: 0, shipped: 0, completed: 0 };
         state.stores = Array.isArray(data.stores) ? data.stores : [];
 
         if (!state.selectedOrderId && state.orders.length) {

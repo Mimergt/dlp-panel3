@@ -6,7 +6,7 @@ if (!defined('ABSPATH')) {
 
 class DLP_Paneles_REST {
     public static function get_panel_statuses() {
-        return array('processing', 'prep', 'lpr', 'rtp');
+        return array('processing', 'prep', 'lpr', 'rtp', 'completed');
     }
 
     public static function is_processing_status($status) {
@@ -15,6 +15,10 @@ class DLP_Paneles_REST {
 
     public static function is_shipped_status($status) {
         return in_array($status, array('lpr', 'rtp'), true);
+    }
+
+    public static function is_completed_status($status) {
+        return $status === 'completed';
     }
 
     public static function parse_store_ids_from_value($value) {
@@ -218,12 +222,9 @@ class DLP_Paneles_REST {
         $supervisor = self::is_supervisor_user($user_id);
         $accessible_store_ids = self::get_accessible_store_ids($user_id);
 
-        $statuses = self::get_panel_statuses();
-        $args = array(
-            'limit' => 180,
+        $base_args = array(
             'orderby' => 'date',
             'order' => 'DESC',
-            'status' => $statuses,
             'return' => 'ids',
         );
 
@@ -232,13 +233,13 @@ class DLP_Paneles_REST {
                 return new WP_REST_Response(array(
                     'scope' => 'tienda',
                     'orders' => array(),
-                    'counts' => array('processing' => 0, 'shipped' => 0),
+                    'counts' => array('processing' => 0, 'shipped' => 0, 'completed' => 0),
                     'stores' => array(),
                     'server_time' => current_time('mysql'),
                 ));
             }
 
-            $args['meta_query'] = array(
+            $base_args['meta_query'] = array(
                 array(
                     'key' => 'extra_store_name',
                     'value' => $accessible_store_ids,
@@ -248,13 +249,31 @@ class DLP_Paneles_REST {
             );
         }
 
-        $order_ids = wc_get_orders($args);
         // Mismo calculo que el panel v2 (manejoPedidos.php): current_time('timestamp')
         // vs WC_DateTime::getTimestamp() desalinea zonas horarias y produce elapsed_seconds
         // desbordado. Se usa hora local de servidor comparada contra el string formateado
         // de la fecha de creacion, igual que el panel v2, para mantener consistencia.
         $now_ts = strtotime(date('Y-m-d H:i:s')) - (3600 * 6);
-        $counts = array('processing' => 0, 'shipped' => 0);
+
+        // Pedidos activos (Procesando / Enviada-LPR): sin limite de fecha, hasta 180 recientes.
+        $active_args = array_merge($base_args, array(
+            'limit' => 180,
+            'status' => array('processing', 'prep', 'lpr', 'rtp'),
+        ));
+        $active_ids = wc_get_orders($active_args);
+
+        // Completados: solo del dia operativo actual, para que la columna
+        // "Completada" no crezca sin limite ni desplace pedidos activos.
+        $today_start_ts = strtotime(date('Y-m-d') . ' 00:00:00') - (3600 * 6);
+        $completed_args = array_merge($base_args, array(
+            'limit' => 150,
+            'status' => array('completed'),
+            'date_created' => '>=' . $today_start_ts,
+        ));
+        $completed_ids = wc_get_orders($completed_args);
+
+        $order_ids = array_merge($active_ids, $completed_ids);
+        $counts = array('processing' => 0, 'shipped' => 0, 'completed' => 0);
         $result = array();
 
         foreach ($order_ids as $order_id) {
@@ -265,7 +284,7 @@ class DLP_Paneles_REST {
 
             $status = $order->get_status();
 
-            if (!self::is_processing_status($status) && !self::is_shipped_status($status)) {
+            if (!self::is_processing_status($status) && !self::is_shipped_status($status) && !self::is_completed_status($status)) {
                 continue;
             }
 
@@ -279,7 +298,13 @@ class DLP_Paneles_REST {
 
             // Procesando incluye 'processing' y 'prep' (legacy): el panel ya no
             // distingue un paso intermedio de preparacion.
-            $group = self::is_processing_status($status) ? 'processing' : 'shipped';
+            if (self::is_processing_status($status)) {
+                $group = 'processing';
+            } elseif (self::is_shipped_status($status)) {
+                $group = 'shipped';
+            } else {
+                $group = 'completed';
+            }
 
             $counts[$group]++;
 

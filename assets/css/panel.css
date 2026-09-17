@@ -88,7 +88,7 @@
 
 .dlp-board {
   display: grid;
-  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
   gap: 12px;
 }
 
@@ -118,6 +118,17 @@
   background: #daf0e3;
   border-bottom-color: #a3cfbb;
   color: #0e5330;
+}
+
+.dlp-col-completed {
+  border-color: #c9c4e0;
+  background: #f3f1fa;
+}
+
+.dlp-col-completed h3 {
+  background: #e6e1f5;
+  border-bottom-color: #c9c4e0;
+  color: #3d2f6b;
 }
 
 .dlp-column h3 {
@@ -185,6 +196,15 @@
   margin-top: 10px;
   display: grid;
   gap: 8px;
+}
+
+.dlp-final-note {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  background: #e6e1f5;
+  color: #3d2f6b;
+  font-weight: 600;
 }
 
 .dlp-field {

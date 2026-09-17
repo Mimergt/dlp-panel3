@@ -281,3 +281,37 @@ Este archivo documenta el historial tecnico y resumen de conversaciones para ret
 ### Estado
 - Listo para validar en `/orders/`: verificar que el tiempo de las tarjetas coincida con el panel v2 y que el flujo de botones sea Procesando -> Enviada/LPR -> Completar.
 - Pendiente evaluar si se sigue avanzando hoy (modal de cancelacion, Fase 2) o se retoma en otra sesion.
+
+## 2026-09-17 (iteracion 1.1.11 - correccion de 1.1.10)
+
+### Resumen de conversacion
+- El usuario aclaro que 1.1.10 malinterpreto el pedido: no queria reducir de 3 a 2 columnas.
+- El tablero debia mantener 3 pasos: 1) Procesando, 2) Enviada / LPR, 3) Completada.
+- Se envio screenshot del panel viejo (`/panelnuevo/`, version aun sin actualizar) mostrando el bug de tiempo (`1901:30:01`) para contexto, antes de que 1.1.10/1.1.11 se suban al hosting.
+
+### Cambios realizados
+- Version actualizada a 1.1.11.
+- `includes/rest.php`:
+  - `get_panel_statuses()` ahora incluye `completed`.
+  - Nueva funcion `is_completed_status()`.
+  - `get_panel_data()` separa la consulta en dos: pedidos activos (`processing`/`prep`/`lpr`/`rtp`, sin limite de fecha, hasta 180) y pedidos completados (solo del dia operativo actual via `date_created >= inicio del dia`, hasta 150) para que la columna `Completada` no crezca sin limite ni desplace pedidos activos del listado.
+  - `counts` ahora es `{processing, shipped, completed}`.
+- `assets/js/panel.js`:
+  - Tablero vuelve a 3 columnas: `Procesando`, `Enviada / LPR`, `Completada`.
+  - `statusLabel('completed')` = "Completada".
+  - Nueva funcion `isFinalStatus()`: oculta los botones de accion (avanzar/cancelar) en el detalle cuando el pedido ya esta completado, y muestra una nota informativa en su lugar.
+- `assets/css/panel.css`:
+  - Grid del tablero vuelve a 3 columnas.
+  - Estilos nuevos para `.dlp-col-completed` y `.dlp-final-note`.
+
+### Archivos tocados
+- dlp-paneles.php
+- includes/rest.php
+- assets/js/panel.js
+- assets/css/panel.css
+- README.md
+
+### Estado
+- Listo para subir al hosting (aun no se habia desplegado 1.1.10/1.1.11 al momento de esta correccion).
+- Pendiente validar en `/orders/`: que aparezcan 3 columnas, que los pedidos completados hoy se vean en `Completada`, y que el tiempo ya no muestre valores desbordados.
+- Pendiente evaluar si se sigue avanzando hoy (modal de cancelacion, Fase 2) o se retoma en otra sesion.
