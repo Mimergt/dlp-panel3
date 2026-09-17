@@ -328,6 +328,17 @@ class DLP_Paneles_REST {
             $created_ts = $created ? strtotime($created->format('Y-m-d H:i:s')) : $now_ts;
             $store_id = absint(get_post_meta($order_id, 'extra_store_name', true));
 
+            // Pedido Completado: el contador no debe seguir corriendo. Se usa la
+            // fecha de finalizacion que WooCommerce ya guarda (_date_completed)
+            // para congelar el tiempo transcurrido en vez de seguir comparando
+            // contra la hora actual del servidor.
+            if (self::is_completed_status($status)) {
+                $completed = $order->get_date_completed();
+                $reference_ts = $completed ? strtotime($completed->format('Y-m-d H:i:s')) : $now_ts;
+            } else {
+                $reference_ts = $now_ts;
+            }
+
             if (!$supervisor && !in_array($store_id, $accessible_store_ids, true)) {
                 continue;
             }
@@ -361,7 +372,7 @@ class DLP_Paneles_REST {
                 'address' => $order->get_billing_address_2(),
                 'full_address' => self::format_full_address($order),
                 'city' => $order->get_billing_city(),
-                'elapsed_seconds' => max(0, $now_ts - $created_ts),
+                'elapsed_seconds' => max(0, $reference_ts - $created_ts),
                 'entry_time' => $created ? $created->format('H:i:s') : '',
                 'priority' => get_post_meta($order_id, '_dlp_priority', true) === '1',
                 'notes' => $order->get_customer_note(),

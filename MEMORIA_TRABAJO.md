@@ -619,3 +619,31 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
 ### Estado
 - Item 16 resuelto. Listo para subir al hosting y validar con datos reales.
 - Sigue pendiente el resto de la lista previa (items 3, 5-15).
+
+## 2026-09-17 (iteracion 1.4.3 - fondo de columnas, bug de contador en Completados, expandido a 2 columnas)
+
+### Resumen de conversacion
+- El usuario pidio quitar el fondo de color de las 3 columnas de estado del tablero (Procesando, Enviada/LPR, Completada), agregado en la iteracion 1.4.1.
+- Pidio ademas hacer la columna Completada un poco mas grande y la de Detalle del pedido un poco mas pequena.
+- Reporto un bug: en pedidos Completados el contador de tiempo seguia corriendo en el panel (solo visualmente); el contador debia detenerse al pasar a Completado y usar el meta que WooCommerce ya guarda.
+- Pidio rediseñar la vista expandida "Pedido" (introducida en 1.4.0) para usar 2 columnas para los productos y 1 columna para el resto de la informacion.
+
+### Cambios realizados
+- Version actualizada a 1.4.3.
+- `assets/css/panel.css`: eliminadas las variables `--dlp-amber-tint`/`--dlp-blue-tint`/`--dlp-green-tint` y las reglas `.dlp2-column-processing/-shipped/-completed` (fondo de color); `.dlp2-column` ahora usa `background: transparent`. `.dlp2-column-narrow` (Completada) paso de `flex: 0.5` a `flex: 0.65`. `.dlp2-detail` (Detalle del pedido) de `620px` a `560px`.
+- `includes/rest.php`: el calculo de `elapsed_seconds` ahora usa una fecha de referencia distinta segun el estado -- para pedidos `completed` usa `$order->get_date_completed()` (meta `_date_completed` que WooCommerce ya guarda al completar) en vez de la hora actual del servidor, congelando el tiempo transcurrido. Para el resto de estados sigue usando la hora actual, sin cambios de comportamiento.
+- `assets/js/panel.js`: `liveElapsed()` ya no le suma tiempo en vivo a los pedidos con `group === 'completed'` (antes seguia sumando segundos desde el ultimo fetch aunque el pedido ya estuviera completado). `render()` ya no agrega las clases de tinte a las columnas del tablero (innecesarias tras quitar el fondo).
+- `assets/js/panel.js` + `assets/css/panel.css`: `renderExpandedOrder()` reestructurado de 3 columnas a 2 -- la primera columna agrupa todo lo que antes estaba repartido en columnas 1 y 3 (tiempo, progreso de preparacion, Acciones, Datos de Entrega y Cliente, totales); la segunda columna (`dlp2-expanded-col-mid`) muestra solo el Detalle de Productos, ahora en una grilla CSS de 2 columnas (`.dlp2-expanded-products { display:grid; grid-template-columns: repeat(2,1fr); }`, con fallback a 1 columna en mobile). `.dlp2-expanded-grid` paso de `repeat(3,1fr)` a `1fr 1.6fr` para darle mas espacio a productos.
+- Probado visualmente con datos simulados (pedido activo con contador corriendo + pedido completado con contador congelado + vista expandida en 2 columnas), sin errores de consola.
+
+### Archivos tocados
+- dlp-paneles.php
+- README.md
+- MEMORIA_TRABAJO.md
+- includes/rest.php
+- assets/js/panel.js
+- assets/css/panel.css
+
+### Estado
+- Listo para subir al hosting y validar con datos reales, en especial el bug del contador (`_date_completed` depende de que WooCommerce lo haya seteado correctamente en pedidos existentes; pedidos ya completados antes de este fix podrian no tener esa meta y usarian la hora actual como fallback).
+- Sigue pendiente el resto de la lista previa (items 3, 5-15).

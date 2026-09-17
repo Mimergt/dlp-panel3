@@ -1,8 +1,5 @@
 :root {
   --dlp-bg: #F5F8FA;
-  --dlp-amber-tint: #FFF9EE;
-  --dlp-blue-tint: #F0F6FF;
-  --dlp-green-tint: #EFFBF6;
   --dlp-border: #DDE3EB;
   --dlp-border-hover: #B6C7D8;
   --dlp-text: #1A2B3D;
@@ -273,7 +270,7 @@
   min-width: 210px;
   display: flex;
   flex-direction: column;
-  background: var(--dlp-bg);
+  background: transparent;
   border: 0;
   border-radius: 10px;
   overflow: hidden;
@@ -281,21 +278,9 @@
   max-height: calc(100vh - 130px);
 }
 
-.dlp2-column-processing {
-  background: var(--dlp-amber-tint);
-}
-
-.dlp2-column-shipped {
-  background: var(--dlp-blue-tint);
-}
-
-.dlp2-column-completed {
-  background: var(--dlp-green-tint);
-}
-
 .dlp2-column-narrow {
-  flex: 0.5;
-  min-width: 180px;
+  flex: 0.65;
+  min-width: 190px;
 }
 
 .dlp2-column-header {
@@ -553,7 +538,7 @@
 /* Detail panel (dark) */
 .dlp2-detail {
   flex-shrink: 0;
-  width: 620px;
+  width: 560px;
   display: flex;
   flex-direction: column;
   background: var(--dlp-dark-bg);
@@ -1344,7 +1329,7 @@
 
 .dlp2-expanded-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr 1.6fr;
 }
 
 .dlp2-expanded-col {
@@ -1375,7 +1360,9 @@
 }
 
 .dlp2-expanded-products {
-  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  align-content: start;
   gap: 12px;
 }
 
@@ -1611,6 +1598,10 @@
   }
 
   .dlp2-management-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dlp2-expanded-products {
     grid-template-columns: 1fr;
   }
 }

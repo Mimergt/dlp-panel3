@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.4.2
+- 1.4.3
 
 ## Shortcode
 - [dlp_paneles]
@@ -118,6 +118,12 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 ## Incluido en 1.4.2
 - Detalle de Productos en la vista expandida con tarjetas mas grandes (mas padding, tipografia mas grande en nombre/precio/modificadores).
 - El bloque de totales se movio de la columna de productos a la columna de "Datos de Entrega y Cliente" (ahora incluye tambien cantidad de items y total), aprovechando el espacio libre que dejo el bloque de cocina.
+
+## Incluido en 1.4.3
+- Quitado el fondo de color de las 3 columnas de estado (Procesando, Enviada/LPR, Completada); quedan sin tinte, dentro del mismo contenedor blanco.
+- Columna `Completada` un poco mas ancha; columna `Detalle del pedido` un poco mas angosta (620px -> 560px).
+- Corregido bug: en pedidos Completados el contador de tiempo seguia corriendo en el panel. Ahora el backend congela `elapsed_seconds` usando la fecha de finalizacion que WooCommerce ya guarda (`_date_completed`), y el frontend deja de sumarle tiempo en vivo a los pedidos del grupo `completed`.
+- Vista expandida "Pedido": rediseñada a 2 columnas -- una columna agrupa todo lo demas (tiempo, progreso, acciones, datos de cliente/entrega, totales) y la otra columna muestra el Detalle de Productos en una grilla de 2 columnas.
 
 ## Versionado acordado
 - Ajustes pequenos: 1.1.1, 1.1.2, 1.1.3

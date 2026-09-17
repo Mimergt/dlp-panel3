@@ -90,7 +90,10 @@
   // siguiente polling.
   function liveElapsed(order) {
     var base = Number(order.elapsed_seconds || 0);
-    if (!state.loadedAt) {
+    // El pedido Completado ya trae un elapsed_seconds congelado (calculado en
+    // el servidor contra la fecha de finalizacion guardada) y no debe seguir
+    // corriendo en el navegador.
+    if (order.group === 'completed' || !state.loadedAt) {
       return base;
     }
     return base + Math.max(0, Math.floor((Date.now() - state.loadedAt) / 1000));
@@ -618,20 +621,6 @@
             renderTimeCard(order) +
             renderPrepProgress(order) +
             renderActionsCard(order) +
-          '</div>' +
-
-          '<div class="dlp2-expanded-col dlp2-expanded-col-mid">' +
-            '<div class="dlp2-section-title-row dlp2-expanded-products-title">' +
-              '<div class="dlp2-section-title-row">' +
-                '<span class="dlp2-section-title">Detalle de Productos</span>' +
-                '<span class="dlp2-items-count">' + Number(order.items_count || items.length) + ' items</span>' +
-              '</div>' +
-              '<span class="dlp2-expanded-combo-count">' + comboCount + ' combos</span>' +
-            '</div>' +
-            '<div class="dlp2-products dlp2-expanded-products">' + items.map(renderProductRow).join('') + '</div>' +
-          '</div>' +
-
-          '<div class="dlp2-expanded-col">' +
             '<div class="dlp2-customer-card">' +
               '<div class="dlp2-section-title-row">' +
                 '<span class="dlp2-section-title">Datos de Entrega y Cliente</span>' +
@@ -649,6 +638,17 @@
               '<div class="dlp2-expanded-totals-divider"></div>' +
               '<div class="dlp2-expanded-totals-row dlp2-expanded-totals-final"><span>Total</span><span class="dlp2-total-amount">' + esc(formatMoney(order.total)) + '</span></div>' +
             '</div>' +
+          '</div>' +
+
+          '<div class="dlp2-expanded-col dlp2-expanded-col-mid">' +
+            '<div class="dlp2-section-title-row dlp2-expanded-products-title">' +
+              '<div class="dlp2-section-title-row">' +
+                '<span class="dlp2-section-title">Detalle de Productos</span>' +
+                '<span class="dlp2-items-count">' + Number(order.items_count || items.length) + ' items</span>' +
+              '</div>' +
+              '<span class="dlp2-expanded-combo-count">' + comboCount + ' combos</span>' +
+            '</div>' +
+            '<div class="dlp2-products dlp2-expanded-products">' + items.map(renderProductRow).join('') + '</div>' +
           '</div>' +
 
         '</div>' +
@@ -672,15 +672,15 @@
     var mainHtml = expandedOrder ? renderExpandedOrder(expandedOrder) :
       '<div class="dlp2-layout">' +
         '<section class="dlp2-board">' +
-          '<div class="dlp2-column dlp2-column-processing">' +
+          '<div class="dlp2-column">' +
             '<div class="dlp2-column-header"><span class="dlp2-dot dlp2-dot-amber"></span><span class="dlp2-column-title">Procesando</span><span class="dlp2-column-count dlp2-count-amber">' + countFor('processing') + '</span></div>' +
             '<div class="dlp2-column-cards">' + renderCards('processing') + '</div>' +
           '</div>' +
-          '<div class="dlp2-column dlp2-column-shipped">' +
+          '<div class="dlp2-column">' +
             '<div class="dlp2-column-header"><span class="dlp2-dot dlp2-dot-blue"></span><span class="dlp2-column-title">Enviada / LPR</span><span class="dlp2-column-count dlp2-count-blue">' + countFor('shipped') + '</span></div>' +
             '<div class="dlp2-column-cards">' + renderCards('shipped') + '</div>' +
           '</div>' +
-          '<div class="dlp2-column dlp2-column-narrow dlp2-column-completed">' +
+          '<div class="dlp2-column dlp2-column-narrow">' +
             '<div class="dlp2-column-header"><span class="dlp2-dot dlp2-dot-green"></span><span class="dlp2-column-title">Completada</span><span class="dlp2-column-count dlp2-count-green">' + countFor('completed') + '</span></div>' +
             '<div class="dlp2-column-cards">' + renderCards('completed') + '</div>' +
           '</div>' +
