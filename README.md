@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.4.5
+- 1.4.6
 
 ## Shortcode
 - [dlp_paneles]
@@ -136,6 +136,10 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 ## Incluido en 1.4.5
 - Detalle de Productos (tablero, detalle y vista expandida): los modificadores de WooFood (que llegan como un par de metas -- descripcion del grupo + opcion elegida con precio) ahora se muestran agrupados como titulo (ej. "Aqui tu carne favorita") + subtitulo con la opcion y el precio resaltado en verde y mas grande (ej. "• Premium Blend  Q0.00"), en vez de dos lineas sueltas sin relacion visual.
 - La columna de Detalle del pedido (tablero) y la vista expandida ahora muestran el pill de tipo de pedido (Delivery/Pickup) justo antes del pill de estado, en el titulo ("Pedido #166501 [Delivery] [Completada]"). Se quito el pill duplicado que estaba en el header de la columna de detalle, ya que ahora vive en el titulo.
+
+## Incluido en 1.4.6
+- Corregido bug: el precio mostrado junto al nombre del producto era el total de linea de WooCommerce (que ya incluye los extras/modificadores), asi que un combo de Q75 con un extra de Q5 se mostraba como "Q80.00 x 1" arriba y luego el extra de Q5 aparecia otra vez abajo, sumando visualmente mal. Ahora se calcula y muestra el precio base del producto (total de linea menos la suma de los extras), y el total final se movio a una fila separada al final de la tarjeta, con una linea divisoria, para que quede claro que es la suma de todo lo de arriba.
+- Boton "Descargar Pedidos" del header renombrado a "Sincronizar" (su funcion no cambio: sigue forzando un refresh manual del panel).
 
 ## Versionado acordado
 - Ajustes pequenos: 1.1.1, 1.1.2, 1.1.3

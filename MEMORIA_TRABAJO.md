@@ -703,3 +703,29 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
 ### Estado
 - Listo para subir al hosting y validar con datos reales de pedidos con modificadores.
 - Sigue pendiente el resto de la lista previa (items 3, 5-15).
+
+## 2026-09-17 (iteracion 1.4.6 - bug de precio base vs total, boton Sincronizar)
+
+### Resumen de conversacion
+- El usuario reporto un bug con capturas: un combo de Q75 con un extra de Tiky de Q5 se mostraba como "Q80.00 x 1" en la parte de arriba de la tarjeta (como si esa fuera el precio base/unitario) y luego el extra de Q5 volvia a aparecer abajo, dando la sensacion de que el calculo estaba mal o que no quedaba claro que era "total de que".
+- Pidio tambien cambiar el texto del boton "Descargar Pedidos" a "Sincronizar".
+- Pidio en general mejorar el formato de la seccion de productos para que quede claro que numero es cual.
+
+### Cambios realizados
+- Version actualizada a 1.4.6.
+- Causa raiz del bug: `item.total` (el total de linea que manda WooCommerce) ya incluye el costo de los extras/modificadores. El codigo anterior calculaba el "precio unitario" como `item.total / quantity`, mostrando el total-con-extras como si fuera el precio base, y luego mostraba el precio de cada extra otra vez en su propia fila -- visualmente parecia que se sumaba de mas.
+- `assets/js/panel.js`: nuevo helper `parseMoneyString()` que extrae el numero de textos como "Q5.00" o "Papas grandes +Q10.00". `renderProductMeta()` ahora devuelve `{ html, modifiersTotal }`, sumando el precio de cada extra (de los grupos titulo+subtitulo y del caso "Upgrade"). `renderProductRow()` calcula `baseTotal = item.total - modifiersTotal` y muestra ese precio base (dividido entre la cantidad) junto al nombre del producto, en vez del total-con-extras.
+- `assets/js/panel.js` + `assets/css/panel.css`: reordenada la tarjeta de producto -- arriba el nombre + precio base x cantidad; en medio los extras con su propio precio; al final una fila "Total" separada por una linea divisoria (`.dlp2-product-linetotal`), mostrando la suma real (precio base + extras). Se eliminaron las clases `.dlp2-product-pricing`/`.dlp2-product-unit` (ya no se usan) y se agrego `.dlp2-product-baseprice`.
+- `assets/js/panel.js`: texto del boton de refresh manual del header cambiado de "Descargar Pedidos" a "Sincronizar" (sin cambios de funcionalidad).
+- Probado visualmente reproduciendo el caso exacto reportado (combo Q75 + extra Tiky Q5 = Total Q80): ahora se ve "Q75.00 x 1" arriba, "Tiky Q5.00" y "Papas fritas Q0.00" como extras, y "Total Q80.00" claramente separado al final. Sin errores de consola.
+
+### Archivos tocados
+- dlp-paneles.php
+- README.md
+- MEMORIA_TRABAJO.md
+- assets/js/panel.js
+- assets/css/panel.css
+
+### Estado
+- Listo para subir al hosting y validar con datos reales, en especial pedidos con varios extras para confirmar que el precio base calculado coincide con el precio real del combo en el catalogo.
+- Sigue pendiente el resto de la lista previa (items 3, 5-15).

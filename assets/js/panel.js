@@ -380,12 +380,26 @@
     return str ? str.charAt(0).toUpperCase() + str.slice(1) : str;
   }
 
+  // Extrae el numero de un texto tipo "Q5.00" o "Papas grandes +Q10.00".
+  // Devuelve 0 si el texto no trae un numero (ej. una opcion sin costo extra).
+  function parseMoneyString(str) {
+    var match = String(str || '').match(/(\d+(?:[.,]\d{1,2})?)/);
+    if (!match) {
+      return 0;
+    }
+    return parseFloat(match[1].replace(',', '.')) || 0;
+  }
+
   // WooFood entrega los modificadores en pares: una meta sin label (la
   // descripcion del grupo, ej. "aqui tu carne favorita") seguida de la meta
   // con la opcion elegida y su precio (ej. "Premium Blend: Q0.00"). Se
   // agrupan como titulo + subtitulo en vez de mostrar ambas como filas sueltas.
+  // El precio de cada extra tambien se suma en modifiersTotal: item.total de
+  // WooCommerce ya incluye esos extras, y se necesita restarlos para mostrar
+  // el precio base del producto por separado (ver renderProductRow).
   function renderProductMeta(meta) {
     var rows = [];
+    var modifiersTotal = 0;
     var i = 0;
 
     while (i < meta.length) {
@@ -393,6 +407,7 @@
       var next = meta[i + 1];
 
       if (!current.label && next) {
+        modifiersTotal += parseMoneyString(next.value);
         rows.push(
           '<div class="dlp2-product-mod">' +
             '<div class="dlp2-product-mod-title">' + esc(capitalizeFirst(current.value)) + '</div>' +
@@ -404,33 +419,37 @@
       }
 
       var isUpgrade = /upgrade/i.test(current.label || '');
+      if (isUpgrade) {
+        modifiersTotal += parseMoneyString(current.value);
+      }
       var rowClass = isUpgrade ? ' dlp2-product-meta-upgrade' : '';
       var label = isUpgrade ? '&#9733; ' + esc(current.label) + ': ' + esc(current.value) : '&bull; ' + esc(current.label) + ': <strong>' + esc(current.value) + '</strong>';
       rows.push('<div class="dlp2-product-meta-row' + rowClass + '"><span>' + label + '</span></div>');
       i += 1;
     }
 
-    return rows.join('');
+    return { html: rows.join(''), modifiersTotal: modifiersTotal };
   }
 
   function renderProductRow(item) {
-    var metaRows = renderProductMeta(item.meta || []);
+    var metaResult = renderProductMeta(item.meta || []);
 
     var qty = Number(item.quantity || 1);
     var lineTotal = Number(item.total || 0);
-    var unitPrice = qty > 0 ? lineTotal / qty : lineTotal;
+    // item.total ya incluye los extras (modificadores); se restan para
+    // mostrar el precio base del producto por separado del total final.
+    var baseTotal = Math.max(0, lineTotal - metaResult.modifiersTotal);
+    var baseUnit = qty > 0 ? baseTotal / qty : baseTotal;
 
     return '' +
       '<div class="dlp2-product">' +
         '<div class="dlp2-product-top">' +
           '<span class="dlp2-product-qty">' + qty + '</span>' +
           '<span class="dlp2-product-name">' + esc(item.name) + '</span>' +
+          '<span class="dlp2-product-baseprice">' + esc(formatMoney(baseUnit)) + ' x ' + qty + '</span>' +
         '</div>' +
-        '<div class="dlp2-product-pricing">' +
-          '<span class="dlp2-product-unit">' + esc(formatMoney(unitPrice)) + ' x ' + qty + '</span>' +
-          '<span class="dlp2-product-price">Total: ' + esc(formatMoney(lineTotal)) + '</span>' +
-        '</div>' +
-        (metaRows ? '<div class="dlp2-product-meta">' + metaRows + '</div>' : '') +
+        (metaResult.html ? '<div class="dlp2-product-meta">' + metaResult.html + '</div>' : '') +
+        '<div class="dlp2-product-linetotal"><span>Total</span><span class="dlp2-product-price">' + esc(formatMoney(lineTotal)) + '</span></div>' +
       '</div>';
   }
 
@@ -757,7 +776,7 @@
             '<strong>' + esc(formatNowTime()) + '</strong>' +
             '<span>' + esc(formatNowDate()) + '</span>' +
           '</div>' +
-          '<button class="dlp2-btn-ghost" data-action="force-refresh" type="button">' + ICON.sync + '<span>Descargar Pedidos</span></button>' +
+          '<button class="dlp2-btn-ghost" data-action="force-refresh" type="button">' + ICON.sync + '<span>Sincronizar</span></button>' +
           '<a class="dlp2-btn-dark" href="' + esc(window.DLP_PANELES_CONFIG.logoutUrl || '#') + '">' + ICON.logout + '<span>Cerrar Sesion</span></a>' +
         '</div>' +
       '</div>' +
