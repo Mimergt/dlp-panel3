@@ -375,13 +375,46 @@
     return cardsHtml + loadMoreHtml;
   }
 
-  function renderProductRow(item) {
-    var metaRows = (item.meta || []).map(function (m) {
-      var isUpgrade = /upgrade/i.test(m.label);
+  function capitalizeFirst(str) {
+    str = String(str || '');
+    return str ? str.charAt(0).toUpperCase() + str.slice(1) : str;
+  }
+
+  // WooFood entrega los modificadores en pares: una meta sin label (la
+  // descripcion del grupo, ej. "aqui tu carne favorita") seguida de la meta
+  // con la opcion elegida y su precio (ej. "Premium Blend: Q0.00"). Se
+  // agrupan como titulo + subtitulo en vez de mostrar ambas como filas sueltas.
+  function renderProductMeta(meta) {
+    var rows = [];
+    var i = 0;
+
+    while (i < meta.length) {
+      var current = meta[i];
+      var next = meta[i + 1];
+
+      if (!current.label && next) {
+        rows.push(
+          '<div class="dlp2-product-mod">' +
+            '<div class="dlp2-product-mod-title">' + esc(capitalizeFirst(current.value)) + '</div>' +
+            '<div class="dlp2-product-mod-row"><span>&bull; ' + esc(next.label) + '</span><span class="dlp2-product-mod-price">' + esc(next.value) + '</span></div>' +
+          '</div>'
+        );
+        i += 2;
+        continue;
+      }
+
+      var isUpgrade = /upgrade/i.test(current.label || '');
       var rowClass = isUpgrade ? ' dlp2-product-meta-upgrade' : '';
-      var label = isUpgrade ? '&#9733; ' + esc(m.label) + ': ' + esc(m.value) : '&bull; ' + esc(m.label) + ': <strong>' + esc(m.value) + '</strong>';
-      return '<div class="dlp2-product-meta-row' + rowClass + '"><span>' + label + '</span></div>';
-    }).join('');
+      var label = isUpgrade ? '&#9733; ' + esc(current.label) + ': ' + esc(current.value) : '&bull; ' + esc(current.label) + ': <strong>' + esc(current.value) + '</strong>';
+      rows.push('<div class="dlp2-product-meta-row' + rowClass + '"><span>' + label + '</span></div>');
+      i += 1;
+    }
+
+    return rows.join('');
+  }
+
+  function renderProductRow(item) {
+    var metaRows = renderProductMeta(item.meta || []);
 
     var qty = Number(item.quantity || 1);
     var lineTotal = Number(item.total || 0);
@@ -500,7 +533,6 @@
       '<aside class="dlp2-detail">' +
         '<div class="dlp2-detail-header">' + ICON.file + '<span>Detalle del pedido</span>' +
           '<div class="dlp2-detail-header-actions">' +
-            renderTypePill(order, false) +
             '<button class="dlp2-expand-btn" data-action="expand-order" data-order-id="' + order.id + '" title="Abrir pedido" type="button">' + ICON.expand + '</button>' +
           '</div>' +
         '</div>' +
@@ -509,6 +541,7 @@
           '<div class="dlp2-detail-top">' +
             '<div class="dlp2-detail-title-row">' +
               '<span class="dlp2-detail-order-id">Pedido #' + order.id + '</span>' +
+              renderTypePill(order, false) +
               '<span class="dlp2-status-pill dlp2-status-' + statusColor(order.status) + '"><span class="dlp2-status-dot"></span>' + esc(statusLabel(order.status)) + '</span>' +
               (order.priority ? '<span class="dlp2-priority-pill">' + ICON.flag + '<span>Prioridad</span></span>' : '') +
             '</div>' +
@@ -625,8 +658,8 @@
               '<span class="dlp2-expanded-divider"></span>' +
               '<h1 class="dlp2-expanded-title">Pedido #' + order.id + '</h1>' +
               '<div class="dlp2-expanded-badges">' +
-                '<span class="dlp2-status-pill dlp2-status-' + statusColor(order.status) + '"><span class="dlp2-status-dot"></span>' + esc(statusLabel(order.status)) + '</span>' +
                 renderTypePill(order, false) +
+                '<span class="dlp2-status-pill dlp2-status-' + statusColor(order.status) + '"><span class="dlp2-status-dot"></span>' + esc(statusLabel(order.status)) + '</span>' +
                 (order.priority ? '<span class="dlp2-priority-pill">' + ICON.flag + '<span>Prioridad</span></span>' : '') +
               '</div>' +
             '</div>' +

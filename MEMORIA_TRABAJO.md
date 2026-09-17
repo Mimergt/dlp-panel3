@@ -678,3 +678,28 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
 - Listo para subir al hosting y validar con datos reales.
 - La paginacion es solo de render (client-side); si en el futuro el volumen de pedidos crece mucho tambien podria valer la pena paginar la llamada a la API (`/panel`) en vez de traer todo de una vez -- no fue necesario para este pedido concreto.
 - Sigue pendiente el resto de la lista previa (items 3, 5-15).
+
+## 2026-09-17 (iteracion 1.4.5 - agrupar modificadores de producto, orden de pill Delivery/Pickup)
+
+### Resumen de conversacion
+- El usuario reviso 1.4.4 y envio captura del Detalle de Productos: los modificadores de WooFood se veian como pares de lineas sueltas sin relacion visual clara, ej. "• : aqui tu carne favorita" seguido de "• Premium Blend: Q0.00".
+- Pidio que se vea como titulo ("Tu carne favorita") + subtitulo ("• Premium Blend: Q0.00"), con el precio resaltado y mas grande.
+- Pidio que en la columna de Detalle del pedido (y por extension la vista expandida) el pill de tipo de pedido (Delivery/Pickup) se muestre antes del pill de estado, en el titulo: "Pedido #166501 [Delivery] [Completada]".
+
+### Cambios realizados
+- Version actualizada a 1.4.5.
+- `assets/js/panel.js`: nueva funcion `renderProductMeta(meta)` que reemplaza el mapeo plano anterior. WooFood entrega los modificadores en pares -- una meta sin `label` (la descripcion del grupo, ej. "aqui tu carne favorita") seguida de la meta con la opcion elegida y su precio (ej. "Premium Blend: Q0.00"). La funcion detecta ese patron y agrupa cada par como un titulo (`.dlp2-product-mod-title`, con primera letra en mayuscula via el nuevo helper `capitalizeFirst()`) + una fila subtitulo con bullet y el precio en su propio span (`.dlp2-product-mod-price`). Los casos que no siguen el patron (ej. meta de "Upgrade") se siguen mostrando como fila suelta, igual que antes.
+- `assets/css/panel.css`: nuevas reglas `.dlp2-product-mod`, `.dlp2-product-mod-title`, `.dlp2-product-mod-row`, `.dlp2-product-mod-price` (precio en verde `#34D399`, negrita, mas grande que el resto del texto); tamanos aumentados en la vista expandida (`.dlp2-expanded-products .dlp2-product-mod-title/-price`); aumentado el espaciado entre grupos de modificadores (`.dlp2-product-meta` gap de 2px a 8px, 10px en expandida).
+- `assets/js/panel.js`: `renderDetail()` -- se agrego `renderTypePill(order, false)` en `.dlp2-detail-title-row` justo antes del pill de estado, y se quito el pill de tipo que estaba duplicado en `.dlp2-detail-header-actions` (quedaba redundante). `renderExpandedOrder()` -- se invirtio el orden dentro de `.dlp2-expanded-badges`: ahora el pill de tipo va antes del pill de estado, igual que en el tablero.
+- Probado visualmente con datos simulados replicando la estructura real de metas de WooFood (grupos de carne/complemento/bebida + un caso de Upgrade + un producto sin modificadores), en el detalle normal y en la vista expandida. Sin errores de consola.
+
+### Archivos tocados
+- dlp-paneles.php
+- README.md
+- MEMORIA_TRABAJO.md
+- assets/js/panel.js
+- assets/css/panel.css
+
+### Estado
+- Listo para subir al hosting y validar con datos reales de pedidos con modificadores.
+- Sigue pendiente el resto de la lista previa (items 3, 5-15).

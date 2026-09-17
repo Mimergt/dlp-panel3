@@ -1015,9 +1015,40 @@
   padding-left: 28px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 8px;
   font-size: 11px;
   color: var(--dlp-dark-faint);
+}
+
+.dlp2-product-mod {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dlp2-product-mod-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--dlp-dark-muted);
+}
+
+.dlp2-product-mod-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-left: 10px;
+}
+
+.dlp2-product-mod-row span:first-child {
+  color: var(--dlp-dark-faint);
+}
+
+.dlp2-product-mod-price {
+  font-size: 13px;
+  font-weight: 800;
+  color: #34D399;
+  white-space: nowrap;
 }
 
 .dlp2-total-row {
@@ -1447,8 +1478,16 @@
 }
 
 .dlp2-expanded-products .dlp2-product-meta {
-  gap: 5px;
+  gap: 10px;
   font-size: 13px;
+}
+
+.dlp2-expanded-products .dlp2-product-mod-title {
+  font-size: 13px;
+}
+
+.dlp2-expanded-products .dlp2-product-mod-price {
+  font-size: 15px;
 }
 
 .dlp2-expanded-totals {

@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.4.4
+- 1.4.5
 
 ## Shortcode
 - [dlp_paneles]
@@ -132,6 +132,10 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 - Nueva linea divisoria sutil (efecto emboss) entre las columnas del tablero (Procesando / Enviada-LPR / Completada) para separarlas visualmente sin usar fondos de color.
 - Paginacion por columna: cada columna del tablero muestra inicialmente solo 12 pedidos, con boton "Cargar mas" que suma 20 a la vez, para no sobrecargar el render cuando una columna acumula muchos pedidos.
 - Confirmado (sin cambios de codigo): la columna `Completada` ya solo trae pedidos completados del dia operativo actual (implementado desde antes), asi que no se acumula historico de dias anteriores.
+
+## Incluido en 1.4.5
+- Detalle de Productos (tablero, detalle y vista expandida): los modificadores de WooFood (que llegan como un par de metas -- descripcion del grupo + opcion elegida con precio) ahora se muestran agrupados como titulo (ej. "Aqui tu carne favorita") + subtitulo con la opcion y el precio resaltado en verde y mas grande (ej. "• Premium Blend  Q0.00"), en vez de dos lineas sueltas sin relacion visual.
+- La columna de Detalle del pedido (tablero) y la vista expandida ahora muestran el pill de tipo de pedido (Delivery/Pickup) justo antes del pill de estado, en el titulo ("Pedido #166501 [Delivery] [Completada]"). Se quito el pill duplicado que estaba en el header de la columna de detalle, ya que ahora vive en el titulo.
 
 ## Versionado acordado
 - Ajustes pequenos: 1.1.1, 1.1.2, 1.1.3
