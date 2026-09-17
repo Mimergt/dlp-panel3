@@ -225,3 +225,23 @@ Este archivo documenta el historial tecnico y resumen de conversaciones para ret
 
 ### Estado
 - Listo para probar en `/pedidos/` con pagina publicada.
+
+## 2026-09-16 (iteracion 1.1.9)
+
+### Resumen de conversacion
+- El sitio ya usa `/pedidos/` para el panel v2 anterior (plugin `manejodepedidos2`), en uso activo en produccion.
+- Se solicito cambiar el slug del modo app de DLP Paneles (v3) para evitar colision con el panel v2.
+
+### Cambios realizados
+- Version actualizada a 1.1.9.
+- Slug por defecto del modo app cambiado de `pedidos` a `orders` en `includes/app_mode.php`.
+- El filtro `dlp_paneles_app_slug` sigue disponible para override.
+
+### Archivos tocados
+- dlp-paneles.php
+- includes/app_mode.php
+- README.md
+
+### Estado
+- Pendiente: en WordPress, crear/publicar pagina con slug `orders` (o renombrar la pagina existente que apuntaba a `pedidos`) para que el modo app quede activo en la nueva ruta.
+- El panel v2 (`manejodepedidos2`) sigue intacto en `/pedidos/`, sin cambios.

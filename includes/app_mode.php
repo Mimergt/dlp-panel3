@@ -14,7 +14,7 @@ class DLP_Paneles_App_Mode {
             return;
         }
 
-        $slug = apply_filters('dlp_paneles_app_slug', 'pedidos');
+        $slug = apply_filters('dlp_paneles_app_slug', 'orders');
         if (!is_page($slug)) {
             return;
         }

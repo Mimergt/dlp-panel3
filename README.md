@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.1.8
+- 1.1.9
 
 ## Shortcode
 - [dlp_paneles]
@@ -52,6 +52,9 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 - Modo app para `/pedidos/` renderizado desde plugin (sin layout del theme).
 - Carga exclusiva de assets del plugin en esa ruta (sin CSS/JS de Divi para esa vista).
 - Soporta cambio de slug via filtro `dlp_paneles_app_slug`.
+
+## Incluido en 1.1.9
+- Slug del modo app cambiado de `/pedidos/` a `/orders/` (el sitio ya usa `/pedidos/` para el panel v2 anterior). Sigue siendo configurable via filtro `dlp_paneles_app_slug`.
 
 ## Versionado acordado
 - Ajustes pequenos: 1.1.1, 1.1.2, 1.1.3
