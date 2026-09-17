@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.4.0
+- 1.4.1
 
 ## Shortcode
 - [dlp_paneles]
@@ -106,10 +106,14 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 ## Incluido en 1.4.0 (vista expandida "Pedido")
 - Nuevo boton "Abrir pedido" (icono expandir) en el header del detalle del pedido.
 - Nueva vista "Pedido" a pantalla completa: reemplaza el tablero + detalle por una tarjeta unica de 3 columnas (Reloj KDS + Resumen de Cocina | Detalle de Productos + Totales | Datos de Entrega/Cliente + Gestion), con boton "Volver al tablero" y boton de cerrar (X).
-- "Resumen de Cocina": agrupa automaticamente los modificadores de todos los productos del pedido (carne, complemento, bebida, upgrades) sumando cantidades. Heuristica provisional (detecta "(xN)" en el valor o usa la cantidad del producto) - pendiente validar con datos reales.
 - "Progreso de preparacion": indicador visual de 3 pasos (Cocina / Enviar-LPR / Entregado) segun el estado del pedido.
-- Desglose de totales: Subtotal, Tarifa de envio (nuevo dato `shipping_total` de la API) y Total.
 - Todas las acciones (avanzar estado, prioridad, nota interna, reasignar tienda, cancelar) funcionan igual dentro de la vista expandida.
+
+## Incluido en 1.4.1
+- Quitada la tarifa de envio: no se estaba calculando correctamente, asi que se elimino del payload de la API (`shipping_total`) y del desglose de totales en la vista expandida (ahora solo muestra `Total`).
+- Quitado el bloque "Resumen de Cocina" de la vista expandida (no se usa en la operacion real). En su lugar, la primera columna ahora tiene una tarjeta "Acciones" con: tienda asignada, prioridad, bitacora interna y cancelar pedido (antes estaban en la tercera columna). La tercera columna queda solo con "Datos de Entrega y Cliente".
+- Rediseno del tablero principal: las 4 columnas (Procesando, Enviada/LPR, Completada, Detalle del pedido) ahora viven dentro de un unico contenedor con bordes redondeados y sombra minimalista. Las columnas del tablero perdieron su borde/sombra individual y en cambio tienen un fondo tenue del color de su categoria (amber/azul/verde). La columna de Detalle del pedido se mantiene con su color oscuro de siempre, pero con un borde y sombra sutiles para que se sienta como una "capa" que se puede expandir.
+- Procesando y Enviada/LPR mas angostas, Completada aun mas angosta, Detalle del pedido mas ancha (500px -> 620px).
 
 ## Versionado acordado
 - Ajustes pequenos: 1.1.1, 1.1.2, 1.1.3

@@ -41,7 +41,6 @@
     expand: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" x2="14" y1="3" y2="10"></line><line x1="3" x2="10" y1="21" y2="14"></line></svg>',
     back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" x2="5" y1="12" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>',
     close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" x2="6" y1="6" y2="18"></line><line x1="6" x2="18" y1="6" y2="18"></line></svg>',
-    kitchen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" x2="6" y1="1" y2="4"></line><line x1="10" x2="10" y1="1" y2="4"></line><line x1="14" x2="14" y1="1" y2="4"></line></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>',
   };
 
@@ -395,78 +394,6 @@
       '</div>';
   }
 
-  // Agrupa los modificadores de todos los productos (carne, complemento,
-  // bebida, upgrades) para el "Resumen de Cocina". Heuristica provisional:
-  // detecta cantidad explicita "(xN)" en el valor del modificador, o usa la
-  // cantidad del producto si no hay una. Pendiente validar con datos reales.
-  function aggregateKitchenItems(order) {
-    var map = {};
-    var order_list = [];
-
-    (order.items || []).forEach(function (item) {
-      (item.meta || []).forEach(function (m) {
-        var match = /\(x(\d+)\)/i.exec(m.value);
-        var qty = match ? parseInt(match[1], 10) : Number(item.quantity || 1);
-        var cleanValue = String(m.value || '').replace(/\s*\(x\d+\)/i, '').trim();
-        var isUpgrade = /upgrade/i.test(m.label);
-        var key = m.label + '|' + cleanValue;
-
-        if (!map[key]) {
-          map[key] = { category: m.label, value: cleanValue, qty: 0, upgrade: isUpgrade };
-          order_list.push(key);
-        }
-        map[key].qty += qty;
-      });
-    });
-
-    return order_list.map(function (key) { return map[key]; });
-  }
-
-  function kitchenCategoryPlural(category) {
-    var key = (category || '').toLowerCase();
-    if (key.indexOf('carne') !== -1) return 'Carnes';
-    if (key.indexOf('complemento') !== -1) return 'Complementos';
-    if (key.indexOf('bebida') !== -1) return 'Bebidas';
-    return category;
-  }
-
-  function kitchenUnitLabel(category, qty) {
-    var key = (category || '').toLowerCase();
-    var plural = qty !== 1;
-    if (key.indexOf('carne') !== -1) return plural ? 'porciones' : 'porcion';
-    if (key.indexOf('complemento') !== -1) return plural ? 'raciones' : 'racion';
-    if (key.indexOf('bebida') !== -1) return plural ? 'unidades' : 'unidad';
-    if (key.indexOf('upgrade') !== -1) return plural ? 'raciones' : 'racion';
-    return plural ? 'unidades' : 'unidad';
-  }
-
-  function renderKitchenSummary(order) {
-    var rows = aggregateKitchenItems(order);
-    var items = Array.isArray(order.items) ? order.items : [];
-
-    var rowsHtml = rows.map(function (row) {
-      var displayName = row.upgrade ?
-        ('&#9733; Upgrade: ' + esc(row.value)) :
-        (esc(kitchenCategoryPlural(row.category)) + ' ' + esc(row.value));
-      var unit = kitchenUnitLabel(row.category, row.qty);
-      var cls = row.upgrade ? ' dlp2-kitchen-item-upgrade' : '';
-
-      return '' +
-        '<div class="dlp2-kitchen-item' + cls + '">' +
-          '<span class="dlp2-kitchen-item-name">' + displayName + '</span>' +
-          '<span class="dlp2-kitchen-item-qty">x' + row.qty + ' ' + esc(unit) + '</span>' +
-        '</div>';
-    }).join('');
-
-    return '' +
-      '<div class="dlp2-kitchen-card">' +
-        '<div class="dlp2-kitchen-header">' +
-          '<div class="dlp2-kitchen-header-left">' + ICON.kitchen + '<span>Resumen de Cocina</span></div>' +
-          '<span class="dlp2-kitchen-total">Total ' + Number(order.items_count || items.length) + ' items</span>' +
-        '</div>' +
-        '<div class="dlp2-kitchen-list">' + (rowsHtml || '<p class="dlp2-empty">Sin modificadores registrados.</p>') + '</div>' +
-      '</div>';
-  }
 
   function renderPrepProgress(order) {
     var step = flowStep(order.status);
@@ -611,18 +538,45 @@
       '</aside>';
   }
 
-  function renderExpandedOrder(order) {
+  function renderActionsCard(order) {
     var storeOptions = (state.stores || []).map(function (store) {
       var selected = Number(store.id) === Number(order.store_id) ? ' selected' : '';
       return '<option value="' + Number(store.id) + '"' + selected + '>' + esc(store.name) + '</option>';
     }).join('');
 
+    return '' +
+      '<div class="dlp2-panel-card">' +
+        '<div class="dlp2-panel-card-header">' +
+          '<div class="dlp2-panel-card-header-left"><span>Acciones</span></div>' +
+        '</div>' +
+        '<div class="dlp2-actions-card-body">' +
+          '<label class="dlp2-field">' +
+            '<span>Tienda asignada</span>' +
+            '<select data-field="store_id" data-action="reassign" data-order-id="' + order.id + '">' + storeOptions + '</select>' +
+          '</label>' +
+          '<label class="dlp2-field">' +
+            '<span>Prioridad de orden</span>' +
+            '<button class="dlp2-toggle-btn" data-action="toggle-priority" data-order-id="' + order.id + '">' + ICON.flag + '<span>' + (order.priority ? 'Quitar Prioridad' : 'Marcar Prioridad') + '</span></button>' +
+          '</label>' +
+          '<label class="dlp2-field">' +
+            '<span>Bitacora interna</span>' +
+            '<div class="dlp2-note-row">' +
+              '<input type="text" data-field="internal_note" placeholder="Agregar nota interna rapida..." value="' + esc(order.internal_note || '') + '" />' +
+              '<button class="dlp2-note-save" data-action="save-note" data-order-id="' + order.id + '">Guardar</button>' +
+            '</div>' +
+          '</label>' +
+          (isFinalStatus(order.status) ? '' :
+            '<button class="dlp2-cancel-link dlp2-cancel-link-block" data-action="cancel" data-order-id="' + order.id + '">Cancelar pedido</button>') +
+        '</div>' +
+      '</div>';
+  }
+
+  function renderExpandedOrder(order) {
     var pickup = isPickup(order);
     var addressLabel = pickup ? 'Retiro en tienda (Pickup)' : 'Entrega a domicilio (Delivery)';
     var items = Array.isArray(order.items) ? order.items : [];
     var comboCount = items.length;
     var subtotal = items.reduce(function (sum, item) { return sum + Number(item.total || 0); }, 0);
-    var shipping = Number(order.shipping_total || 0);
 
     var metaParts = [];
     if (order.entry_time) {
@@ -663,7 +617,7 @@
           '<div class="dlp2-expanded-col">' +
             renderTimeCard(order) +
             renderPrepProgress(order) +
-            renderKitchenSummary(order) +
+            renderActionsCard(order) +
           '</div>' +
 
           '<div class="dlp2-expanded-col dlp2-expanded-col-mid">' +
@@ -676,9 +630,6 @@
             '</div>' +
             '<div class="dlp2-products dlp2-expanded-products">' + items.map(renderProductRow).join('') + '</div>' +
             '<div class="dlp2-expanded-totals">' +
-              '<div class="dlp2-expanded-totals-row"><span>Subtotal (' + Number(order.items_count || items.length) + ' items)</span><span>' + esc(formatMoney(subtotal)) + '</span></div>' +
-              '<div class="dlp2-expanded-totals-row"><span>Tarifa de envio (' + esc(orderTypeLabel(order)) + ')</span><span class="dlp2-expanded-shipping">' + (shipping > 0 ? esc(formatMoney(shipping)) : esc(formatMoney(0)) + ' (Gratis)') + '</span></div>' +
-              '<div class="dlp2-expanded-totals-divider"></div>' +
               '<div class="dlp2-expanded-totals-row dlp2-expanded-totals-final"><span>Total</span><span class="dlp2-total-amount">' + esc(formatMoney(order.total)) + '</span></div>' +
             '</div>' +
           '</div>' +
@@ -696,25 +647,6 @@
               (order.full_address ? '<div class="dlp2-customer-address">' + ICON.pin + '<div><span class="dlp2-address-label">' + esc(addressLabel) + '</span><span class="dlp2-address-value">' + esc(order.full_address) + '</span></div></div>' : '') +
               (order.notes ? '<div class="dlp2-customer-note">' + ICON.alert + '<span>Nota: ' + esc(order.notes) + '</span></div>' : '') +
             '</div>' +
-            '<div class="dlp2-section">' +
-              '<span class="dlp2-section-title">Gestion de Tienda y Supervisor</span>' +
-              '<div class="dlp2-management-grid">' +
-                '<label class="dlp2-field">' +
-                  '<span>Tienda asignada</span>' +
-                  '<select data-field="store_id" data-action="reassign" data-order-id="' + order.id + '">' + storeOptions + '</select>' +
-                '</label>' +
-                '<label class="dlp2-field">' +
-                  '<span>Prioridad de orden</span>' +
-                  '<button class="dlp2-toggle-btn" data-action="toggle-priority" data-order-id="' + order.id + '">' + ICON.flag + '<span>' + (order.priority ? 'Quitar Prioridad' : 'Marcar Prioridad') + '</span></button>' +
-                '</label>' +
-              '</div>' +
-              '<div class="dlp2-note-row">' +
-                '<input type="text" data-field="internal_note" placeholder="Agregar nota interna rapida..." value="' + esc(order.internal_note || '') + '" />' +
-                '<button class="dlp2-note-save" data-action="save-note" data-order-id="' + order.id + '">Guardar</button>' +
-              '</div>' +
-            '</div>' +
-            (isFinalStatus(order.status) ? '' :
-              '<button class="dlp2-cancel-link" data-action="cancel" data-order-id="' + order.id + '">Cancelar pedido</button>') +
           '</div>' +
 
         '</div>' +
@@ -738,15 +670,15 @@
     var mainHtml = expandedOrder ? renderExpandedOrder(expandedOrder) :
       '<div class="dlp2-layout">' +
         '<section class="dlp2-board">' +
-          '<div class="dlp2-column">' +
+          '<div class="dlp2-column dlp2-column-processing">' +
             '<div class="dlp2-column-header"><span class="dlp2-dot dlp2-dot-amber"></span><span class="dlp2-column-title">Procesando</span><span class="dlp2-column-count dlp2-count-amber">' + countFor('processing') + '</span></div>' +
             '<div class="dlp2-column-cards">' + renderCards('processing') + '</div>' +
           '</div>' +
-          '<div class="dlp2-column">' +
+          '<div class="dlp2-column dlp2-column-shipped">' +
             '<div class="dlp2-column-header"><span class="dlp2-dot dlp2-dot-blue"></span><span class="dlp2-column-title">Enviada / LPR</span><span class="dlp2-column-count dlp2-count-blue">' + countFor('shipped') + '</span></div>' +
             '<div class="dlp2-column-cards">' + renderCards('shipped') + '</div>' +
           '</div>' +
-          '<div class="dlp2-column dlp2-column-narrow">' +
+          '<div class="dlp2-column dlp2-column-narrow dlp2-column-completed">' +
             '<div class="dlp2-column-header"><span class="dlp2-dot dlp2-dot-green"></span><span class="dlp2-column-title">Completada</span><span class="dlp2-column-count dlp2-count-green">' + countFor('completed') + '</span></div>' +
             '<div class="dlp2-column-cards">' + renderCards('completed') + '</div>' +
           '</div>' +

@@ -1,5 +1,8 @@
 :root {
   --dlp-bg: #F5F8FA;
+  --dlp-amber-tint: #FFF9EE;
+  --dlp-blue-tint: #F0F6FF;
+  --dlp-green-tint: #EFFBF6;
   --dlp-border: #DDE3EB;
   --dlp-border-hover: #B6C7D8;
   --dlp-text: #1A2B3D;
@@ -250,8 +253,12 @@
   display: flex;
   flex: 1;
   gap: 12px;
+  margin: 14px;
   padding: 14px;
   align-items: flex-start;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(20, 30, 45, 0.06);
 }
 
 .dlp2-board {
@@ -262,21 +269,33 @@
 }
 
 .dlp2-column {
-  flex: 1.1;
-  min-width: 250px;
+  flex: 0.8;
+  min-width: 210px;
   display: flex;
   flex-direction: column;
-  background: #fff;
-  border: 1px solid var(--dlp-border);
+  background: var(--dlp-bg);
+  border: 0;
   border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 1px 2px rgba(20, 30, 45, 0.03);
-  max-height: calc(100vh - 110px);
+  box-shadow: none;
+  max-height: calc(100vh - 130px);
+}
+
+.dlp2-column-processing {
+  background: var(--dlp-amber-tint);
+}
+
+.dlp2-column-shipped {
+  background: var(--dlp-blue-tint);
+}
+
+.dlp2-column-completed {
+  background: var(--dlp-green-tint);
 }
 
 .dlp2-column-narrow {
-  flex: 0.85;
-  min-width: 210px;
+  flex: 0.5;
+  min-width: 180px;
 }
 
 .dlp2-column-header {
@@ -286,7 +305,7 @@
   align-items: center;
   gap: 8px;
   padding: 0 14px;
-  border-bottom: 1px solid var(--dlp-border);
+  border-bottom: 1px solid rgba(20, 30, 45, 0.06);
 }
 
 .dlp2-column-title {
@@ -534,15 +553,15 @@
 /* Detail panel (dark) */
 .dlp2-detail {
   flex-shrink: 0;
-  width: 500px;
+  width: 620px;
   display: flex;
   flex-direction: column;
   background: var(--dlp-dark-bg);
-  border: 1px solid var(--dlp-dark-border);
-  border-radius: 10px;
+  border: 1px solid rgba(51, 73, 95, 0.7);
+  border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 4px 14px rgba(10, 20, 35, 0.15);
-  max-height: calc(100vh - 110px);
+  box-shadow: 0 8px 24px rgba(10, 20, 35, 0.2), 0 2px 6px rgba(10, 20, 35, 0.12);
+  max-height: calc(100vh - 130px);
 }
 
 .dlp2-detail-header {
@@ -1377,11 +1396,6 @@
   color: var(--dlp-dark-faint);
 }
 
-.dlp2-expanded-shipping {
-  color: #6EE7B7;
-  font-weight: 600;
-}
-
 .dlp2-expanded-totals-divider {
   height: 1px;
   background: var(--dlp-dark-border);
@@ -1394,8 +1408,8 @@
   color: #fff;
 }
 
-/* Resumen de cocina */
-.dlp2-kitchen-card {
+/* Tarjeta generica dentro de la vista expandida (usada por Acciones) */
+.dlp2-panel-card {
   padding: 14px;
   background: var(--dlp-dark-card);
   border: 1px solid var(--dlp-dark-border);
@@ -1405,7 +1419,7 @@
   gap: 10px;
 }
 
-.dlp2-kitchen-header {
+.dlp2-panel-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1414,7 +1428,7 @@
   border-bottom: 1px solid var(--dlp-dark-border);
 }
 
-.dlp2-kitchen-header-left {
+.dlp2-panel-card-header-left {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1425,67 +1439,28 @@
   letter-spacing: 0.02em;
 }
 
-.dlp2-kitchen-header-left svg {
-  color: var(--dlp-brand);
-}
-
-.dlp2-kitchen-total {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--dlp-dark-faint);
-  background: var(--dlp-dark-bg);
-  border: 1px solid var(--dlp-dark-border);
-  border-radius: 4px;
-  padding: 2px 8px;
-  white-space: nowrap;
-}
-
-.dlp2-kitchen-list {
+.dlp2-actions-card-body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
-.dlp2-kitchen-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 8px 10px;
-  background: var(--dlp-dark-bg);
-  border: 1px solid var(--dlp-dark-border);
+.dlp2-actions-card-body .dlp2-field select,
+.dlp2-actions-card-body .dlp2-toggle-btn {
+  height: 34px;
+}
+
+.dlp2-cancel-link-block {
+  align-self: stretch;
+  text-align: center;
+  padding: 8px;
   border-radius: 6px;
-  font-size: 12px;
+  background: rgba(239, 68, 68, 0.08);
+  text-decoration: none;
 }
 
-.dlp2-kitchen-item-name {
-  font-weight: 600;
-  color: #fff;
-}
-
-.dlp2-kitchen-item-qty {
-  padding: 2px 8px;
-  background: var(--dlp-dark-card);
-  border: 1px solid var(--dlp-dark-border);
-  border-radius: 4px;
-  font-weight: 700;
-  color: var(--dlp-dark-faint);
-  white-space: nowrap;
-}
-
-.dlp2-kitchen-item-upgrade {
-  background: var(--dlp-amber-bg);
-  border-color: var(--dlp-amber-border);
-}
-
-.dlp2-kitchen-item-upgrade .dlp2-kitchen-item-name {
-  color: var(--dlp-amber-text);
-}
-
-.dlp2-kitchen-item-upgrade .dlp2-kitchen-item-qty {
-  background: #fff;
-  border-color: var(--dlp-amber-border);
-  color: var(--dlp-amber-text);
+.dlp2-cancel-link-block:hover {
+  background: rgba(239, 68, 68, 0.14);
 }
 
 /* Progreso de preparacion (3 pasos) */

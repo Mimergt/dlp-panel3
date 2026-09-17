@@ -553,3 +553,46 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
 ### Estado
 - Listo para subir al hosting y validar con datos reales, especialmente el Resumen de Cocina (la heuristica de agrupacion es lo mas incierto de esta iteracion).
 - Sigue pendiente el resto de la lista de 1.2.0/1.3.0 (items 3, 5-15).
+
+## 2026-09-17 (iteracion 1.4.1 - quitar envio, rediseno tablero, cocina->acciones)
+
+### Resumen de conversacion
+- El usuario confirmo que la animacion de expandir "esta perfecta".
+- Pidio quitar la tarifa de envio del desglose de totales: "no se calcula, es algo que hay que quitar".
+- Pidio meter las 4 columnas del tablero principal (Procesando, Enviada/LPR, Completada, Detalle del pedido) dentro de un unico contenedor con bordes redondeados y sombra minimalista; quitar el borde/sombra de cada columna individual y en su lugar darle un fondo tenue del color de su categoria; dejar la columna de Detalle del pedido con su color actual pero con sombra/borde sutil tipo "capa" que se puede expandir.
+- Pidio hacer mas pequenas las columnas Procesando y Enviada/LPR, y mas grande la columna de Detalle del pedido.
+- En la vista expandida: el bloque "Resumen de Cocina" no se usa en la operacion real. Pidio reemplazarlo por una seccion "Acciones" con cambiar tienda, cancelar pedido, etc.
+- Pidio explorar opciones para mostrar los productos/extras del pedido con mas detalle y mas grande, aprovechando el espacio que libero quitar el bloque de cocina.
+
+### Cambios realizados
+- Version actualizada a 1.4.1.
+- `includes/rest.php`: eliminado el campo `shipping_total` (no se usa).
+- `assets/js/panel.js`:
+  - `renderExpandedOrder()`: quitada la fila "Tarifa de envio" del desglose de totales (ahora solo `Total`). Eliminadas `aggregateKitchenItems()`, `kitchenCategoryPlural()`, `kitchenUnitLabel()`, `renderKitchenSummary()` y el icono `kitchen` (ya no se usan).
+  - Nueva funcion `renderActionsCard(order)`: tarjeta "Acciones" con tienda asignada, prioridad, bitacora interna y cancelar pedido - reemplaza el bloque de cocina en la primera columna de la vista expandida.
+  - La tercera columna de la vista expandida quedo solo con "Datos de Entrega y Cliente" (se le quito la seccion de Gestion de Tienda y Supervisor, que ahora vive en la columna 1 dentro de Acciones).
+  - Clases renombradas de `.dlp2-kitchen-*` a `.dlp2-panel-card*` (contenedor generico reutilizable, ya no especifico de cocina).
+  - `render()`: las columnas del tablero ahora llevan clases `dlp2-column-processing`/`dlp2-column-shipped`/`dlp2-column-completed` para el fondo tenue por categoria.
+- `assets/css/panel.css`:
+  - Nuevas variables `--dlp-amber-tint`, `--dlp-blue-tint`, `--dlp-green-tint`.
+  - `.dlp2-layout` ahora es el contenedor visual unico (fondo blanco, `border-radius:16px`, sombra minimalista) que envuelve tablero + detalle.
+  - `.dlp2-column`: sin borde ni sombra propia, fondo tenue segun categoria (`.dlp2-column-processing/-shipped/-completed`).
+  - `.dlp2-column` (Procesando/Enviada) `flex` de `1.1` a `0.8`; `.dlp2-column-narrow` (Completada) de `0.85` a `0.5`.
+  - `.dlp2-detail`: ancho de `500px` a `620px`, `border-radius` de `10px` a `14px`, sombra reforzada en 2 capas para look de "capa" flotante.
+  - Nuevos estilos `.dlp2-panel-card*`, `.dlp2-actions-card-body`, `.dlp2-cancel-link-block`. Eliminados los estilos `.dlp2-kitchen-item*` (ya no se usan).
+- Probado visualmente en navegador: contenedor unico con sombra visible, columnas con tinte de color correcto, columna de detalle mas ancha y con sombra de "capa", vista expandida con "Acciones" en la primera columna y sin fila de envio, sin errores de consola.
+
+### Pendiente (no resuelto en esta iteracion, requiere decision del usuario)
+16. **Diseno de "Detalle de Productos" en la vista expandida**: el usuario pidio explorar opciones para mostrarlo "mejor, con mas detalle y mas grande", aprovechando el espacio libre que dejo quitar el bloque de cocina (la columna 3 tambien quedo con bastante espacio vacio). Se le presentaron opciones via pregunta directa en el chat antes de implementar, en vez de adivinar - ver respuesta del usuario en la conversacion para saber cual se eligio.
+
+### Archivos tocados
+- dlp-paneles.php
+- README.md
+- MEMORIA_TRABAJO.md
+- includes/rest.php
+- assets/js/panel.js
+- assets/css/panel.css
+
+### Estado
+- Listo para subir al hosting y validar con datos reales.
+- Pendiente resolver el item 16 (diseno de productos) segun lo que elija el usuario, y el resto de la lista previa (items 3, 5-15).
