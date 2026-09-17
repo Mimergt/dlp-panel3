@@ -27,7 +27,7 @@
     pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>',
     file: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" x2="8" y1="13" y2="13"></line><line x1="16" x2="8" y1="17" y2="17"></line></svg>',
     chevrons: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline></svg>',
-    download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>',
+    sync: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>',
     logout: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" x2="9" y1="12" y2="12"></line></svg>',
     alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" x2="12" y1="8" y2="12"></line><line x1="12" x2="12.01" y1="16" y2="16"></line></svg>',
   };
@@ -193,35 +193,17 @@
     });
   }
 
-  function downloadOrdersCsv() {
-    var rows = [['ID', 'Estado', 'Cliente', 'Telefono', 'Tienda', 'Tiempo']];
+  function forceRefresh(button) {
+    var icon = button ? button.querySelector('svg') : null;
+    if (icon) {
+      icon.classList.add('dlp2-spin');
+    }
 
-    state.orders.forEach(function (order) {
-      rows.push([
-        order.id,
-        statusLabel(order.status),
-        order.customer_name || '',
-        order.phone || '',
-        order.store_name || '',
-        fmtCardTime(order.elapsed_seconds),
-      ]);
+    return loadPanel().finally(function () {
+      if (icon) {
+        icon.classList.remove('dlp2-spin');
+      }
     });
-
-    var csv = rows.map(function (row) {
-      return row.map(function (cell) {
-        return '"' + String(cell).replace(/"/g, '""') + '"';
-      }).join(',');
-    }).join('\n');
-
-    var blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-    var url = URL.createObjectURL(blob);
-    var link = document.createElement('a');
-    link.href = url;
-    link.download = 'pedidos-' + new Date().toISOString().slice(0, 10) + '.csv';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
   }
 
   function renderCards(status) {
@@ -412,7 +394,7 @@
             '<strong>' + esc(formatNowTime()) + '</strong>' +
             '<span>' + esc(formatNowDate()) + '</span>' +
           '</div>' +
-          '<button class="dlp2-btn-ghost" data-action="download-csv" type="button">' + ICON.download + '<span>Descargar Pedidos</span></button>' +
+          '<button class="dlp2-btn-ghost" data-action="force-refresh" type="button">' + ICON.sync + '<span>Descargar Pedidos</span></button>' +
           '<a class="dlp2-btn-dark" href="' + esc(window.DLP_PANELES_CONFIG.logoutUrl || '#') + '">' + ICON.logout + '<span>Cerrar Sesion</span></a>' +
         '</div>' +
       '</div>' +
@@ -501,8 +483,9 @@
       return;
     }
 
-    if (event.target.closest('[data-action="download-csv"]')) {
-      downloadOrdersCsv();
+    var refreshBtn = event.target.closest('[data-action="force-refresh"]');
+    if (refreshBtn) {
+      forceRefresh(refreshBtn);
       return;
     }
 

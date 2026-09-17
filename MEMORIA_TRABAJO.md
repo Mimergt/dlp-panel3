@@ -367,7 +367,7 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
 1. **Meta de tiempo (SLA)**: `SLA_GOAL_MINUTES = 30` esta hardcodeado en `panel.js`. Falta decidir si debe ser configurable por tienda/pedido/tipo de pedido, y confirmar que 30 min es el valor correcto.
 2. **Umbrales de color del badge de tiempo en tarjetas**: provisional en `timeTier()` (`panel.js`): neutral <30min, amber 30-60min, rojo >=60min. Confirmar con el usuario si son los umbrales reales de operacion.
 3. **"Cliente frecuente"**: el boceto muestra un badge de cliente frecuente bajo el nombre. No implementado - requiere logica para contar pedidos previos por telefono/cliente. Pendiente de decidir criterio (cuantos pedidos, en que periodo).
-4. **"Descargar Pedidos"**: implementado como exportacion CSV simple, 100% client-side (id, estado, cliente, telefono, tienda, tiempo) de los pedidos visibles en ese momento. Pendiente confirmar si se necesita: rango de fechas/historico, mas columnas (productos, total, forma de pago), o formato Excel real (no solo CSV).
+4. ~~**"Descargar Pedidos"**~~ RESUELTO en 1.2.1: no era exportar, es un refresh forzado manual del panel (icono de sincronizar).
 5. **"Cancelar pedido"**: se reubico como link secundario debajo de "Gestion de Tienda y Supervisor". Sigue usando `prompt()` nativo del navegador (Fase 2 original, aun sin modal propio). Confirmar si la ubicacion/estilo nuevo es la deseada.
 6. **Reasignar tienda**: cambio de boton explicito "Reasignar tienda" a autosave al cambiar el `<select>`. Confirmar que este comportamiento (sin paso de confirmacion) es el deseado, ya que un clic accidental en el dropdown reasigna sin aviso.
 7. **Marcar/Quitar Prioridad**: cambio de checkbox + boton "Guardar prioridad" a un boton toggle que aplica el cambio de inmediato al hacer clic. Confirmar que este comportamiento es el deseado.
@@ -389,3 +389,26 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
 ### Estado
 - Diseno base implementado y probado visualmente con datos simulados. Listo para subir al hosting y validar con datos reales.
 - Pendiente ir resolviendo uno por uno los items de la lista de pendientes arriba, segun prioridad que defina el usuario.
+
+## 2026-09-17 (iteracion 1.2.1 - ajuste header: boton "Descargar Pedidos")
+
+### Resumen de conversacion
+- El usuario empezo a revisar los pendientes de 1.2.0 desde el header.
+- Aclaro que el boton "Descargar Pedidos" (que yo habia implementado como exportacion CSV, item 4 de pendientes) en realidad debia ser: cambiar el icono a uno de "sincronizar", y la accion debe ser forzar manualmente una recarga/descarga de los pedidos desde el servidor (no exportar un archivo).
+
+### Cambios realizados
+- Version actualizada a 1.2.1.
+- `assets/js/panel.js`: se elimino `downloadOrdersCsv()` y el icono `download`. Se agrego icono `sync` (flechas circulares) y funcion `forceRefresh(button)` que llama a `loadPanel()` y aplica una clase `dlp2-spin` al icono mientras carga (feedback visual de que esta sincronizando).
+- `assets/css/panel.css`: nueva animacion `dlp2-spin-anim` (rotacion continua) aplicada via clase `.dlp2-spin`.
+- El texto del boton se dejo igual ("Descargar Pedidos") porque el usuario no pidio cambiarlo, solo el icono y la accion.
+- Probado visualmente en navegador (servidor HTTP local temporal): clic en el boton dispara el refresh sin errores de consola.
+
+### Archivos tocados
+- dlp-paneles.php
+- README.md
+- assets/js/panel.js
+- assets/css/panel.css
+
+### Estado
+- Pendiente #4 de la lista de 1.2.0 resuelto.
+- El usuario esta revisando el resto de pendientes empezando por el header; continuar con los siguientes ajustes que indique.

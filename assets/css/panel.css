@@ -139,6 +139,15 @@
   border-color: var(--dlp-border-hover);
 }
 
+.dlp2-spin {
+  animation: dlp2-spin-anim 0.8s linear infinite;
+}
+
+@keyframes dlp2-spin-anim {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .dlp2-btn-dark {
   background: var(--dlp-text);
   color: #fff;

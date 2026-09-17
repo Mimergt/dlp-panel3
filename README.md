@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.2.0
+- 1.2.1
 
 ## Shortcode
 - [dlp_paneles]
@@ -78,9 +78,12 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 - Detalle de pedido: tarjeta de tiempo con barra de progreso vs. meta operativa, tarjeta "Flujo operativo" con boton unico de siguiente paso, seccion de "Detalle de Productos" con modificadores y total a cobrar, datos de entrega con telefono como link `tel:`.
 - "Marcar/Quitar Prioridad" pasa de checkbox+boton a un boton toggle que aplica el cambio de inmediato.
 - Reasignar tienda pasa a aplicarse automaticamente al cambiar el `<select>` (sin boton "Reasignar" aparte).
-- Nuevo boton "Descargar Pedidos" en el header: exporta a CSV (client-side, sin endpoint nuevo) los pedidos visibles actualmente (id, estado, cliente, telefono, tienda, tiempo).
+- Boton "Descargar Pedidos" en el header (ver correccion en 1.2.1 mas abajo).
 - "Cancelar pedido" se reubico como link secundario al final del detalle (sigue usando `prompt()` nativo, ver pendientes).
 - Ver `MEMORIA_TRABAJO.md` seccion "Pendientes diseno nuevo (1.2.0)" para la lista completa de decisiones/acciones que aun faltan definir o activar.
+
+## Incluido en 1.2.1
+- Corregido boton "Descargar Pedidos": ya no exporta CSV. Ahora es un refresh forzado del panel (icono de sincronizar, gira mientras carga) para "forzar" manualmente una actualizacion de los pedidos sin esperar el polling automatico de 30s.
 
 ## Versionado acordado
 - Ajustes pequenos: 1.1.1, 1.1.2, 1.1.3
