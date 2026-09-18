@@ -16,17 +16,26 @@
   var COLUMN_INITIAL_LIMIT = 12;
   var COLUMN_LOAD_MORE = 20;
 
+  // Carga progresiva de /panel: la primera llamada pide pocos pedidos (rapida
+  // de pintar) y si el backend indica que faltan mas (has_more), se vuelve a
+  // pedir con el siguiente tamano de la lista hasta traer todo. Pensado sobre
+  // todo para el panel de supervisor, que junta pedidos de todas las tiendas.
+  var PAGE_SIZE_STEPS = [10, 25, 50, 100, 200, 330];
+
   var state = {
     orders: [],
     selectedOrderId: null,
     counts: { processing: 0, shipped: 0, completed: 0 },
     stores: [],
+    scope: 'tienda',
     networkWarning: '',
     firstLoadDone: false,
     loadedAt: 0,
     typeFilter: 'all',
+    storeFilter: '',
     expandedOrderId: null,
     columnLimits: { processing: COLUMN_INITIAL_LIMIT, shipped: COLUMN_INITIAL_LIMIT, completed: COLUMN_INITIAL_LIMIT },
+    currentPageSize: PAGE_SIZE_STEPS[0],
   };
 
   var ICON = {
@@ -49,6 +58,7 @@
     back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" x2="5" y1="12" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>',
     close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" x2="6" y1="6" y2="18"></line><line x1="6" x2="18" y1="6" y2="18"></line></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>',
+    userBlock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="17" x2="22" y1="8" y2="13"></line><line x1="22" x2="17" y1="8" y2="13"></line></svg>',
   };
 
   function esc(str) {
@@ -223,12 +233,28 @@
   }
 
   function filteredOrders() {
-    if (state.typeFilter === 'all') {
-      return state.orders;
-    }
     return state.orders.filter(function (order) {
-      return order.order_type === state.typeFilter;
+      var typeOk = state.typeFilter === 'all' || order.order_type === state.typeFilter;
+      var storeOk = !state.storeFilter || Number(order.store_id) === Number(state.storeFilter);
+      return typeOk && storeOk;
     });
+  }
+
+  // Filtro de tienda: solo tiene sentido mostrarlo cuando el usuario ve
+  // pedidos de mas de una tienda (supervisor, o multistore_user con varias
+  // tiendas asignadas). Se pinta junto a los tabs de Delivery/Pickup.
+  function renderStoreFilter() {
+    if (!Array.isArray(state.stores) || state.stores.length <= 1) {
+      return '';
+    }
+
+    var options = '<option value="">Todas las tiendas</option>' +
+      state.stores.map(function (store) {
+        var selected = String(Number(store.id)) === String(state.storeFilter) ? ' selected' : '';
+        return '<option value="' + Number(store.id) + '"' + selected + '>' + esc(store.name) + '</option>';
+      }).join('');
+
+    return '<select class="dlp2-store-filter" data-action="store-filter">' + options + '</select>';
   }
 
   function renderTypeTabs() {
@@ -247,10 +273,13 @@
     }
 
     return '' +
-      '<div class="dlp2-type-tabs">' +
-        tab('all', 'Todos', '', all, 'dlp2-type-tab-count-all') +
-        tab('delivery', 'Delivery', ICON.truck, deliveryCount, 'dlp2-type-tab-count-delivery') +
-        tab('pickup', 'Pickup', ICON.bag, pickupCount, 'dlp2-type-tab-count-pickup') +
+      '<div class="dlp2-header-center">' +
+        '<div class="dlp2-type-tabs">' +
+          tab('all', 'Todos', '', all, 'dlp2-type-tab-count-all') +
+          tab('delivery', 'Delivery', ICON.truck, deliveryCount, 'dlp2-type-tab-count-delivery') +
+          tab('pickup', 'Pickup', ICON.bag, pickupCount, 'dlp2-type-tab-count-pickup') +
+        '</div>' +
+        renderStoreFilter() +
       '</div>';
   }
 
@@ -535,6 +564,26 @@
       '</div>';
   }
 
+  // Solo visible para supervisores: bloquea/desbloquea la cuenta del cliente
+  // (via el meta que usa el plugin User Blocker), no solo este pedido.
+  function renderBlockCustomerButton(order) {
+    if (state.scope !== 'supervisor') {
+      return '';
+    }
+
+    var hasAccount = !!order.customer_id;
+    var blocked = !!order.customer_blocked;
+    var label = !hasAccount ? 'Cliente invitado (sin cuenta)' : (blocked ? 'Desbloquear Cliente' : 'Bloquear Cliente');
+    var disabledAttr = hasAccount ? '' : ' disabled title="Este pedido no tiene una cuenta de cliente asociada"';
+    var extraClass = blocked ? ' dlp2-block-btn-active' : '';
+
+    return '' +
+      '<label class="dlp2-field">' +
+        '<span>Cuenta del cliente</span>' +
+        '<button class="dlp2-toggle-btn' + extraClass + '" data-action="toggle-block-customer" data-order-id="' + order.id + '"' + disabledAttr + '>' + ICON.userBlock + '<span>' + label + '</span></button>' +
+      '</label>';
+  }
+
   function renderDetail(order) {
     if (!order) {
       return '<aside class="dlp2-detail"><div class="dlp2-detail-header">' + ICON.file + '<span>Detalle del pedido</span></div><div class="dlp2-detail-body"><p class="dlp2-empty">Selecciona un pedido para operar.</p></div></aside>';
@@ -603,6 +652,7 @@
                 '<span>Prioridad de orden</span>' +
                 '<button class="dlp2-toggle-btn" data-action="toggle-priority" data-order-id="' + order.id + '">' + ICON.flag + '<span>' + (order.priority ? 'Quitar Prioridad' : 'Marcar Prioridad') + '</span></button>' +
               '</label>' +
+              renderBlockCustomerButton(order) +
             '</div>' +
             '<div class="dlp2-note-row">' +
               '<input type="text" data-field="internal_note" placeholder="Agregar nota interna rapida..." value="' + esc(order.internal_note || '') + '" />' +
@@ -637,6 +687,7 @@
             '<span>Prioridad de orden</span>' +
             '<button class="dlp2-toggle-btn" data-action="toggle-priority" data-order-id="' + order.id + '">' + ICON.flag + '<span>' + (order.priority ? 'Quitar Prioridad' : 'Marcar Prioridad') + '</span></button>' +
           '</label>' +
+          renderBlockCustomerButton(order) +
           '<label class="dlp2-field">' +
             '<span>Bitacora interna</span>' +
             '<div class="dlp2-note-row">' +
@@ -877,14 +928,21 @@
     refreshTimeCard(document.getElementById('dlp2-expanded-overlay'), state.expandedOrderId);
   }
 
-  function loadPanel() {
-    return api('/panel', 'GET', null, { retries: 2, retryDelayMs: 1200 })
+  function loadPanel(pageSize) {
+    var size = pageSize || state.currentPageSize || PAGE_SIZE_STEPS[0];
+    var path = '/panel?page=1&per_page=' + size;
+
+    return api(path, 'GET', null, { retries: 2, retryDelayMs: 1200 })
       .then(function (data) {
         state.networkWarning = '';
         state.orders = Array.isArray(data.orders) ? data.orders : [];
         state.counts = data.counts || { processing: 0, shipped: 0, completed: 0 };
         state.stores = Array.isArray(data.stores) ? data.stores : [];
+        state.scope = data.scope || 'tienda';
         state.loadedAt = Date.now();
+
+        var pagination = data.pagination || null;
+        state.currentPageSize = pagination ? pagination.per_page : size;
 
         if (!state.selectedOrderId && state.orders.length) {
           state.selectedOrderId = state.orders[0].id;
@@ -910,6 +968,15 @@
 
         state.firstLoadDone = true;
         render();
+
+        // Si el backend indica que quedan mas pedidos por traer, se sigue
+        // escalando al siguiente tamano de pagina (10 -> 25 -> 50 -> ...)
+        // en vez de esperar al proximo refresco automatico de 30s.
+        if (pagination && pagination.has_more) {
+          var idx = PAGE_SIZE_STEPS.indexOf(size);
+          var nextSize = (idx > -1 && idx < PAGE_SIZE_STEPS.length - 1) ? PAGE_SIZE_STEPS[idx + 1] : size * 2;
+          return loadPanel(nextSize);
+        }
       })
       .catch(function (error) {
         console.error(error);
@@ -925,6 +992,13 @@
   }
 
   root.addEventListener('change', function (event) {
+    var storeFilterSelect = event.target.closest('[data-action="store-filter"]');
+    if (storeFilterSelect) {
+      state.storeFilter = storeFilterSelect.value ? Number(storeFilterSelect.value) : '';
+      render();
+      return;
+    }
+
     var select = event.target.closest('[data-action="reassign"]');
     if (!select || !select.dataset.orderId) {
       return;
@@ -938,7 +1012,7 @@
     }
 
     api('/pedido/' + orderId + '/tienda', 'POST', { store_id: targetStoreId })
-      .then(loadPanel)
+      .then(function () { loadPanel(); })
       .catch(function (error) {
         alert('No se pudo reasignar tienda: ' + error.message);
       });
@@ -1007,7 +1081,7 @@
       }
 
       api('/pedido/' + orderId + '/estado', 'POST', { new_status: target })
-        .then(loadPanel)
+        .then(function () { loadPanel(); })
         .catch(function (error) {
           alert('No se pudo cambiar estado: ' + error.message);
         });
@@ -1021,7 +1095,7 @@
       }
 
       api('/pedido/' + orderId + '/cancelar', 'POST', { motivo: motivo.trim() })
-        .then(loadPanel)
+        .then(function () { loadPanel(); })
         .catch(function (error) {
           alert('No se pudo cancelar: ' + error.message);
         });
@@ -1035,9 +1109,37 @@
       }
 
       api('/pedido/' + orderId + '/meta', 'POST', { priority: !priorityOrder.priority })
-        .then(loadPanel)
+        .then(function () { loadPanel(); })
         .catch(function (error) {
           alert('No se pudo cambiar prioridad: ' + error.message);
+        });
+      return;
+    }
+
+    if (action === 'toggle-block-customer') {
+      var blockOrder = state.orders.find(function (item) { return item.id === orderId; });
+      if (!blockOrder) {
+        return;
+      }
+
+      if (!blockOrder.customer_id) {
+        alert('Este pedido no tiene una cuenta de cliente asociada (compra como invitado), no se puede bloquear.');
+        return;
+      }
+
+      var nextBlocked = !blockOrder.customer_blocked;
+      var confirmMsg = nextBlocked ?
+        'Bloquear la cuenta de este cliente? No podra iniciar sesion en el sitio hasta que se desbloquee.' :
+        'Desbloquear la cuenta de este cliente?';
+
+      if (!confirm(confirmMsg)) {
+        return;
+      }
+
+      api('/pedido/' + orderId + '/cliente-bloqueo', 'POST', { block: nextBlocked })
+        .then(function () { loadPanel(); })
+        .catch(function (error) {
+          alert('No se pudo actualizar el bloqueo del cliente: ' + error.message);
         });
       return;
     }
@@ -1049,7 +1151,7 @@
       api('/pedido/' + orderId + '/meta', 'POST', {
         internal_note: noteInput ? noteInput.value : ''
       })
-        .then(loadPanel)
+        .then(function () { loadPanel(); })
         .catch(function (error) {
           alert('No se pudo guardar nota: ' + error.message);
         });

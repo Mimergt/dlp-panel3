@@ -65,6 +65,13 @@
   gap: 14px;
 }
 
+.dlp2-header-center {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .dlp2-type-tabs {
   display: flex;
   align-items: center;
@@ -73,6 +80,20 @@
   background: var(--dlp-bg);
   border: 1px solid var(--dlp-border);
   border-radius: 8px;
+}
+
+/* Filtro de tienda: solo aparece cuando el usuario ve pedidos de mas de una
+   tienda (supervisor o multistore_user con varias tiendas asignadas). */
+.dlp2-store-filter {
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--dlp-border);
+  background: #fff;
+  color: var(--dlp-text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .dlp2-type-tab {
@@ -1228,6 +1249,30 @@
 
 .dlp2-toggle-btn:hover {
   background: #2C4560;
+}
+
+.dlp2-toggle-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dlp2-toggle-btn:disabled:hover {
+  background: var(--dlp-dark-card);
+}
+
+/* Cliente ya bloqueado: resaltado en rojo para que se note a simple vista. */
+.dlp2-toggle-btn.dlp2-block-btn-active {
+  background: rgba(239, 68, 68, 0.16);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #FCA5A5;
+}
+
+.dlp2-toggle-btn.dlp2-block-btn-active:hover {
+  background: rgba(239, 68, 68, 0.24);
+}
+
+.dlp2-toggle-btn.dlp2-block-btn-active svg {
+  color: #FCA5A5;
 }
 
 .dlp2-toggle-btn svg {

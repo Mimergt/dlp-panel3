@@ -105,6 +105,10 @@ class DLP_Paneles_REST {
             'methods' => WP_REST_Server::READABLE,
             'callback' => array(__CLASS__, 'get_panel_data'),
             'permission_callback' => array(__CLASS__, 'can_access_panel'),
+            'args' => array(
+                'page' => array('required' => false, 'type' => 'integer'),
+                'per_page' => array('required' => false, 'type' => 'integer'),
+            ),
         ));
 
         register_rest_route('dlp-paneles/v1', '/pedido/(?P<id>\\d+)/estado', array(
@@ -145,6 +149,18 @@ class DLP_Paneles_REST {
                 'store_id' => array(
                     'required' => true,
                     'type' => 'integer',
+                ),
+            ),
+        ));
+
+        register_rest_route('dlp-paneles/v1', '/pedido/(?P<id>\\d+)/cliente-bloqueo', array(
+            'methods' => WP_REST_Server::CREATABLE,
+            'callback' => array(__CLASS__, 'toggle_customer_block'),
+            'permission_callback' => array(__CLASS__, 'can_access_panel'),
+            'args' => array(
+                'block' => array(
+                    'required' => true,
+                    'type' => 'boolean',
                 ),
             ),
         ));
@@ -272,6 +288,7 @@ class DLP_Paneles_REST {
                     'counts' => array('processing' => 0, 'shipped' => 0, 'completed' => 0),
                     'stores' => array(),
                     'server_time' => current_time('mysql'),
+                    'pagination' => array('page' => 1, 'per_page' => 0, 'total' => 0, 'has_more' => false),
                 ));
             }
 
@@ -311,6 +328,19 @@ class DLP_Paneles_REST {
         $order_ids = array_merge($active_ids, $completed_ids);
         $counts = array('processing' => 0, 'shipped' => 0, 'completed' => 0);
         $result = array();
+
+        // Paginacion: para paneles con muchos pedidos (sobre todo el del
+        // supervisor, que junta todas las tiendas) se evita construir el
+        // payload completo (items + meta formateada, lo mas caro por pedido)
+        // para mas pedidos de los que el frontend va a pintar en esta
+        // llamada. El conteo por columna si se calcula sobre todos los
+        // pedidos elegibles, sin importar la pagina. El frontend pide
+        // paginas cada vez mas grandes (10, 25, 50, ...) hasta traer todo.
+        $page = max(1, absint($request->get_param('page')) ?: 1);
+        $per_page = absint($request->get_param('per_page'));
+        $paginate = $per_page > 0;
+        $offset = $paginate ? ($page - 1) * $per_page : 0;
+        $eligible_index = 0;
 
         foreach ($order_ids as $order_id) {
             $order = wc_get_order($order_id);
@@ -355,10 +385,22 @@ class DLP_Paneles_REST {
 
             $counts[$group]++;
 
+            // El conteo de arriba se hace para todos los pedidos elegibles;
+            // la hidratacion completa (la parte cara) solo se hace para los
+            // que caen dentro de la pagina pedida.
+            $in_page = !$paginate || ($eligible_index >= $offset && $eligible_index < $offset + $per_page);
+            $eligible_index++;
+
+            if (!$in_page) {
+                continue;
+            }
+
             $order_type = get_post_meta($order_id, 'woofood_order_type', true);
             if ($order_type !== 'pickup') {
                 $order_type = 'delivery';
             }
+
+            $customer_id = absint($order->get_customer_id());
 
             $result[] = array(
                 'id' => $order_id,
@@ -381,8 +423,17 @@ class DLP_Paneles_REST {
                 'total' => (float) $order->get_total(),
                 'items' => self::get_order_items_payload($order),
                 'items_count' => count($order->get_items()),
+                'customer_id' => $customer_id,
+                'customer_blocked' => $customer_id ? (get_user_meta($customer_id, 'is_active', true) === 'n') : false,
             );
         }
+
+        $pagination = array(
+            'page' => $page,
+            'per_page' => $paginate ? $per_page : $eligible_index,
+            'total' => $eligible_index,
+            'has_more' => $paginate ? ($offset + $per_page) < $eligible_index : false,
+        );
 
         return new WP_REST_Response(array(
             'scope' => $supervisor ? 'supervisor' : 'tienda',
@@ -390,6 +441,7 @@ class DLP_Paneles_REST {
             'counts' => $counts,
             'stores' => self::format_store_list($accessible_store_ids),
             'server_time' => current_time('mysql'),
+            'pagination' => $pagination,
         ));
     }
 
@@ -537,6 +589,51 @@ class DLP_Paneles_REST {
             'order_id' => $order_id,
             'store_id' => $store_id,
             'store_name' => get_the_title($store_id),
+        ));
+    }
+
+    // Bloquea/desbloquea la cuenta del cliente del pedido usando la misma
+    // convencion de meta que el plugin "User Blocker" (user-blocker.php):
+    // el meta de usuario `is_active` = 'n' impide el login mientras este
+    // presente con ese valor; se borra para desbloquear. Solo un supervisor
+    // puede usar esta accion, ya que afecta la cuenta del cliente en todo
+    // el sitio, no solo este pedido.
+    public static function toggle_customer_block(WP_REST_Request $request) {
+        $order_id = absint($request['id']);
+        $order = wc_get_order($order_id);
+
+        if (!$order) {
+            return new WP_REST_Response(array('message' => 'Pedido no encontrado'), 404);
+        }
+
+        $user_id = get_current_user_id();
+        if (!self::user_can_access_order($order, $user_id)) {
+            return new WP_REST_Response(array('message' => 'No autorizado para este pedido'), 403);
+        }
+
+        if (!self::is_supervisor_user($user_id)) {
+            return new WP_REST_Response(array('message' => 'Solo un supervisor puede bloquear o desbloquear clientes'), 403);
+        }
+
+        $customer_id = absint($order->get_customer_id());
+        if (!$customer_id) {
+            return new WP_REST_Response(array('message' => 'Este pedido no tiene una cuenta de cliente asociada (compra como invitado)'), 400);
+        }
+
+        $block = (bool) $request->get_param('block');
+
+        if ($block) {
+            update_user_meta($customer_id, 'is_active', 'n');
+            update_user_meta($customer_id, 'block_msg_permenant', 'Tu cuenta ha sido bloqueada. Contacta a la tienda para mas informacion.');
+        } else {
+            delete_user_meta($customer_id, 'is_active');
+        }
+
+        return new WP_REST_Response(array(
+            'ok' => true,
+            'order_id' => $order_id,
+            'customer_id' => $customer_id,
+            'blocked' => $block,
         ));
     }
 }

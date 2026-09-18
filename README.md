@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.5.0
+- 1.6.0
 
 ## Shortcode
 - [dlp_paneles]
@@ -149,6 +149,12 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 - Quitado el boton "Volver al tablero" de la vista expandida (solo queda el boton de cerrar).
 - El boton de cerrar (X) ahora flota por encima del contenido, en blanco/alto contraste con el fondo oscuro, en vez de integrarse en la barra superior.
 - Cambio tecnico interno: el panel ahora mantiene el tablero y el panel expandido en el DOM de forma persistente (en vez de reconstruir todo desde cero en cada actualizacion), necesario para que la animacion de abrir/cerrar funcione. En pantallas angostas (menos de 1100px) se mantiene el comportamiento simple anterior, sin la animacion, ya que no hay una columna de detalle fija con la que alinearla.
+
+## Incluido en 1.6.0 (panel de supervisor: filtro de tienda, carga progresiva, bloquear cliente)
+- No se creo un plugin/copia separada para el panel de supervisor: el backend ya distinguia supervisor vs. tienda por permisos (`is_supervisor_user`), asi que se extendio el mismo codigo en vez de duplicarlo (evita mantener dos copias sincronizadas para cada ajuste futuro de diseno).
+- Nuevo filtro de tienda en el header, junto a los tabs de Delivery/Pickup. Solo aparece cuando el usuario ve pedidos de mas de una tienda (supervisor, o `multistore_user` con varias tiendas asignadas); si solo ve una tienda, no se muestra.
+- Carga progresiva del panel (`GET /panel?page=1&per_page=N`): la primera llamada trae pocos pedidos (10) para pintar rapido, y si el backend indica que faltan mas, se sigue pidiendo con tamanos crecientes (10 -> 25 -> 50 -> 100 -> 200 -> 330) hasta traer todo, en vez de una sola llamada pesada. El backend solo evita construir el detalle completo (items, meta formateada) de los pedidos fuera de la pagina actual; los conteos de las columnas siempre reflejan el total real.
+- Nuevo boton "Bloquear Cliente" / "Desbloquear Cliente" en Acciones (tablero y vista expandida), solo visible para supervisores. Usa la misma convencion de meta de usuario que el plugin User Blocker (`is_active = 'n'` bloquea el login; se borra para desbloquear), sin depender de llamar funciones del plugin. Si el pedido es de un cliente invitado (sin cuenta), el boton aparece deshabilitado con una nota aclaratoria.
 
 ## Versionado acordado
 - Ajustes pequenos: 1.1.1, 1.1.2, 1.1.3

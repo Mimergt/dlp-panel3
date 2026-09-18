@@ -782,3 +782,43 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
 ### Estado
 - Listo para subir al hosting y probar con datos reales, prestando atencion especial a la animacion en distintos anchos de pantalla y con el polling automatico de 30s activo mientras el pedido esta expandido.
 - Sigue pendiente el resto de la lista previa (items 3, 5-15).
+
+## 2026-09-17 (iteracion 1.6.0 - panel de supervisor: filtro de tienda, carga progresiva, bloquear cliente)
+
+### Resumen de conversacion
+- El usuario pidio trabajar el "panel del supervisor": basicamente el mismo panel, pero con pedidos de todas las tiendas y un filtro de tienda en el header, a la par de Delivery/Pickup.
+- Anticipando que el supervisor puede ver muchos pedidos a la vez (todas las tiendas juntas), pidio que la carga no traiga todo de una vez sino progresivamente (ej. 10, luego 25, luego 50...) para que no se sature.
+- Sugirio hacer una copia del plugin para el panel de supervisor, pero dejo la decision de arquitectura de mi lado.
+- Pidio agregar un boton "Bloquear al cliente" en las acciones del pedido, que agregue un meta al usuario, usando como referencia el plugin "User Blocker" (https://wordpress.org/plugins/user-blocker/) que ya usa el sitio.
+
+### Decision de arquitectura
+- Se opto por NO duplicar el plugin. El backend (`includes/rest.php`) ya distinguia claramente supervisor vs. tienda por permisos desde el diseño original (`is_supervisor_user()`, `get_accessible_store_ids()` ya devuelve todas las tiendas para el supervisor). Duplicar el plugin hubiera significado mantener dos copias sincronizadas para cada ajuste de diseno futuro (y ya llevamos muchas iteraciones de diseno). Se extendio el mismo codigo con logica condicionada por rol/cantidad de tiendas en vez de bifurcar el proyecto.
+
+### Investigacion previa (plugin User Blocker)
+- Se reviso el codigo fuente del plugin (via SVN de wordpress.org, `plugins.svn.wordpress.org/user-blocker/trunk/`) para saber exactamente como bloquea a un usuario, en vez de adivinar el nombre de un meta. Hallazgo: el filtro `authenticate` (`ublk_auth_signon` en `user_blocker.php`) deniega el login si el user meta `is_active` es exactamente `'n'`. Para desbloquear, el propio plugin borra ese meta (`delete_user_meta`). No hace falta llamar ninguna funcion del plugin, solo escribir/borrar ese meta con esa convencion -- el plugin solo necesita estar activo en el sitio para que el bloqueo tenga efecto real al iniciar sesion.
+
+### Cambios realizados
+- Version actualizada a 1.6.0.
+- `includes/rest.php`:
+  - `/panel` ahora acepta `page` y `per_page` opcionales. El conteo por columna (`counts`) se calcula sobre TODOS los pedidos elegibles del usuario, pero la hidratacion cara (items + meta formateada via `get_order_items_payload()`) solo se hace para los pedidos que caen dentro de la pagina pedida (`$eligible_index >= $offset && < $offset + $per_page`). La respuesta ahora incluye `pagination: { page, per_page, total, has_more }`.
+  - Cada pedido en el payload ahora incluye `customer_id` (`$order->get_customer_id()`) y `customer_blocked` (`get_user_meta($customer_id, 'is_active', true) === 'n'`).
+  - Nuevo endpoint `POST /pedido/{id}/cliente-bloqueo` (`toggle_customer_block`): solo permitido para supervisores (`is_supervisor_user`); si el pedido es de un cliente invitado (`customer_id` 0) devuelve error 400; si no, hace `update_user_meta($customer_id, 'is_active', 'n')` (+ `block_msg_permenant`) para bloquear, o `delete_user_meta($customer_id, 'is_active')` para desbloquear.
+- `assets/js/panel.js`:
+  - Nuevo filtro de tienda (`renderStoreFilter()`, `state.storeFilter`) junto a los tabs de Delivery/Pickup dentro de un nuevo wrapper `.dlp2-header-center` (para que ambos controles queden juntos y no los separe el `justify-content:space-between` del header). Solo se pinta si `state.stores.length > 1`. `filteredOrders()` ahora filtra por tipo Y tienda a la vez.
+  - `loadPanel(pageSize)` implementa la carga progresiva: arranca en `PAGE_SIZE_STEPS = [10, 25, 50, 100, 200, 330]`, y si `pagination.has_more` es true en la respuesta, se vuelve a llamar a si misma con el siguiente tamano de la lista, sin esperar al proximo refresco automatico de 30s. El refresco periodico (`setInterval`) reutiliza el ultimo tamano ya conocido (`state.currentPageSize`) en vez de reiniciar la rampa desde 10 cada vez.
+  - Se corrigieron 5 sitios que hacian `.then(loadPanel)` (reasignar tienda, cancelar, prioridad, guardar nota, avanzar estado): al no envolverlos en una funcion, el objeto de respuesta de la API previa se pasaba sin querer como `pageSize` a `loadPanel`, lo que hubiera roto la URL de la siguiente carga.
+  - Nuevo boton "Bloquear Cliente" / "Desbloquear Cliente" (`renderBlockCustomerButton()`), agregado tanto en la seccion "Gestion de Tienda y Supervisor" del detalle normal como en la tarjeta "Acciones" de la vista expandida. Solo se muestra si `state.scope === 'supervisor'`. Si el pedido no tiene cuenta de cliente asociada, el boton aparece deshabilitado con un tooltip explicando por que. Al hacer click pide confirmacion (`confirm()`) antes de llamar al endpoint, dado que es una accion sensible (afecta el login del cliente en todo el sitio, no solo este pedido).
+- `assets/css/panel.css`: `.dlp2-header-center`, `.dlp2-store-filter` (select con el mismo lenguaje visual que los tabs), `.dlp2-toggle-btn:disabled` (atenuado, cursor not-allowed) y `.dlp2-toggle-btn.dlp2-block-btn-active` (resaltado en rojo cuando el cliente ya esta bloqueado).
+- Probado visualmente con un dataset simulado de 37 pedidos elegibles en 3 tiendas: la carga escalo exactamente 10 -> 25 -> 50 (confirmado via los logs de las llamadas simuladas) y se detuvo al cubrir el total; el filtro de tienda oculta correctamente los pedidos de otras tiendas; el boton de bloqueo aparece habilitado para pedidos con cuenta, deshabilitado para invitados, en rojo cuando ya esta bloqueado, y desaparece por completo cuando `scope` no es `supervisor`. Sin errores de consola.
+
+### Archivos tocados
+- dlp-paneles.php
+- README.md
+- MEMORIA_TRABAJO.md
+- includes/rest.php
+- assets/js/panel.js
+- assets/css/panel.css
+
+### Estado
+- Listo para subir al hosting. Pendiente de validar en el sitio real: que el plugin User Blocker este activo para que el bloqueo tenga efecto real al iniciar sesion, y probar con un pedido de un cliente invitado real para confirmar el mensaje de "sin cuenta".
+- Sigue pendiente el resto de la lista previa (items 3, 5-15).
