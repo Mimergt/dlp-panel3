@@ -820,6 +820,8 @@
         '<div class="dlp2-header-left">' +
           '<span class="dlp2-brand">' + esc(window.DLP_PANELES_CONFIG.brandTitle || 'DEL PUENTE') + '</span>' +
           '<span class="dlp2-location">' + ICON.pin + '<span>' + esc(getStoreLabel()) + '</span></span>' +
+          (window.DLP_PANELES_CONFIG.currentUserName ?
+            '<span class="dlp2-location dlp2-current-user">' + ICON.user + '<span>' + esc(window.DLP_PANELES_CONFIG.currentUserName) + '</span></span>' : '') +
         '</div>' +
         renderTypeTabs() +
         '<div class="dlp2-header-right">' +

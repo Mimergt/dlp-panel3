@@ -822,3 +822,33 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
 ### Estado
 - Listo para subir al hosting. Pendiente de validar en el sitio real: que el plugin User Blocker este activo para que el bloqueo tenga efecto real al iniciar sesion, y probar con un pedido de un cliente invitado real para confirmar el mensaje de "sin cuenta".
 - Sigue pendiente el resto de la lista previa (items 3, 5-15).
+
+## 2026-09-17 (iteracion 1.6.1 - diagnostico de acceso de supervisor, checkbox de perfil, usuario en header)
+
+### Resumen de conversacion
+- El usuario probo el panel de supervisor logueado con un usuario de rol "Gestor de la tienda" y le aparecio "No se pudo cargar el panel", "Sin tienda asignada" y sin el filtro de tiendas -- es decir, no estaba siendo reconocido como supervisor por el backend.
+- Pregunto tambien donde se ve que usuario esta logueado, ya que no aparecia en ningun lado del header.
+
+### Diagnostico
+- `is_supervisor_user()` (en `includes/rest.php`) determina supervisor por dos vias independientes del rol de WordPress: `user_can($user_id, 'manage_options')` (tipicamente solo Administrador) o el user meta `_dlp_paneles_supervisor === '1'`. El rol "Gestor de la tienda" que se ve en el perfil de WordPress (probablemente shop_manager u otro rol custom) no otorga `manage_options` por si solo, asi que sin ese meta, `can_access_panel()` devuelve `false`, la API responde con error de permisos, y el frontend lo muestra como "No se pudo cargar el panel" (mensaje generico de error de red/sesion, ya que no distinguia ese caso especifico). No era un bug del feature nuevo: el usuario de prueba simplemente no tenia marcado el meta de supervisor todavia.
+
+### Cambios realizados
+- Version actualizada a 1.6.1.
+- Nuevo archivo `includes/supervisor-profile.php` (`DLP_Paneles_Supervisor_Profile`): agrega un checkbox "Supervisor del panel" en la pantalla de perfil de usuario de wp-admin (hooks `show_user_profile`/`edit_user_profile` para mostrarlo, `personal_options_update`/`edit_user_profile_update` para guardarlo), visible y editable solo si `current_user_can('manage_options')` (un gestor de tienda no puede auto-otorgarse el permiso). Guarda el mismo meta `_dlp_paneles_supervisor` que ya leia el backend, asi que no hace falta tocar codigo ni la base de datos para dar/quitar acceso de supervisor a alguien -- ahora es un checkbox en Usuarios > Editar usuario.
+- `dlp-paneles.php`: se agrego el `require_once` e `init()` de la nueva clase.
+- `includes/shortcode.php` y `includes/app_mode.php`: se agrego `currentUserName` (nombre visible o, si no tiene, el user_login) a `DLP_PANELES_CONFIG`, tomado de `wp_get_current_user()`.
+- `assets/js/panel.js`: el header ahora muestra el nombre del usuario logueado junto al indicador de tienda (mismo estilo de pastilla que la tienda, con icono de persona en vez de pin), leido de `window.DLP_PANELES_CONFIG.currentUserName`.
+- Probado visualmente con un usuario simulado ("Mimer Recinos"): aparece correctamente en el header, distinguible del indicador de tienda por el icono. Sin errores de consola.
+
+### Archivos tocados
+- dlp-paneles.php
+- README.md
+- MEMORIA_TRABAJO.md
+- includes/shortcode.php
+- includes/app_mode.php
+- includes/supervisor-profile.php (nuevo)
+- assets/js/panel.js
+
+### Estado
+- Listo para subir al hosting. El usuario debe entrar a Usuarios > (su usuario de prueba) > marcar el nuevo checkbox "Supervisor del panel" y guardar, para que el panel de supervisor funcione con ese usuario.
+- Sigue pendiente el resto de la lista previa (items 3, 5-15).

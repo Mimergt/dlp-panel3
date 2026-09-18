@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.6.0
+- 1.6.1
 
 ## Shortcode
 - [dlp_paneles]
@@ -155,6 +155,10 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 - Nuevo filtro de tienda en el header, junto a los tabs de Delivery/Pickup. Solo aparece cuando el usuario ve pedidos de mas de una tienda (supervisor, o `multistore_user` con varias tiendas asignadas); si solo ve una tienda, no se muestra.
 - Carga progresiva del panel (`GET /panel?page=1&per_page=N`): la primera llamada trae pocos pedidos (10) para pintar rapido, y si el backend indica que faltan mas, se sigue pidiendo con tamanos crecientes (10 -> 25 -> 50 -> 100 -> 200 -> 330) hasta traer todo, en vez de una sola llamada pesada. El backend solo evita construir el detalle completo (items, meta formateada) de los pedidos fuera de la pagina actual; los conteos de las columnas siempre reflejan el total real.
 - Nuevo boton "Bloquear Cliente" / "Desbloquear Cliente" en Acciones (tablero y vista expandida), solo visible para supervisores. Usa la misma convencion de meta de usuario que el plugin User Blocker (`is_active = 'n'` bloquea el login; se borra para desbloquear), sin depender de llamar funciones del plugin. Si el pedido es de un cliente invitado (sin cuenta), el boton aparece deshabilitado con una nota aclaratoria.
+
+## Incluido en 1.6.1
+- Nuevo checkbox "Supervisor del panel" en el perfil de usuario de wp-admin (visible/editable solo por administradores). Marca el mismo meta `_dlp_paneles_supervisor` que ya usaba el backend, sin tener que tocar codigo o base de datos para dar acceso de supervisor a alguien. El rol de WordPress del usuario (ej. "Gestor de la tienda") es independiente de esto.
+- El header del panel ahora muestra el nombre del usuario que tiene la sesion iniciada, junto al indicador de tienda.
 
 ## Versionado acordado
 - Ajustes pequenos: 1.1.1, 1.1.2, 1.1.3

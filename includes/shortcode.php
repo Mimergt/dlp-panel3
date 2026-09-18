@@ -34,6 +34,8 @@ class DLP_Paneles_Shortcode {
             true
         );
 
+        $current_user = wp_get_current_user();
+
         wp_localize_script('dlp-paneles-app', 'DLP_PANELES_CONFIG', array(
             'apiBase' => esc_url_raw(rest_url('dlp-paneles/v1')),
             'nonce' => wp_create_nonce('wp_rest'),
@@ -41,6 +43,7 @@ class DLP_Paneles_Shortcode {
             'logoutUrl' => esc_url_raw(wp_logout_url(home_url('/'))),
             'brandTitle' => 'DEL PUENTE',
             'brandLogoUrl' => 'https://delpuente.com.gt/wp-content/uploads/2020/08/new-logo-web-dlp.png',
+            'currentUserName' => $current_user->display_name ? $current_user->display_name : $current_user->user_login,
         ));
 
         return '<div id="dlp-paneles-root"></div>';
