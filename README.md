@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.7.2
+- 1.7.3
 
 ## Shortcode
 - [dlp_paneles]
@@ -172,6 +172,9 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 
 ## Incluido en 1.7.2
 - Corregido: `format_full_address()` a veces mostraba la misma zona dos veces (ej. "Zona 3 de mixco (Completo), ..., Zona 3 de mixco (Completo)") porque el checkout guarda esa misma zona tanto en `billing_address_1` como en `billing_city`. Ahora se descartan las partes de la direccion que ya aparecieron antes (comparando sin importar mayus/minus), manteniendo el orden original.
+
+## Incluido en 1.7.3
+- Corregido: el modal "Asignar a otra Tienda" mostraba solo las tiendas accesibles al usuario (para un operador de tienda normal, solo la suya). Ahora muestra todas las tiendas activas del sitio, ya que reasignar un pedido a otra tienda es una accion distinta de "que pedidos veo en mi tablero" -- cualquiera que pueda operar un pedido puede transferirlo a cualquier tienda. Nuevo campo `reassign_stores` en la respuesta de `/panel`, y el endpoint `/pedido/{id}/tienda` valida contra esa misma lista completa en vez de las tiendas accesibles del usuario.
 
 ## Versionado acordado
 - Ajustes pequenos: 1.1.1, 1.1.2, 1.1.3

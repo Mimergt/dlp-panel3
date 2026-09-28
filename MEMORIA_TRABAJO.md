@@ -895,6 +895,31 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
   2. El fix de `post_status` para tiendas es defensivo (ampliado a draft/pending/private); si el problema persiste, revisar directamente en la BD que estado tienen las tiendas que faltan y si hay algun otro filtro (ej. `extra_store_enabled`) escondiendolas.
 - Sigue pendiente el resto de la lista previa (items 3, 5-15 de iteraciones anteriores).
 
+## 2026-09-28 (iteracion 1.7.3 - modal de reasignar solo mostraba la tienda propia)
+
+### Resumen de conversacion
+- Tras 1.7.2, el usuario reporto que el modal "Asignar a otra Tienda" seguia mostrando solo la tienda en la que el operador esta logueado/asignado, no todas las tiendas. Pidio que el operador pueda elegir cualquier tienda activa para transferir el pedido.
+
+### Diagnostico
+- El modal usaba `state.stores`, que viene de `accessible_store_ids` en el backend. Para un usuario de tienda normal (no supervisor), esa lista SIEMPRE es solo su propia tienda (`get_user_store_ids()`), porque ese campo esta pensado para "que pedidos puede ver este usuario en el tablero", no para "a que tiendas puede transferir un pedido". Eran dos conceptos distintos usando el mismo dato.
+
+### Cambios realizados
+- Version actualizada a 1.7.3.
+- `includes/rest.php`: nuevo metodo `get_all_store_ids()` (extraido de lo que antes hacia `get_accessible_store_ids()` solo para supervisores) que trae TODAS las tiendas del sitio sin importar a quien estan asignadas. Nuevo campo `reassign_stores` en la respuesta de `/panel` (en los dos `return` posibles: el de "sin tiendas accesibles" y el normal), poblado con `format_store_list(get_all_store_ids())`. `reassign_order_store()` ahora valida el `store_id` recibido contra `get_all_store_ids()` en vez de `get_accessible_store_ids($user_id)`.
+- `assets/js/panel.js`: nuevo `state.allStores`, poblado desde `data.reassign_stores` en `loadPanel()`. `renderReassignModal()` y el handler `confirm-reassign-store` ahora usan `state.allStores` en vez de `state.stores` para listar/validar las tiendas del modal. `state.stores` (y el filtro de tienda del header) no cambiaron -- siguen mostrando solo las tiendas accesibles, que es su proposito correcto.
+- Probado visualmente simulando un usuario de tienda normal (`scope: 'tienda'`, con `stores` limitado a 1 tienda propia pero `reassign_stores` con 4 tiendas): el modal ahora muestra las 4, con la tienda actual del pedido pre-seleccionada. Sin errores de consola.
+
+### Archivos tocados
+- dlp-paneles.php
+- README.md
+- MEMORIA_TRABAJO.md
+- includes/rest.php
+- assets/js/panel.js
+
+### Estado
+- Listo para subir al hosting.
+- Sigue pendiente el resto de la lista previa (items 3, 5-15 de iteraciones anteriores).
+
 ## 2026-09-28 (iteracion 1.7.2 - direccion duplicada)
 
 ### Resumen de conversacion

@@ -245,16 +245,24 @@ class DLP_Paneles_REST {
         return array_map('absint', $stores);
     }
 
+    // Todas las tiendas que existen en el sitio, sin importar a quien estan
+    // asignadas. Se usa para el modal de "Asignar a otra Tienda": cualquier
+    // usuario que pueda operar un pedido puede reasignarlo a cualquier
+    // tienda activa, no solo a las que el mismo tiene asignadas.
+    public static function get_all_store_ids() {
+        $stores = get_posts(array(
+            'post_type' => 'extra_store',
+            'fields' => 'ids',
+            'post_status' => array('publish', 'private', 'draft', 'pending'),
+            'numberposts' => -1,
+        ));
+
+        return array_map('absint', $stores);
+    }
+
     public static function get_accessible_store_ids($user_id) {
         if (self::is_supervisor_user($user_id)) {
-            $stores = get_posts(array(
-                'post_type' => 'extra_store',
-                'fields' => 'ids',
-                'post_status' => array('publish', 'private', 'draft', 'pending'),
-                'numberposts' => -1,
-            ));
-
-            return array_map('absint', $stores);
+            return self::get_all_store_ids();
         }
 
         return self::get_user_store_ids($user_id);
@@ -310,6 +318,7 @@ class DLP_Paneles_REST {
                     'orders' => array(),
                     'counts' => array('processing' => 0, 'shipped' => 0, 'completed' => 0, 'cancelled' => 0),
                     'stores' => array(),
+                    'reassign_stores' => self::format_store_list(self::get_all_store_ids()),
                     'server_time' => current_time('mysql'),
                     'pagination' => array('page' => 1, 'per_page' => 0, 'total' => 0, 'has_more' => false),
                 ));
@@ -482,6 +491,10 @@ class DLP_Paneles_REST {
             'orders' => $result,
             'counts' => $counts,
             'stores' => self::format_store_list($accessible_store_ids),
+            // Lista completa de tiendas activas, para el modal de "Asignar a
+            // otra Tienda" -- independiente de $accessible_store_ids, que
+            // para un usuario de tienda normal solo trae la suya.
+            'reassign_stores' => self::format_store_list(self::get_all_store_ids()),
             'server_time' => current_time('mysql'),
             'pagination' => $pagination,
         ));
@@ -618,9 +631,13 @@ class DLP_Paneles_REST {
             return new WP_REST_Response(array('message' => 'No autorizado para este pedido'), 403);
         }
 
-        $allowed_store_ids = self::get_accessible_store_ids($user_id);
-        if (!in_array($store_id, $allowed_store_ids, true)) {
-            return new WP_REST_Response(array('message' => 'No autorizado para asignar esa tienda'), 403);
+        // Cualquier usuario autorizado a operar este pedido puede
+        // reasignarlo a cualquier tienda activa del sitio, no solo a las
+        // que tiene asignadas a si mismo (esas son las que ve en el
+        // tablero, algo distinto de a donde puede transferir un pedido).
+        $all_store_ids = self::get_all_store_ids();
+        if (!in_array($store_id, $all_store_ids, true)) {
+            return new WP_REST_Response(array('message' => 'Tienda invalida'), 400);
         }
 
         update_post_meta($order_id, 'extra_store_name', $store_id);

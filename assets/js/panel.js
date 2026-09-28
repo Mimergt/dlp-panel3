@@ -27,6 +27,7 @@
     selectedOrderId: null,
     counts: { processing: 0, shipped: 0, completed: 0, cancelled: 0 },
     stores: [],
+    allStores: [],
     scope: 'tienda',
     networkWarning: '',
     firstLoadDone: false,
@@ -928,7 +929,7 @@
       return '';
     }
 
-    var storesHtml = (state.stores || []).map(function (store) {
+    var storesHtml = (state.allStores || []).map(function (store) {
       var storeId = Number(store.id);
       var checked = storeId === Number(state.reassignSelectedStoreId) ? ' checked' : '';
       var selectedClass = storeId === Number(state.reassignSelectedStoreId) ? ' dlp2-modal-store-selected' : '';
@@ -1011,6 +1012,7 @@
         state.orders = Array.isArray(data.orders) ? data.orders : [];
         state.counts = data.counts || { processing: 0, shipped: 0, completed: 0, cancelled: 0 };
         state.stores = Array.isArray(data.stores) ? data.stores : [];
+        state.allStores = Array.isArray(data.reassign_stores) ? data.reassign_stores : [];
         state.scope = data.scope || 'tienda';
         state.loadedAt = Date.now();
 
@@ -1158,7 +1160,7 @@
         return;
       }
 
-      var targetStore = (state.stores || []).find(function (s) { return Number(s.id) === targetStoreId; });
+      var targetStore = (state.allStores || []).find(function (s) { return Number(s.id) === targetStoreId; });
       var targetStoreName = targetStore ? targetStore.name : ('#' + targetStoreId);
 
       if (!confirm('Confirme que va a asignar el pedido #' + reassignOrderId + ' a la tienda "' + targetStoreName + '".')) {
