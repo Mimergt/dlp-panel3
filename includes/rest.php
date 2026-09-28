@@ -52,13 +52,29 @@ class DLP_Paneles_REST {
     }
 
     public static function format_full_address($order) {
-        $parts = array(
+        $parts = array_filter(array_map('trim', array(
             $order->get_billing_address_1(),
             $order->get_billing_address_2(),
             $order->get_billing_city(),
-        );
+        )));
 
-        return implode(', ', array_filter(array_map('trim', $parts)));
+        // El checkout a veces guarda la misma zona tanto en address_1 como
+        // en city (ej. "Zona 3 de mixco (Completo)" en ambos), duplicando
+        // el texto al armar la direccion completa. Se descarta cualquier
+        // parte que ya aparecio antes (comparando sin importar mayus/minus),
+        // manteniendo el orden original.
+        $seen = array();
+        $unique_parts = array();
+        foreach ($parts as $part) {
+            $key = mb_strtolower($part);
+            if (isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+            $unique_parts[] = $part;
+        }
+
+        return implode(', ', $unique_parts);
     }
 
     public static function parse_store_ids_from_value($value) {

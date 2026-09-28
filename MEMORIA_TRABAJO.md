@@ -895,6 +895,29 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
   2. El fix de `post_status` para tiendas es defensivo (ampliado a draft/pending/private); si el problema persiste, revisar directamente en la BD que estado tienen las tiendas que faltan y si hay algun otro filtro (ej. `extra_store_enabled`) escondiendolas.
 - Sigue pendiente el resto de la lista previa (items 3, 5-15 de iteraciones anteriores).
 
+## 2026-09-28 (iteracion 1.7.2 - direccion duplicada)
+
+### Resumen de conversacion
+- Tras subir 1.7.1, el usuario confirmo que el problema de "no veo cambios" era cache de Cloudflare (no relacionado con el plugin) -- se resolvio purgando esa cache.
+- Reporto un bug nuevo: en todas las direcciones de entrega aparece la misma zona repetida dos veces, ej. "Zona 3 de mixco (Completo), 1ra calle 3-37 Recidenciales el castaño codigo de acceso 1337, Zona 3 de mixco (Completo)".
+
+### Diagnostico
+- `format_full_address()` concatena `billing_address_1 + billing_address_2 + billing_city`. El checkout de este sitio guarda la misma zona tanto en `address_1` como en `city` (posiblemente WooFood la autocompleta en ambos campos), duplicando el texto al armar la direccion completa.
+
+### Cambios realizados
+- Version actualizada a 1.7.2.
+- `includes/rest.php`: `format_full_address()` ahora descarta cualquier parte de la direccion que ya aparecio antes (comparacion case-insensitive con `mb_strtolower`), preservando el orden de las partes restantes. Probado con un caso PHP standalone: la zona repetida se elimina y las direcciones normales (sin repeticion) quedan igual.
+
+### Archivos tocados
+- dlp-paneles.php
+- README.md
+- MEMORIA_TRABAJO.md
+- includes/rest.php
+
+### Estado
+- Listo para subir al hosting.
+- Sigue pendiente el resto de la lista previa (items 3, 5-15 de iteraciones anteriores).
+
 ## 2026-09-28 (iteracion 1.7.1 - correccion del meta key de NIT, confirmacion de cancelados)
 
 ### Resumen de conversacion

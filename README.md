@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.7.1
+- 1.7.2
 
 ## Shortcode
 - [dlp_paneles]
@@ -169,6 +169,9 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 ## Incluido en 1.7.1
 - Corregido el meta key del nombre de facturacion del NIT: era `billing_nit_nombre` (supuesto), el correcto es `billing_nitname`. El numero de NIT sigue siendo `billing_nit`.
 - Confirmado con el usuario: los pedidos cancelados si deben verse para el supervisor (columna "Cancelados", agregada en 1.7.0) -- sin cambios de codigo, ya estaba implementado asi.
+
+## Incluido en 1.7.2
+- Corregido: `format_full_address()` a veces mostraba la misma zona dos veces (ej. "Zona 3 de mixco (Completo), ..., Zona 3 de mixco (Completo)") porque el checkout guarda esa misma zona tanto en `billing_address_1` como en `billing_city`. Ahora se descartan las partes de la direccion que ya aparecieron antes (comparando sin importar mayus/minus), manteniendo el orden original.
 
 ## Versionado acordado
 - Ajustes pequenos: 1.1.1, 1.1.2, 1.1.3
