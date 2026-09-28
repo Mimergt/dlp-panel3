@@ -894,3 +894,23 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
   1. El meta key `billing_nit_nombre` es una suposicion (no se encontro registrado en el repo) -- si el nombre de facturacion no aparece, revisar cual es el meta key real y corregir en `includes/rest.php`.
   2. El fix de `post_status` para tiendas es defensivo (ampliado a draft/pending/private); si el problema persiste, revisar directamente en la BD que estado tienen las tiendas que faltan y si hay algun otro filtro (ej. `extra_store_enabled`) escondiendolas.
 - Sigue pendiente el resto de la lista previa (items 3, 5-15 de iteraciones anteriores).
+
+## 2026-09-28 (iteracion 1.7.1 - correccion del meta key de NIT, confirmacion de cancelados)
+
+### Resumen de conversacion
+- El usuario confirmo el meta key real del nombre de facturacion: `billing_nitname` (no `billing_nit_nombre` como se habia asumido en 1.7.0). El meta del numero de NIT si era correcto: `billing_nit`.
+- Confirmo tambien que los pedidos cancelados SI deben verse para el supervisor -- lo cual ya estaba implementado en 1.7.0 (columna "Cancelados" gateada a `state.scope === 'supervisor'`), asi que no hizo falta ningun cambio de codigo para ese punto.
+
+### Cambios realizados
+- Version actualizada a 1.7.1.
+- `includes/rest.php`: campo `nit_nombre` del payload cambiado de `get_post_meta($order_id, 'billing_nit_nombre', true)` a `get_post_meta($order_id, 'billing_nitname', true)`.
+
+### Archivos tocados
+- dlp-paneles.php
+- README.md
+- MEMORIA_TRABAJO.md
+- includes/rest.php
+
+### Estado
+- Listo para subir al hosting. Con esta correccion, el NIT y el nombre de facturacion deberian mostrarse correctamente en produccion.
+- Sigue pendiente el resto de la lista previa (items 3, 5-15 de iteraciones anteriores).

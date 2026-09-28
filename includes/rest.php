@@ -445,11 +445,11 @@ class DLP_Paneles_REST {
                 'items_count' => count($order->get_items()),
                 'customer_id' => $customer_id,
                 'customer_blocked' => $customer_id ? (get_user_meta($customer_id, 'is_active', true) === 'n') : false,
-                // "billing_nit" y "billing_nit_nombre" son metas personalizados
-                // de checkout (nombre para facturacion + numero de NIT), no
+                // "billing_nit" y "billing_nitname" son metas personalizados
+                // de checkout (numero de NIT + nombre para facturacion), no
                 // estandar de WooCommerce.
                 'nit' => (string) get_post_meta($order_id, 'billing_nit', true),
-                'nit_nombre' => (string) get_post_meta($order_id, 'billing_nit_nombre', true),
+                'nit_nombre' => (string) get_post_meta($order_id, 'billing_nitname', true),
                 'cancel_reason' => self::is_cancelled_status($status) ? (string) get_post_meta($order_id, '_motivo_cancelacion_tienda', true) : '',
             );
         }

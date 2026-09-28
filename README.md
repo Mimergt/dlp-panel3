@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.7.0
+- 1.7.1
 
 ## Shortcode
 - [dlp_paneles]
@@ -165,6 +165,10 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 - La tarjeta de pedido ahora muestra la direccion de entrega de forma destacada (fondo propio, negrita) para que se note a simple vista. No aplica a las tarjetas de Completados/Cancelados (formato mini, sin espacio para eso).
 - Reasignar tienda ya no usa un `<select>`: ahora hay un boton "Asignar a otra Tienda" que abre un modal con el listado completo de tiendas, boton "Asignar" (con confirmacion "Confirme que va a asignar el pedido a la tienda...") y "Cancelar"/cerrar. De paso se ampliaron los estados de post considerados al listar tiendas (antes solo `publish`; ahora tambien `private`/`draft`/`pending`), por si alguna tienda no aparecia al no estar publicada.
 - Nueva columna "Cancelados" (solo visible para supervisores), con pedidos cancelados del dia operativo actual, igual que Completada. El backend ya soporta traer cancelados para cualquier rol; solo el frontend limita la columna a supervisor por ahora.
+
+## Incluido en 1.7.1
+- Corregido el meta key del nombre de facturacion del NIT: era `billing_nit_nombre` (supuesto), el correcto es `billing_nitname`. El numero de NIT sigue siendo `billing_nit`.
+- Confirmado con el usuario: los pedidos cancelados si deben verse para el supervisor (columna "Cancelados", agregada en 1.7.0) -- sin cambios de codigo, ya estaba implementado asi.
 
 ## Versionado acordado
 - Ajustes pequenos: 1.1.1, 1.1.2, 1.1.3
