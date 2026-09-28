@@ -25,7 +25,7 @@
   var state = {
     orders: [],
     selectedOrderId: null,
-    counts: { processing: 0, shipped: 0, completed: 0 },
+    counts: { processing: 0, shipped: 0, completed: 0, cancelled: 0 },
     stores: [],
     scope: 'tienda',
     networkWarning: '',
@@ -34,8 +34,10 @@
     typeFilter: 'all',
     storeFilter: '',
     expandedOrderId: null,
-    columnLimits: { processing: COLUMN_INITIAL_LIMIT, shipped: COLUMN_INITIAL_LIMIT, completed: COLUMN_INITIAL_LIMIT },
+    columnLimits: { processing: COLUMN_INITIAL_LIMIT, shipped: COLUMN_INITIAL_LIMIT, completed: COLUMN_INITIAL_LIMIT, cancelled: COLUMN_INITIAL_LIMIT },
     currentPageSize: PAGE_SIZE_STEPS[0],
+    reassignModalOrderId: null,
+    reassignSelectedStoreId: null,
   };
 
   var ICON = {
@@ -350,7 +352,7 @@
   }
 
   function renderCards(status) {
-    var isMini = status === 'completed';
+    var isMini = status === 'completed' || status === 'cancelled';
 
     var all = filteredOrders().filter(function (order) {
       return order.group === status;
@@ -387,6 +389,7 @@
               renderTypePill(order, false) +
               renderTimeBadge(order, seconds, false) +
             '</div>' +
+            (order.full_address ? '<div class="dlp2-card-address">' + ICON.pin + '<span>' + esc(order.full_address) + '</span></div>' : '') +
             '<div class="dlp2-card-row">' + ICON.user + '<span>' + esc(order.customer_name || 'Consumidor final') + '</span></div>' +
             '<div class="dlp2-card-row">' + ICON.phone + '<span>' + esc(order.phone || '-') + '</span></div>' +
             '<div class="dlp2-card-bottom">' +
@@ -584,15 +587,26 @@
       '</label>';
   }
 
+  // "billing_nit" y "billing_nit_nombre" son metas personalizados de
+  // checkout (numero de NIT y el nombre de facturacion asociado), no
+  // estandar de WooCommerce. Se muestran juntos en una sola fila.
+  function renderNitRow(order) {
+    if (!order.nit && !order.nit_nombre) {
+      return '';
+    }
+
+    var value = order.nit ? esc(order.nit) : 'C/F';
+    if (order.nit_nombre) {
+      value += ' &mdash; ' + esc(order.nit_nombre);
+    }
+
+    return '<div class="dlp2-customer-address">' + ICON.file + '<div><span class="dlp2-address-label">NIT</span><span class="dlp2-address-value">' + value + '</span></div></div>';
+  }
+
   function renderDetail(order) {
     if (!order) {
       return '<aside class="dlp2-detail"><div class="dlp2-detail-header">' + ICON.file + '<span>Detalle del pedido</span></div><div class="dlp2-detail-body"><p class="dlp2-empty">Selecciona un pedido para operar.</p></div></aside>';
     }
-
-    var storeOptions = (state.stores || []).map(function (store) {
-      var selected = Number(store.id) === Number(order.store_id) ? ' selected' : '';
-      return '<option value="' + Number(store.id) + '"' + selected + '>' + esc(store.name) + '</option>';
-    }).join('');
 
     var pickup = isPickup(order);
     var addressLabel = pickup ? 'Retiro en tienda (Pickup)' : 'Entrega a domicilio (Delivery)';
@@ -637,6 +651,7 @@
                 (order.phone ? '<a class="dlp2-phone-link" href="tel:' + esc(order.phone) + '">' + ICON.phone + '<span>' + esc(order.phone) + '</span></a>' : '') +
               '</div>' +
               (order.full_address ? '<div class="dlp2-customer-address">' + ICON.pin + '<div><span class="dlp2-address-label">' + esc(addressLabel) + '</span><span class="dlp2-address-value">' + esc(order.full_address) + '</span></div></div>' : '') +
+              renderNitRow(order) +
               (order.notes ? '<div class="dlp2-customer-note">' + ICON.alert + '<span>Nota: ' + esc(order.notes) + '</span></div>' : '') +
             '</div>' +
           '</div>' +
@@ -646,7 +661,8 @@
             '<div class="dlp2-management-grid">' +
               '<label class="dlp2-field">' +
                 '<span>Tienda asignada</span>' +
-                '<select data-field="store_id" data-action="reassign" data-order-id="' + order.id + '">' + storeOptions + '</select>' +
+                '<div class="dlp2-current-store">' + esc(order.store_name || 'Sin tienda asignada') + '</div>' +
+                '<button class="dlp2-toggle-btn" data-action="open-reassign-modal" data-order-id="' + order.id + '" type="button">' + ICON.store + '<span>Asignar a otra Tienda</span></button>' +
               '</label>' +
               '<label class="dlp2-field">' +
                 '<span>Prioridad de orden</span>' +
@@ -668,11 +684,6 @@
   }
 
   function renderActionsCard(order) {
-    var storeOptions = (state.stores || []).map(function (store) {
-      var selected = Number(store.id) === Number(order.store_id) ? ' selected' : '';
-      return '<option value="' + Number(store.id) + '"' + selected + '>' + esc(store.name) + '</option>';
-    }).join('');
-
     return '' +
       '<div class="dlp2-panel-card">' +
         '<div class="dlp2-panel-card-header">' +
@@ -681,7 +692,8 @@
         '<div class="dlp2-actions-card-body">' +
           '<label class="dlp2-field">' +
             '<span>Tienda asignada</span>' +
-            '<select data-field="store_id" data-action="reassign" data-order-id="' + order.id + '">' + storeOptions + '</select>' +
+            '<div class="dlp2-current-store">' + esc(order.store_name || 'Sin tienda asignada') + '</div>' +
+            '<button class="dlp2-toggle-btn" data-action="open-reassign-modal" data-order-id="' + order.id + '" type="button">' + ICON.store + '<span>Asignar a otra Tienda</span></button>' +
           '</label>' +
           '<label class="dlp2-field">' +
             '<span>Prioridad de orden</span>' +
@@ -755,6 +767,7 @@
                 (order.phone ? '<a class="dlp2-phone-link" href="tel:' + esc(order.phone) + '">' + ICON.phone + '<span>' + esc(order.phone) + '</span></a>' : '') +
               '</div>' +
               (order.full_address ? '<div class="dlp2-customer-address">' + ICON.pin + '<div><span class="dlp2-address-label">' + esc(addressLabel) + '</span><span class="dlp2-address-value">' + esc(order.full_address) + '</span></div></div>' : '') +
+              renderNitRow(order) +
               (order.notes ? '<div class="dlp2-customer-note">' + ICON.alert + '<span>Nota: ' + esc(order.notes) + '</span></div>' : '') +
             '</div>' +
             '<div class="dlp2-expanded-totals">' +
@@ -796,6 +809,7 @@
           '<div id="dlp2-board-slot"></div>' +
           '<div class="dlp2-expanded-overlay" id="dlp2-expanded-overlay"></div>' +
         '</div>' +
+        '<div id="dlp2-modal-slot"></div>' +
       '</div>';
   }
 
@@ -852,6 +866,11 @@
             '<div class="dlp2-column-header"><span class="dlp2-dot dlp2-dot-green"></span><span class="dlp2-column-title">Completada</span><span class="dlp2-column-count dlp2-count-green">' + countFor('completed') + '</span></div>' +
             '<div class="dlp2-column-cards">' + renderCards('completed') + '</div>' +
           '</div>' +
+          (state.scope === 'supervisor' ?
+            '<div class="dlp2-column dlp2-column-narrow">' +
+              '<div class="dlp2-column-header"><span class="dlp2-dot dlp2-dot-red"></span><span class="dlp2-column-title">Cancelados</span><span class="dlp2-column-count dlp2-count-red">' + countFor('cancelled') + '</span></div>' +
+              '<div class="dlp2-column-cards">' + renderCards('cancelled') + '</div>' +
+            '</div>' : '') +
         '</section>' +
         renderDetail(selected) +
       '</div>';
@@ -890,6 +909,58 @@
       overlay.innerHTML = '';
       overlay.classList.remove('is-visible');
     }
+
+    document.getElementById('dlp2-modal-slot').innerHTML = renderReassignModal();
+  }
+
+  // Modal para reasignar un pedido a otra tienda: lista las tiendas (todas
+  // las accesibles al usuario, ya vengan del panel de supervisor o de
+  // tienda), y el boton "Asignar" pide una confirmacion nativa antes de
+  // llamar a la API (en vez de aplicar el cambio con solo elegir la opcion,
+  // como hacia el <select> anterior).
+  function renderReassignModal() {
+    if (!state.reassignModalOrderId) {
+      return '';
+    }
+
+    var order = state.orders.find(function (o) { return o.id === state.reassignModalOrderId; });
+    if (!order) {
+      return '';
+    }
+
+    var storesHtml = (state.stores || []).map(function (store) {
+      var storeId = Number(store.id);
+      var checked = storeId === Number(state.reassignSelectedStoreId) ? ' checked' : '';
+      var selectedClass = storeId === Number(state.reassignSelectedStoreId) ? ' dlp2-modal-store-selected' : '';
+      var isCurrent = storeId === Number(order.store_id);
+      return '' +
+        '<label class="dlp2-modal-store-row' + selectedClass + '">' +
+          '<input type="radio" name="reassign-store" value="' + storeId + '" data-action="select-reassign-store"' + checked + ' />' +
+          '<span>' + esc(store.name) + (isCurrent ? ' <em>(tienda actual)</em>' : '') + '</span>' +
+        '</label>';
+    }).join('');
+
+    if (!storesHtml) {
+      storesHtml = '<p class="dlp2-empty">No hay tiendas disponibles.</p>';
+    }
+
+    return '' +
+      '<div class="dlp2-modal-backdrop">' +
+        '<div class="dlp2-modal">' +
+          '<div class="dlp2-modal-header">' +
+            '<h3>Asignar a otra tienda</h3>' +
+            '<button class="dlp2-modal-close" data-action="close-reassign-modal" type="button">' + ICON.close + '</button>' +
+          '</div>' +
+          '<div class="dlp2-modal-body">' +
+            '<p class="dlp2-modal-subtitle">Pedido #' + order.id + ' &middot; tienda actual: ' + esc(order.store_name || 'Sin tienda asignada') + '</p>' +
+            '<div class="dlp2-modal-store-list">' + storesHtml + '</div>' +
+          '</div>' +
+          '<div class="dlp2-modal-footer">' +
+            '<button class="dlp2-btn-ghost" data-action="close-reassign-modal" type="button">Cancelar</button>' +
+            '<button class="dlp2-btn-dark" data-action="confirm-reassign-store" data-order-id="' + order.id + '" type="button"' + (state.reassignSelectedStoreId ? '' : ' disabled') + '>Asignar</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
   }
 
   // Ticker en vivo: recalcula solo los nodos de tiempo (badges de tarjeta +
@@ -938,7 +1009,7 @@
       .then(function (data) {
         state.networkWarning = '';
         state.orders = Array.isArray(data.orders) ? data.orders : [];
-        state.counts = data.counts || { processing: 0, shipped: 0, completed: 0 };
+        state.counts = data.counts || { processing: 0, shipped: 0, completed: 0, cancelled: 0 };
         state.stores = Array.isArray(data.stores) ? data.stores : [];
         state.scope = data.scope || 'tienda';
         state.loadedAt = Date.now();
@@ -1001,23 +1072,11 @@
       return;
     }
 
-    var select = event.target.closest('[data-action="reassign"]');
-    if (!select || !select.dataset.orderId) {
-      return;
+    var storeRadio = event.target.closest('[data-action="select-reassign-store"]');
+    if (storeRadio) {
+      state.reassignSelectedStoreId = Number(storeRadio.value);
+      render();
     }
-
-    var orderId = Number(select.dataset.orderId);
-    var targetStoreId = Number(select.value);
-
-    if (!targetStoreId) {
-      return;
-    }
-
-    api('/pedido/' + orderId + '/tienda', 'POST', { store_id: targetStoreId })
-      .then(function () { loadPanel(); })
-      .catch(function (error) {
-        alert('No se pudo reasignar tienda: ' + error.message);
-      });
   });
 
   root.addEventListener('click', function (event) {
@@ -1060,6 +1119,61 @@
     if (collapseBtn) {
       state.expandedOrderId = null;
       render();
+      return;
+    }
+
+    // Modal de reasignar tienda: clic en el fondo oscuro (solo si el click
+    // fue exactamente sobre el fondo, no sobre algo dentro del modal) o en
+    // los botones de cerrar/cancelar lo cierran sin aplicar ningun cambio.
+    var reassignBackdrop = event.target.closest('.dlp2-modal-backdrop');
+    if (reassignBackdrop && event.target === reassignBackdrop) {
+      state.reassignModalOrderId = null;
+      state.reassignSelectedStoreId = null;
+      render();
+      return;
+    }
+
+    var closeReassignBtn = event.target.closest('[data-action="close-reassign-modal"]');
+    if (closeReassignBtn) {
+      state.reassignModalOrderId = null;
+      state.reassignSelectedStoreId = null;
+      render();
+      return;
+    }
+
+    var openReassignBtn = event.target.closest('[data-action="open-reassign-modal"]');
+    if (openReassignBtn && openReassignBtn.dataset.orderId) {
+      var reassignOrder = state.orders.find(function (o) { return o.id === Number(openReassignBtn.dataset.orderId); });
+      state.reassignModalOrderId = Number(openReassignBtn.dataset.orderId);
+      state.reassignSelectedStoreId = reassignOrder && reassignOrder.store_id ? Number(reassignOrder.store_id) : null;
+      render();
+      return;
+    }
+
+    var confirmReassignBtn = event.target.closest('[data-action="confirm-reassign-store"]');
+    if (confirmReassignBtn && !confirmReassignBtn.disabled) {
+      var reassignOrderId = Number(confirmReassignBtn.dataset.orderId);
+      var targetStoreId = Number(state.reassignSelectedStoreId);
+      if (!targetStoreId) {
+        return;
+      }
+
+      var targetStore = (state.stores || []).find(function (s) { return Number(s.id) === targetStoreId; });
+      var targetStoreName = targetStore ? targetStore.name : ('#' + targetStoreId);
+
+      if (!confirm('Confirme que va a asignar el pedido #' + reassignOrderId + ' a la tienda "' + targetStoreName + '".')) {
+        return;
+      }
+
+      api('/pedido/' + reassignOrderId + '/tienda', 'POST', { store_id: targetStoreId })
+        .then(function () {
+          state.reassignModalOrderId = null;
+          state.reassignSelectedStoreId = null;
+          loadPanel();
+        })
+        .catch(function (error) {
+          alert('No se pudo reasignar tienda: ' + error.message);
+        });
       return;
     }
 

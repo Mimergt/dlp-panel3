@@ -21,6 +21,10 @@ class DLP_Paneles_REST {
         return $status === 'completed';
     }
 
+    public static function is_cancelled_status($status) {
+        return $status === 'cancelled';
+    }
+
     // Mismo dato que usa el panel v2 via wc_display_item_meta(): WooCommerce ya
     // trae los modificadores (carne, complemento, bebida, upgrades) formateados
     // por producto en get_formatted_meta_data().
@@ -204,10 +208,13 @@ class DLP_Paneles_REST {
         }
 
         // Fallback legacy: tiendas asociadas por meta en post extra_store.
+        // post_status incluye mas que 'publish': algunas tiendas quedaron
+        // guardadas como draft/pending/private (nunca se les dio "Publicar"
+        // explicitamente) y con solo 'publish' no aparecian en el listado.
         $stores = get_posts(array(
             'post_type' => 'extra_store',
             'fields' => 'ids',
-            'post_status' => 'publish',
+            'post_status' => array('publish', 'private', 'draft', 'pending'),
             'numberposts' => -1,
             'meta_query' => array(
                 array(
@@ -227,7 +234,7 @@ class DLP_Paneles_REST {
             $stores = get_posts(array(
                 'post_type' => 'extra_store',
                 'fields' => 'ids',
-                'post_status' => 'publish',
+                'post_status' => array('publish', 'private', 'draft', 'pending'),
                 'numberposts' => -1,
             ));
 
@@ -285,7 +292,7 @@ class DLP_Paneles_REST {
                 return new WP_REST_Response(array(
                     'scope' => 'tienda',
                     'orders' => array(),
-                    'counts' => array('processing' => 0, 'shipped' => 0, 'completed' => 0),
+                    'counts' => array('processing' => 0, 'shipped' => 0, 'completed' => 0, 'cancelled' => 0),
                     'stores' => array(),
                     'server_time' => current_time('mysql'),
                     'pagination' => array('page' => 1, 'per_page' => 0, 'total' => 0, 'has_more' => false),
@@ -325,8 +332,19 @@ class DLP_Paneles_REST {
         ));
         $completed_ids = wc_get_orders($completed_args);
 
-        $order_ids = array_merge($active_ids, $completed_ids);
-        $counts = array('processing' => 0, 'shipped' => 0, 'completed' => 0);
+        // Cancelados: solo del dia operativo actual (mismo criterio que
+        // Completada), y solo se pintan para el supervisor en el frontend.
+        // Se traen igual para usuarios de tienda por si en el futuro se
+        // decide mostrarlos tambien ahi.
+        $cancelled_args = array_merge($base_args, array(
+            'limit' => 150,
+            'status' => array('cancelled'),
+            'date_created' => '>=' . $today_start_ts,
+        ));
+        $cancelled_ids = wc_get_orders($cancelled_args);
+
+        $order_ids = array_merge($active_ids, $completed_ids, $cancelled_ids);
+        $counts = array('processing' => 0, 'shipped' => 0, 'completed' => 0, 'cancelled' => 0);
         $result = array();
 
         // Paginacion: para paneles con muchos pedidos (sobre todo el del
@@ -350,7 +368,7 @@ class DLP_Paneles_REST {
 
             $status = $order->get_status();
 
-            if (!self::is_processing_status($status) && !self::is_shipped_status($status) && !self::is_completed_status($status)) {
+            if (!self::is_processing_status($status) && !self::is_shipped_status($status) && !self::is_completed_status($status) && !self::is_cancelled_status($status)) {
                 continue;
             }
 
@@ -379,6 +397,8 @@ class DLP_Paneles_REST {
                 $group = 'processing';
             } elseif (self::is_shipped_status($status)) {
                 $group = 'shipped';
+            } elseif (self::is_cancelled_status($status)) {
+                $group = 'cancelled';
             } else {
                 $group = 'completed';
             }
@@ -425,6 +445,12 @@ class DLP_Paneles_REST {
                 'items_count' => count($order->get_items()),
                 'customer_id' => $customer_id,
                 'customer_blocked' => $customer_id ? (get_user_meta($customer_id, 'is_active', true) === 'n') : false,
+                // "billing_nit" y "billing_nit_nombre" son metas personalizados
+                // de checkout (nombre para facturacion + numero de NIT), no
+                // estandar de WooCommerce.
+                'nit' => (string) get_post_meta($order_id, 'billing_nit', true),
+                'nit_nombre' => (string) get_post_meta($order_id, 'billing_nit_nombre', true),
+                'cancel_reason' => self::is_cancelled_status($status) ? (string) get_post_meta($order_id, '_motivo_cancelacion_tienda', true) : '',
             );
         }
 

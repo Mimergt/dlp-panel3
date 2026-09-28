@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.6.1
+- 1.7.0
 
 ## Shortcode
 - [dlp_paneles]
@@ -159,6 +159,12 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 ## Incluido en 1.6.1
 - Nuevo checkbox "Supervisor del panel" en el perfil de usuario de wp-admin (visible/editable solo por administradores). Marca el mismo meta `_dlp_paneles_supervisor` que ya usaba el backend, sin tener que tocar codigo o base de datos para dar acceso de supervisor a alguien. El rol de WordPress del usuario (ej. "Gestor de la tienda") es independiente de esto.
 - El header del panel ahora muestra el nombre del usuario que tiene la sesion iniciada, junto al indicador de tienda.
+
+## Incluido en 1.7.0 (feedback de operarios)
+- Datos de facturacion (NIT): se muestran en la seccion de cliente del detalle (tablero y vista expandida) usando los metas personalizados de checkout `billing_nit` (numero) y `billing_nit_nombre` (nombre de facturacion) -- **el segundo meta no se pudo confirmar en el codigo del sitio, se asumio siguiendo la convencion `billing_nit` ya usada; avisar si el meta real tiene otro nombre para corregirlo**.
+- La tarjeta de pedido ahora muestra la direccion de entrega de forma destacada (fondo propio, negrita) para que se note a simple vista. No aplica a las tarjetas de Completados/Cancelados (formato mini, sin espacio para eso).
+- Reasignar tienda ya no usa un `<select>`: ahora hay un boton "Asignar a otra Tienda" que abre un modal con el listado completo de tiendas, boton "Asignar" (con confirmacion "Confirme que va a asignar el pedido a la tienda...") y "Cancelar"/cerrar. De paso se ampliaron los estados de post considerados al listar tiendas (antes solo `publish`; ahora tambien `private`/`draft`/`pending`), por si alguna tienda no aparecia al no estar publicada.
+- Nueva columna "Cancelados" (solo visible para supervisores), con pedidos cancelados del dia operativo actual, igual que Completada. El backend ya soporta traer cancelados para cualquier rol; solo el frontend limita la columna a supervisor por ahora.
 
 ## Versionado acordado
 - Ajustes pequenos: 1.1.1, 1.1.2, 1.1.3

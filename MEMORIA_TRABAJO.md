@@ -852,3 +852,45 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
 ### Estado
 - Listo para subir al hosting. El usuario debe entrar a Usuarios > (su usuario de prueba) > marcar el nuevo checkbox "Supervisor del panel" y guardar, para que el panel de supervisor funcione con ese usuario.
 - Sigue pendiente el resto de la lista previa (items 3, 5-15).
+
+## 2026-09-28 (iteracion 1.7.0 - feedback de operarios: NIT, direccion en tarjeta, modal de reasignar tienda, cancelados)
+
+### Resumen de conversacion
+- El usuario ya probo el panel de supervisor con operarios reales y trajo 4 pedidos de ajuste:
+  1. Mostrar el NIT (numero + nombre de facturacion) en la seccion de cliente del detalle del pedido -- son metas personalizados de checkout, no campos estandar de WooCommerce.
+  2. Mostrar la direccion de entrega en la tarjeta de pedido, de forma visible a simple vista. No es necesario en las tarjetas de Completados (formato mini).
+  3. Bug: no aparecen todas las tiendas al reasignar un pedido en "Gestion de Tienda y Supervisor". Pidio ademas cambiar ese `<select>` por un boton "Asignar a otra Tienda" que abra un modal con el listado de tiendas + boton "Asignar" + cerrar/cancelar, y que "Asignar" pida una confirmacion explicita antes de aplicar el cambio.
+  4. Confirmar si el supervisor puede ver los pedidos cancelados; si no, agregarlos.
+
+### Investigacion previa
+- Se busco en el repo mas amplio (`dlp_funciones/`, fuera del plugin) el meta key real del NIT: se confirmo `billing_nit` (usado en `manejodepedidos2/archivos/pedidos2.php:200`, `pedidos21.php:183`, `panelMotoristas/panel.php:143`, etc.) pero **no se encontro en ningun lugar el meta key exacto del "nombre" asociado al NIT** (no hay registro via `woocommerce_checkout_fields` visible en el repo, probablemente se agrega por otro medio como WooFood custom fields). Se asumio `billing_nit_nombre` siguiendo la misma convencion `billing_<campo>` que ya usa `billing_nit` -- **queda pendiente que el usuario confirme el meta key real** si el nombre no aparece en produccion.
+- Se investigo (via agente Explore) el registro del CPT `extra_store` (`woofood-multistore-plugin/woofood-connection.php:86-134`): es un CPT estandar de WordPress (`register_post_type`, sin workflow custom), por lo que normalmente queda en `publish` al crearse desde el editor, pero puede quedar en `draft`/`pending`/`private` si alguien lo guardo sin publicar. El propio codigo del proyecto (`dlp-26-functions.php`, `woofood-connection.php`) siempre filtra tiendas con `post_status='publish'` unicamente, igual que `dlp-paneles`, asi que cualquier tienda no publicada quedaria fuera en todos lados, no solo en este plugin. No se encontro un origen alterno de "todas las tiendas" (no hay taxonomia ni tabla custom).
+
+### Cambios realizados
+- Version actualizada a 1.7.0.
+- `includes/rest.php`:
+  - `get_user_store_ids()` y `get_accessible_store_ids()`: `post_status` de `extra_store` ampliado de solo `'publish'` a `array('publish', 'private', 'draft', 'pending')`, como fix defensivo mas probable para tiendas faltantes en el selector (no se pudo confirmar en la BD real cuales tiendas exactamente faltaban).
+  - Nuevo helper `is_cancelled_status()`. Se agrego una tercera consulta `wc_get_orders` para pedidos `cancelled` del dia operativo actual (mismo criterio de fecha que Completada), fusionada al listado principal. El grupo `'cancelled'` se agrego al filtro de estados validos, al calculo de `$group` y a `$counts`.
+  - Nuevos campos en el payload de cada pedido: `nit` (`billing_nit`), `nit_nombre` (`billing_nit_nombre`, ver nota de investigacion arriba), y `cancel_reason` (`_motivo_cancelacion_tienda`, solo para pedidos cancelados).
+- `assets/js/panel.js`:
+  - `renderCards()`: nueva fila `.dlp2-card-address` (con `order.full_address`) en las tarjetas normales, justo antes del nombre del cliente; no se agrega en las tarjetas mini (Completada/Cancelados). `isMini` ahora incluye tambien `status === 'cancelled'`.
+  - Nuevo helper `renderNitRow(order)`, insertado en la tarjeta de cliente tanto del detalle normal (`renderDetail`) como de la vista expandida (`renderExpandedOrder`), justo despues de la direccion.
+  - Reemplazado el `<select data-action="reassign">` por un boton "Asignar a otra Tienda" (`data-action="open-reassign-modal"`) + un `<div class="dlp2-current-store">` mostrando la tienda actual como texto, en ambos lugares (`renderDetail` y `renderActionsCard`).
+  - Nuevo modal persistente (`renderReassignModal()`, pintado en un nuevo slot `#dlp2-modal-slot` del esqueleto): lista de tiendas como radios, resalta la tienda actual, boton "Asignar" deshabilitado hasta elegir una tienda distinta. Nuevos manejadores de click/change: `open-reassign-modal`, `close-reassign-modal` (boton X y "Cancelar"), clic en el fondo oscuro (solo si el click fue exactamente sobre el backdrop, no dentro del modal), `select-reassign-store` (radio, evento `change`), y `confirm-reassign-store` que pide `confirm()` con el texto "Confirme que va a asignar el pedido #X a la tienda "Y"." antes de llamar a la API existente `/pedido/{id}/tienda`. Se elimino el viejo handler de `change` que aplicaba el cambio apenas se elegia una opcion del `<select>`.
+  - Nueva columna "Cancelados" en el tablero (`state.scope === 'supervisor'` unicamente), reutilizando `renderCards('cancelled')`; se agrego `cancelled` a `state.columnLimits` y a los valores por defecto de `state.counts`.
+- `assets/css/panel.css`: `--dlp-red-bg/border/text`, `.dlp2-dot-red`/`.dlp2-count-red` (columna Cancelados), `.dlp2-card-address` (direccion destacada en la tarjeta, fondo propio + negrita), `.dlp2-current-store` (texto de la tienda actual, mismo look que el `<select>` anterior), y todo el bloque del modal (`.dlp2-modal-backdrop`, `.dlp2-modal`, header/body/footer, `.dlp2-modal-store-row`/`-selected`).
+- Probado visualmente con datos simulados (4 pedidos, uno por columna incluido un cancelado con motivo, NIT + nombre de facturacion, 3 tiendas): la tarjeta muestra la direccion destacada, el detalle muestra el NIT, el modal lista las 3 tiendas con la actual pre-seleccionada, el boton "Asignar" se habilita al elegir otra, el `confirm()` muestra el texto esperado, cerrar por X/"Cancelar"/click-en-fondo funciona sin aplicar cambios, la columna "Cancelados" solo aparece con `scope: 'supervisor'`. Sin errores de consola.
+
+### Archivos tocados
+- dlp-paneles.php
+- README.md
+- MEMORIA_TRABAJO.md
+- includes/rest.php
+- assets/js/panel.js
+- assets/css/panel.css
+
+### Estado
+- Listo para subir al hosting, con dos puntos a confirmar en produccion:
+  1. El meta key `billing_nit_nombre` es una suposicion (no se encontro registrado en el repo) -- si el nombre de facturacion no aparece, revisar cual es el meta key real y corregir en `includes/rest.php`.
+  2. El fix de `post_status` para tiendas es defensivo (ampliado a draft/pending/private); si el problema persiste, revisar directamente en la BD que estado tienen las tiendas que faltan y si hay algun otro filtro (ej. `extra_store_enabled`) escondiendolas.
+- Sigue pendiente el resto de la lista previa (items 3, 5-15 de iteraciones anteriores).
