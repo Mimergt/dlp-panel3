@@ -895,6 +895,28 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
   2. El fix de `post_status` para tiendas es defensivo (ampliado a draft/pending/private); si el problema persiste, revisar directamente en la BD que estado tienen las tiendas que faltan y si hay algun otro filtro (ej. `extra_store_enabled`) escondiendolas.
 - Sigue pendiente el resto de la lista previa (items 3, 5-15 de iteraciones anteriores).
 
+## 2026-09-28 (iteracion 1.8.0 - boton para ocultar/mostrar la columna Completada)
+
+### Resumen de conversacion
+- Ultimo pedido del dia: en la columna de Completados, junto al contador de pedidos, agregar un icono/boton para "ocultar" todos los pedidos de esa columna (dejandola en blanco) y que un segundo click los vuelva a mostrar.
+
+### Cambios realizados
+- Version actualizada a 1.8.0.
+- `assets/js/panel.js`: nuevo `state.collapsedColumns` (objeto vacio por defecto, cualquier columna no listada se trata como expandida). Nuevo icono `ICON.chevronDown`. En el encabezado de la columna Completada se agrego `<button data-action="toggle-column-collapse" data-column="completed">`, con `title` dinamico ("Ocultar"/"Mostrar pedidos completados"). Cuando la columna esta colapsada, `renderCards('completed')` ni siquiera se llama -- el `.dlp2-column-cards` queda vacio. Nuevo handler de click que hace `state.collapsedColumns[column] = !state.collapsedColumns[column]` y vuelve a renderizar.
+- `assets/css/panel.css`: `.dlp2-column-collapse-btn` (boton chevron discreto, sin fondo hasta el hover) y `.dlp2-column-collapse-btn.is-collapsed svg { transform: rotate(180deg) }` para que la flecha indique visualmente el estado (apunta hacia abajo = click para ocultar, apunta hacia arriba = click para mostrar).
+- Probado visualmente: click oculta las tarjetas dejando la columna en blanco (el contador se mantiene mostrando el total real), la flecha rota, y un segundo click las vuelve a mostrar. Sin errores de consola.
+
+### Archivos tocados
+- dlp-paneles.php
+- README.md
+- MEMORIA_TRABAJO.md
+- assets/js/panel.js
+- assets/css/panel.css
+
+### Estado
+- Listo para subir al hosting.
+- Sigue pendiente el resto de la lista previa (items 3, 5-15 de iteraciones anteriores).
+
 ## 2026-09-28 (iteracion 1.7.3 - modal de reasignar solo mostraba la tienda propia)
 
 ### Resumen de conversacion

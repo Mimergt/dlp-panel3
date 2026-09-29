@@ -39,6 +39,7 @@
     currentPageSize: PAGE_SIZE_STEPS[0],
     reassignModalOrderId: null,
     reassignSelectedStoreId: null,
+    collapsedColumns: {},
   };
 
   var ICON = {
@@ -61,6 +62,7 @@
     back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" x2="5" y1="12" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>',
     close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" x2="6" y1="6" y2="18"></line><line x1="6" x2="18" y1="6" y2="18"></line></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>',
+    chevronDown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>',
     userBlock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="17" x2="22" y1="8" y2="13"></line><line x1="22" x2="17" y1="8" y2="13"></line></svg>',
   };
 
@@ -864,8 +866,13 @@
             '<div class="dlp2-column-cards">' + renderCards('shipped') + '</div>' +
           '</div>' +
           '<div class="dlp2-column dlp2-column-narrow">' +
-            '<div class="dlp2-column-header"><span class="dlp2-dot dlp2-dot-green"></span><span class="dlp2-column-title">Completada</span><span class="dlp2-column-count dlp2-count-green">' + countFor('completed') + '</span></div>' +
-            '<div class="dlp2-column-cards">' + renderCards('completed') + '</div>' +
+            '<div class="dlp2-column-header">' +
+              '<span class="dlp2-dot dlp2-dot-green"></span>' +
+              '<span class="dlp2-column-title">Completada</span>' +
+              '<span class="dlp2-column-count dlp2-count-green">' + countFor('completed') + '</span>' +
+              '<button class="dlp2-column-collapse-btn' + (state.collapsedColumns.completed ? ' is-collapsed' : '') + '" data-action="toggle-column-collapse" data-column="completed" title="' + (state.collapsedColumns.completed ? 'Mostrar pedidos completados' : 'Ocultar pedidos completados') + '" type="button">' + ICON.chevronDown + '</button>' +
+            '</div>' +
+            '<div class="dlp2-column-cards">' + (state.collapsedColumns.completed ? '' : renderCards('completed')) + '</div>' +
           '</div>' +
           (state.scope === 'supervisor' ?
             '<div class="dlp2-column dlp2-column-narrow">' +
@@ -1100,6 +1107,14 @@
     if (loadMoreBtn && loadMoreBtn.dataset.column) {
       var column = loadMoreBtn.dataset.column;
       state.columnLimits[column] = (state.columnLimits[column] || COLUMN_INITIAL_LIMIT) + COLUMN_LOAD_MORE;
+      render();
+      return;
+    }
+
+    var collapseColumnBtn = event.target.closest('[data-action="toggle-column-collapse"]');
+    if (collapseColumnBtn && collapseColumnBtn.dataset.column) {
+      var collapseColumn = collapseColumnBtn.dataset.column;
+      state.collapsedColumns[collapseColumn] = !state.collapsedColumns[collapseColumn];
       render();
       return;
     }

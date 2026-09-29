@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.7.3
+- 1.8.0
 
 ## Shortcode
 - [dlp_paneles]
@@ -175,6 +175,9 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 
 ## Incluido en 1.7.3
 - Corregido: el modal "Asignar a otra Tienda" mostraba solo las tiendas accesibles al usuario (para un operador de tienda normal, solo la suya). Ahora muestra todas las tiendas activas del sitio, ya que reasignar un pedido a otra tienda es una accion distinta de "que pedidos veo en mi tablero" -- cualquiera que pueda operar un pedido puede transferirlo a cualquier tienda. Nuevo campo `reassign_stores` en la respuesta de `/panel`, y el endpoint `/pedido/{id}/tienda` valida contra esa misma lista completa en vez de las tiendas accesibles del usuario.
+
+## Incluido en 1.8.0
+- Columna "Completada": nuevo boton (flecha) junto al contador para ocultar/mostrar todos los pedidos de la columna de un click, dejandola en blanco sin quitarla del tablero. Util para no distraer la vista con pedidos ya resueltos mientras se opera el resto del dia.
 
 ## Versionado acordado
 - Ajustes pequenos: 1.1.1, 1.1.2, 1.1.3
