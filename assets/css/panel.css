@@ -2052,3 +2052,5 @@
 .dlp2-svc-cover { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .dlp2-svc-form { grid-column: 1 / -1; }
 .dlp2-geo-cover { color: #b45309; font-weight: 600; }
+
+.dlp2-pickup-time .dlp2-address-value { font-weight: 800; }

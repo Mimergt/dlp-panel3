@@ -625,6 +625,13 @@
     '</div>';
   }
 
+  function renderPickupTime(order) {
+    if (!order.pickup_time) {
+      return '';
+    }
+    return '<div class="dlp2-customer-address dlp2-pickup-time">' + ICON.clock + '<div><span class="dlp2-address-label">Recoge a las</span><span class="dlp2-address-value">' + esc(order.pickup_time) + '</span></div></div>';
+  }
+
   function renderNitRow(order) {
     if (!order.nit && !order.nit_nombre) {
       return '';
@@ -686,6 +693,7 @@
                 (order.phone ? '<a class="dlp2-phone-link" href="tel:' + esc(order.phone) + '">' + ICON.phone + '<span>' + esc(order.phone) + '</span></a>' : '') +
               '</div>' +
               (order.full_address ? '<div class="dlp2-customer-address">' + ICON.pin + '<div><span class="dlp2-address-label">' + esc(addressLabel) + '</span><span class="dlp2-address-value">' + esc(order.full_address) + '</span></div></div>' : '') +
+              renderPickupTime(order) +
               renderGeoRow(order) +
               renderNitRow(order) +
               (order.notes ? '<div class="dlp2-customer-note">' + ICON.alert + '<span>Nota: ' + esc(order.notes) + '</span></div>' : '') +
@@ -803,6 +811,7 @@
                 (order.phone ? '<a class="dlp2-phone-link" href="tel:' + esc(order.phone) + '">' + ICON.phone + '<span>' + esc(order.phone) + '</span></a>' : '') +
               '</div>' +
               (order.full_address ? '<div class="dlp2-customer-address">' + ICON.pin + '<div><span class="dlp2-address-label">' + esc(addressLabel) + '</span><span class="dlp2-address-value">' + esc(order.full_address) + '</span></div></div>' : '') +
+              renderPickupTime(order) +
               renderGeoRow(order) +
               renderNitRow(order) +
               (order.notes ? '<div class="dlp2-customer-note">' + ICON.alert + '<span>Nota: ' + esc(order.notes) + '</span></div>' : '') +
