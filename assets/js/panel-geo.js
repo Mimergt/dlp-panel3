@@ -50,8 +50,7 @@
     loadLibs().then(function () {
       var box = el.querySelector('#dlp2-geo-map'); box.innerHTML = '';
       map = L.map(box, { center: [lat, lng], zoom: 16, minZoom: geo.minZoom, maxZoom: geo.maxZoom });
-      protomapsL.leafletLayer({ url: geo.tilesUrl, flavor: 'light', lang: 'es' }).addTo(map);
-      map.attributionControl.addAttribution('© OpenStreetMap · Protomaps');
+      protomapsL.leafletLayer({ url: geo.tilesUrl, flavor: 'light', lang: 'es', attribution: 'EPIC.GT · <a href="https://protomaps.com" target="_blank" rel="noopener">Protomaps</a> © <a href="https://openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>' }).addTo(map);
       L.circleMarker([lat, lng], { radius: 10, color: '#fff', weight: 3, fillColor: '#e63946', fillOpacity: 1 }).addTo(map);
       if (hasStore) {
         L.circleMarker([slat, slng], { radius: 9, color: '#fff', weight: 3, fillColor: '#111', fillOpacity: 1 }).addTo(map);
