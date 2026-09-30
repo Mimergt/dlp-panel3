@@ -77,8 +77,21 @@
     }
     return '<div class="dlp2-svc-cell"><strong>' + label + '</strong>' + chip(svc) + act + '</div>';
   }
+  var OPTIONS = [];
+  function coverHtml(row) {
+    var h = '<div class="dlp2-svc-cover">';
+    if (row.cubierta_por) {
+      h += '<span class="dlp2-svc-chip dlp2-svc-pause">Cubierta por ' + esc(row.cubierta_por.name) + (row.cubierta_por.hasta ? ' hasta ' + esc(row.cubierta_por.hasta) : '') + '</span>' +
+        (row.cubierta_por.motivo ? '<small class="dlp2-svc-reason">' + esc(row.cubierta_por.motivo) + '</small>' : '') +
+        ' <button type="button" class="dlp2-btn-dark dlp2-svc-btn" data-svc="uncover" data-store="' + row.store_id + '">Quitar cobertura</button>';
+    } else {
+      h += '<button type="button" class="dlp2-btn-ghost dlp2-svc-btn" data-svc="cover-ask" data-store="' + row.store_id + '">Que otra tienda la cubra</button>';
+    }
+    (row.cubriendo || []).forEach(function (c) { h += '<span class="dlp2-svc-chip dlp2-svc-ok">Cubriendo a ' + esc(c.name) + '</span>'; });
+    return h + '</div>';
+  }
   function rowHtml(row) {
-    return '<div class="dlp2-svc-row" data-row="' + row.store_id + '" data-name="' + esc(row.name.toLowerCase()) + '"><div class="dlp2-svc-name">' + esc(row.name) + '</div>' + cell(row, 'delivery') + cell(row, 'pickup') + '<div class="dlp2-svc-form" hidden></div></div>';
+    return '<div class="dlp2-svc-row" data-row="' + row.store_id + '" data-name="' + esc(row.name.toLowerCase()) + '"><div class="dlp2-svc-name">' + esc(row.name) + '</div>' + cell(row, 'delivery') + cell(row, 'pickup') + coverHtml(row) + '<div class="dlp2-svc-form" hidden></div></div>';
   }
 
   function openServices() {
@@ -89,6 +102,7 @@
     var list = el.querySelector('.dlp2-svc-list'), search = el.querySelector('.dlp2-svc-search');
     api('/servicios').then(function (d) {
       if (!d.stores.length) { list.innerHTML = '<p class="dlp2-geo-loading">No hay tiendas para mostrar.</p>'; return; }
+      OPTIONS = d.options || [];
       list.innerHTML = d.stores.map(rowHtml).join('');
       if (d.stores.length > 4) { search.hidden = false; }
     }).catch(function (e) { list.innerHTML = '<p class="dlp2-geo-loading">' + esc(e.message) + '</p>'; });
@@ -104,9 +118,31 @@
       api('/servicios/pausa', 'POST', { store_id: Number(store), tipo: tipo, activa: activa, motivo: motivo || '', minutos: minutos || 0 })
         .then(replaceRow).catch(function (e) { alert('No se pudo actualizar: ' + e.message); if (btn) btn.disabled = false; });
     }
+    function sendCover(store, por, minutos, motivo, btn) {
+      if (btn) btn.disabled = true;
+      api('/servicios/cubrir', 'POST', { store_id: Number(store), por: Number(por), minutos: minutos || 0, motivo: motivo || '' })
+        .then(function () { return api('/servicios'); })
+        .then(function (d) { OPTIONS = d.options || []; list.innerHTML = d.stores.map(rowHtml).join(''); }) // la otra tienda tambien cambia
+        .catch(function (e) { alert('No se pudo actualizar: ' + e.message); if (btn) btn.disabled = false; });
+    }
     list.addEventListener('click', function (e) {
       var b = e.target.closest('[data-svc]'); if (!b) return;
       var row = b.closest('.dlp2-svc-row'), form = row.querySelector('.dlp2-svc-form'), store = b.dataset.store, tipo = b.dataset.tipo;
+      if (b.dataset.svc === 'uncover') { sendCover(store, 0, 0, '', b); return; }
+      if (b.dataset.svc === 'cover-ask') {
+        form.hidden = false;
+        form.innerHTML = '<strong>Cobertura de Delivery</strong> <select class="dlp2-svc-por">' +
+          OPTIONS.filter(function (o) { return String(o.id) !== String(store); }).map(function (o) { return '<option value="' + o.id + '">' + esc(o.name) + '</option>'; }).join('') + '</select> ' +
+          '<select class="dlp2-svc-min"><option value="120">2 horas</option><option value="480">8 horas</option><option value="1440">1 dia</option><option value="0">Hasta quitarla</option></select> ' +
+          '<input type="text" class="dlp2-svc-motivo" maxlength="120" placeholder="Motivo (opcional)"> ' +
+          '<button type="button" class="dlp2-btn-dark dlp2-svc-btn" data-svc="cover-confirm" data-store="' + store + '">Confirmar</button> ' +
+          '<button type="button" class="dlp2-btn-ghost dlp2-svc-btn" data-svc="cancel">Cancelar</button>';
+        return;
+      }
+      if (b.dataset.svc === 'cover-confirm') {
+        sendCover(store, form.querySelector('.dlp2-svc-por').value, parseInt(form.querySelector('.dlp2-svc-min').value, 10), form.querySelector('.dlp2-svc-motivo').value, b);
+        return;
+      }
       if (b.dataset.svc === 'resume') { send(store, tipo, false, '', 0, b); return; }
       if (b.dataset.svc === 'ask') {
         form.hidden = false;

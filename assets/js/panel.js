@@ -616,6 +616,7 @@
     var l = geoLinks(g);
     return '<div class="dlp2-geo-row">' +
       (g.zona ? '<div class="dlp2-geo-zone">' + ICON.pin + '<span>Zona: ' + esc(g.zona) + '</span></div>' : '') +
+      (g.cubre_a ? '<div class="dlp2-geo-zone dlp2-geo-cover">' + ICON.pin + '<span>Cubriendo la zona de ' + esc(g.cubre_a) + '</span></div>' : '') +
       '<div class="dlp2-geo-actions">' +
         '<button class="dlp2-geo-btn" type="button" data-action="open-geo" data-order-id="' + order.id + '" data-lat="' + g.lat + '" data-lng="' + g.lng + '" data-slat="' + (g.store_lat == null ? '' : g.store_lat) + '" data-slng="' + (g.store_lng == null ? '' : g.store_lng) + '" data-zona="' + esc(g.zona || '') + '">' + ICON.map + '<span>Ver mapa</span></button>' +
         '<a class="dlp2-geo-btn" href="' + esc(l.gm) + '" target="_blank" rel="noopener">' + ICON.nav + '<span>Ruta</span></a>' +

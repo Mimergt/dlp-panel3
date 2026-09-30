@@ -49,7 +49,10 @@ class DLP_Paneles_Geo {
         $slat = $store_id ? get_post_meta($store_id, 'extra_store_lat', true) : '';
         $slng = $store_id ? get_post_meta($store_id, 'extra_store_lng', true) : '';
 
+        $zs = (int) $order->get_meta('_dlp_tienda_zona');
+
         return array(
+            'cubre_a' => $zs ? get_the_title($zs) : '',
             'lat' => (float) $lat,
             'lng' => (float) $lng,
             'zona' => (string) $order->get_meta('_dlp_zona'),

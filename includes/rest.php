@@ -197,6 +197,18 @@ class DLP_Paneles_REST {
             'permission_callback' => array(__CLASS__, 'can_access_panel'),
         ));
 
+        register_rest_route('dlp-paneles/v1', '/servicios/cubrir', array(
+            'methods' => WP_REST_Server::CREATABLE,
+            'callback' => array(__CLASS__, 'set_service_cover'),
+            'permission_callback' => array(__CLASS__, 'can_access_panel'),
+            'args' => array(
+                'store_id' => array('required' => true, 'type' => 'integer'),
+                'por' => array('required' => true, 'type' => 'integer'),
+                'minutos' => array('required' => false, 'type' => 'integer'),
+                'motivo' => array('required' => false, 'type' => 'string'),
+            ),
+        ));
+
         register_rest_route('dlp-paneles/v1', '/servicios/pausa', array(
             'methods' => WP_REST_Server::CREATABLE,
             'callback' => array(__CLASS__, 'set_service_pause'),
@@ -253,7 +265,28 @@ class DLP_Paneles_REST {
                 'hasta' => $paused && !empty($p['hasta']) ? wp_date('H:i', (int) $p['hasta']) : '',
             );
         }
+        $ci = function_exists('dlp_tiendas_cobertura_info') ? dlp_tiendas_cobertura_info($store_id) : array('cubierta_por' => null, 'cubriendo' => array());
+        $row['cubierta_por'] = $ci['cubierta_por'];
+        $row['cubriendo'] = $ci['cubriendo'];
         return $row;
+    }
+
+    public static function set_service_cover($request) {
+        if (!DLP_Paneles_Geo::available() || !function_exists('dlp_tiendas_set_cubierta')) {
+            return new WP_Error('dlp_unavailable', 'DLP Tiendas no esta activo.', array('status' => 501));
+        }
+        $uid = get_current_user_id();
+        $store_id = absint($request['store_id']);
+        $allowed = self::is_supervisor_user($uid) ? self::get_all_store_ids() : self::get_user_store_ids($uid);
+        if (!$store_id || !in_array($store_id, $allowed, true) || get_post_type($store_id) !== 'extra_store') {
+            return new WP_Error('dlp_forbidden', 'No puede modificar esta tienda.', array('status' => 403));
+        }
+        $min = max(0, min(10080, (int) $request['minutos']));
+        $res = dlp_tiendas_set_cubierta($store_id, absint($request['por']), $min, (string) $request['motivo']);
+        if (is_wp_error($res)) {
+            return new WP_Error('dlp_cover', $res->get_error_message(), array('status' => 400));
+        }
+        return self::service_row($store_id);
     }
 
     public static function get_services() {
@@ -262,6 +295,13 @@ class DLP_Paneles_REST {
         }
         $uid = get_current_user_id();
         $ids = self::is_supervisor_user($uid) ? self::get_all_store_ids() : self::get_user_store_ids($uid);
+        $options = array();
+        foreach (self::get_all_store_ids() as $oid) {
+            if (get_post_status($oid) === 'publish' && dlp_tiendas_store_flags($oid)['enabled']) {
+                $options[] = array('id' => (int) $oid, 'name' => get_the_title($oid));
+            }
+        }
+        usort($options, function ($a, $b) { return strcasecmp($a['name'], $b['name']); });
         $rows = array();
         foreach ($ids as $id) {
             if (get_post_status($id) === 'publish') {
@@ -269,7 +309,7 @@ class DLP_Paneles_REST {
             }
         }
         usort($rows, function ($a, $b) { return strcasecmp($a['name'], $b['name']); });
-        return array('available' => true, 'stores' => $rows);
+        return array('available' => true, 'stores' => $rows, 'options' => $options);
     }
 
     public static function set_service_pause($request) {
