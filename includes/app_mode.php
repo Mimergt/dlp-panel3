@@ -33,6 +33,8 @@ class DLP_Paneles_App_Mode {
 
         $css_url = DLP_PANELES_URL . 'assets/css/panel.css?ver=' . rawurlencode($css_version);
         $js_url = DLP_PANELES_URL . 'assets/js/panel.js?ver=' . rawurlencode($js_version);
+        $geo_file = DLP_PANELES_DIR . 'assets/js/panel-geo.js';
+        $geo_url = DLP_PANELES_URL . 'assets/js/panel-geo.js?ver=' . rawurlencode(file_exists($geo_file) ? (string) filemtime($geo_file) : DLP_PANELES_VERSION);
 
         $current_user = wp_get_current_user();
 
@@ -44,6 +46,7 @@ class DLP_Paneles_App_Mode {
             'brandTitle' => 'DEL PUENTE',
             'brandLogoUrl' => 'https://delpuente.com.gt/wp-content/uploads/2020/08/new-logo-web-dlp.png',
             'currentUserName' => $current_user->display_name ? $current_user->display_name : $current_user->user_login,
+            'geo' => DLP_Paneles_Geo::front_config(),
         );
 
         status_header(200);
@@ -65,6 +68,7 @@ class DLP_Paneles_App_Mode {
         echo '<body class="dlp-paneles-app-mode">';
         echo '<div id="dlp-paneles-root"></div>';
         echo '<script src="' . esc_url($js_url) . '" defer></script>';
+        echo '<script src="' . esc_url($geo_url) . '" defer></script>';
         echo '</body>';
         echo '</html>';
         exit;

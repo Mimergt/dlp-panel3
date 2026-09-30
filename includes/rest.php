@@ -184,6 +184,129 @@ class DLP_Paneles_REST {
                 ),
             ),
         ));
+
+        register_rest_route('dlp-paneles/v1', '/pedido/(?P<id>\\d+)/geo', array(
+            'methods' => WP_REST_Server::READABLE,
+            'callback' => array(__CLASS__, 'get_order_geo_hint'),
+            'permission_callback' => array(__CLASS__, 'can_access_panel'),
+        ));
+
+        register_rest_route('dlp-paneles/v1', '/servicios', array(
+            'methods' => WP_REST_Server::READABLE,
+            'callback' => array(__CLASS__, 'get_services'),
+            'permission_callback' => array(__CLASS__, 'can_access_panel'),
+        ));
+
+        register_rest_route('dlp-paneles/v1', '/servicios/pausa', array(
+            'methods' => WP_REST_Server::CREATABLE,
+            'callback' => array(__CLASS__, 'set_service_pause'),
+            'permission_callback' => array(__CLASS__, 'can_access_panel'),
+            'args' => array(
+                'store_id' => array('required' => true, 'type' => 'integer'),
+                'tipo' => array('required' => true, 'type' => 'string'),
+                'activa' => array('required' => true, 'type' => 'boolean'),
+                'motivo' => array('required' => false, 'type' => 'string'),
+                'minutos' => array('required' => false, 'type' => 'integer'),
+            ),
+        ));
+    }
+
+    // Tienda que le corresponde a la ubicacion del pedido segun los poligonos (para avisar al reasignar).
+    public static function get_order_geo_hint($request) {
+        $order = wc_get_order(absint($request['id']));
+        if (!$order || !self::user_can_access_order($order, get_current_user_id())) {
+            return new WP_Error('dlp_forbidden', 'No tiene acceso a este pedido.', array('status' => 403));
+        }
+        if (!DLP_Paneles_Geo::available()) {
+            return array('available' => false);
+        }
+        $lat = $order->get_meta('_dlp_lat');
+        $lng = $order->get_meta('_dlp_lng');
+        if (!is_numeric($lat) || !is_numeric($lng)) {
+            return array('available' => true, 'has_geo' => false);
+        }
+        $hit = dlp_tiendas_resolve_store((float) $lat, (float) $lng);
+        return array(
+            'available' => true,
+            'has_geo' => true,
+            'zone_store_id' => $hit ? (int) $hit['store_id'] : 0,
+            'zone_store_name' => $hit ? get_the_title($hit['store_id']) : '',
+            'zona' => $hit ? $hit['zona'] : '',
+        );
+    }
+
+    private static function service_row($store_id) {
+        $row = array('store_id' => (int) $store_id, 'name' => get_the_title($store_id), 'enabled' => false);
+        $flags = dlp_tiendas_store_flags($store_id);
+        $row['enabled'] = (bool) $flags['enabled'];
+        foreach (array('delivery', 'pickup') as $t) {
+            $st = dlp_tiendas_service_status($store_id, $t);
+            $p = dlp_tiendas_get_pausa($store_id, $t);
+            $paused = !empty($p['activa']) && (empty($p['hasta']) || (int) $p['hasta'] > time());
+            $row[$t] = array(
+                'offered' => (bool) $flags[$t],
+                'ok' => (bool) $st['ok'],
+                'reason' => $st['reason'],
+                'msg' => $st['msg'],
+                'paused' => $paused,
+                'motivo' => $paused ? (string) $p['motivo'] : '',
+                'hasta' => $paused && !empty($p['hasta']) ? wp_date('H:i', (int) $p['hasta']) : '',
+            );
+        }
+        return $row;
+    }
+
+    public static function get_services() {
+        if (!DLP_Paneles_Geo::available()) {
+            return array('available' => false, 'stores' => array());
+        }
+        $uid = get_current_user_id();
+        $ids = self::is_supervisor_user($uid) ? self::get_all_store_ids() : self::get_user_store_ids($uid);
+        $rows = array();
+        foreach ($ids as $id) {
+            if (get_post_status($id) === 'publish') {
+                $rows[] = self::service_row($id);
+            }
+        }
+        usort($rows, function ($a, $b) { return strcasecmp($a['name'], $b['name']); });
+        return array('available' => true, 'stores' => $rows);
+    }
+
+    public static function set_service_pause($request) {
+        if (!DLP_Paneles_Geo::available()) {
+            return new WP_Error('dlp_unavailable', 'DLP Tiendas no esta activo.', array('status' => 501));
+        }
+        $uid = get_current_user_id();
+        $store_id = absint($request['store_id']);
+        $allowed = self::is_supervisor_user($uid) ? self::get_all_store_ids() : self::get_user_store_ids($uid);
+        if (!$store_id || !in_array($store_id, $allowed, true) || get_post_type($store_id) !== 'extra_store') {
+            return new WP_Error('dlp_forbidden', 'No puede modificar esta tienda.', array('status' => 403));
+        }
+        $tipo = sanitize_key($request['tipo']);
+        if (!in_array($tipo, array('delivery', 'pickup'), true)) {
+            return new WP_Error('dlp_bad_type', 'Servicio no valido.', array('status' => 400));
+        }
+
+        if ($request['activa']) {
+            $min = max(0, min(1440, (int) $request['minutos']));
+            $data = array(
+                'activa' => 1,
+                'motivo' => mb_substr(sanitize_text_field((string) $request['motivo']), 0, 120),
+                'hasta' => $min > 0 ? time() + $min * 60 : 0,
+            );
+            update_post_meta($store_id, "_dlp_pausa_{$tipo}", wp_slash(wp_json_encode($data)));
+        } else {
+            delete_post_meta($store_id, "_dlp_pausa_{$tipo}");
+        }
+
+        // Bitacora simple de quien pauso / reanudo.
+        $user = wp_get_current_user();
+        add_post_meta($store_id, '_dlp_pausa_log', wp_slash(wp_json_encode(array(
+            'ts' => time(), 'user' => $user->user_login, 'tipo' => $tipo, 'activa' => $request['activa'] ? 1 : 0,
+            'motivo' => (string) $request['motivo'], 'minutos' => (int) $request['minutos'],
+        ))));
+
+        return self::service_row($store_id);
     }
 
     public static function can_access_panel() {
@@ -468,6 +591,7 @@ class DLP_Paneles_REST {
                 'total' => (float) $order->get_total(),
                 'items' => self::get_order_items_payload($order),
                 'items_count' => count($order->get_items()),
+                'geo' => DLP_Paneles_Geo::order_payload($order, $order_type, $store_id),
                 'customer_id' => $customer_id,
                 'customer_blocked' => $customer_id ? (get_user_meta($customer_id, 'is_active', true) === 'n') : false,
                 // "billing_nit" y "billing_nitname" son metas personalizados

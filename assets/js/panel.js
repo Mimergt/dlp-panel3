@@ -40,9 +40,14 @@
     reassignModalOrderId: null,
     reassignSelectedStoreId: null,
     collapsedColumns: {},
+    geoHint: null,
+    servicesModal: null,
   };
 
   var ICON = {
+    map: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" x2="8" y1="2" y2="18"></line><line x1="16" x2="16" y1="6" y2="22"></line></svg>',
+    nav: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>',
+    power: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" x2="12" y1="2" y2="12"></line></svg>',
     clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>',
     user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>',
     phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>',
@@ -593,6 +598,32 @@
   // "billing_nit" y "billing_nit_nombre" son metas personalizados de
   // checkout (numero de NIT y el nombre de facturacion asociado), no
   // estandar de WooCommerce. Se muestran juntos en una sola fila.
+  // Ubicacion del pedido (delivery). Los enlaces de ruta son solo enlaces (cero peticiones);
+  // el mapa se carga unicamente al pulsar "Ver mapa".
+  function geoLinks(g) {
+    var dest = g.lat + ',' + g.lng;
+    var gm = 'https://www.google.com/maps/dir/?api=1&destination=' + dest +
+      (g.store_lat != null && g.store_lng != null ? '&origin=' + g.store_lat + ',' + g.store_lng : '') + '&travelmode=driving';
+    var wz = 'https://waze.com/ul?ll=' + dest + '&navigate=yes';
+    return { gm: gm, wz: wz };
+  }
+
+  function renderGeoRow(order) {
+    var g = order.geo;
+    if (!g) {
+      return '';
+    }
+    var l = geoLinks(g);
+    return '<div class="dlp2-geo-row">' +
+      (g.zona ? '<div class="dlp2-geo-zone">' + ICON.pin + '<span>Zona: ' + esc(g.zona) + '</span></div>' : '') +
+      '<div class="dlp2-geo-actions">' +
+        '<button class="dlp2-geo-btn" type="button" data-action="open-geo" data-order-id="' + order.id + '" data-lat="' + g.lat + '" data-lng="' + g.lng + '" data-slat="' + (g.store_lat == null ? '' : g.store_lat) + '" data-slng="' + (g.store_lng == null ? '' : g.store_lng) + '" data-zona="' + esc(g.zona || '') + '">' + ICON.map + '<span>Ver mapa</span></button>' +
+        '<a class="dlp2-geo-btn" href="' + esc(l.gm) + '" target="_blank" rel="noopener">' + ICON.nav + '<span>Ruta</span></a>' +
+        '<a class="dlp2-geo-btn" href="' + esc(l.wz) + '" target="_blank" rel="noopener">' + ICON.nav + '<span>Waze</span></a>' +
+      '</div>' +
+    '</div>';
+  }
+
   function renderNitRow(order) {
     if (!order.nit && !order.nit_nombre) {
       return '';
@@ -654,6 +685,7 @@
                 (order.phone ? '<a class="dlp2-phone-link" href="tel:' + esc(order.phone) + '">' + ICON.phone + '<span>' + esc(order.phone) + '</span></a>' : '') +
               '</div>' +
               (order.full_address ? '<div class="dlp2-customer-address">' + ICON.pin + '<div><span class="dlp2-address-label">' + esc(addressLabel) + '</span><span class="dlp2-address-value">' + esc(order.full_address) + '</span></div></div>' : '') +
+              renderGeoRow(order) +
               renderNitRow(order) +
               (order.notes ? '<div class="dlp2-customer-note">' + ICON.alert + '<span>Nota: ' + esc(order.notes) + '</span></div>' : '') +
             '</div>' +
@@ -770,6 +802,7 @@
                 (order.phone ? '<a class="dlp2-phone-link" href="tel:' + esc(order.phone) + '">' + ICON.phone + '<span>' + esc(order.phone) + '</span></a>' : '') +
               '</div>' +
               (order.full_address ? '<div class="dlp2-customer-address">' + ICON.pin + '<div><span class="dlp2-address-label">' + esc(addressLabel) + '</span><span class="dlp2-address-value">' + esc(order.full_address) + '</span></div></div>' : '') +
+              renderGeoRow(order) +
               renderNitRow(order) +
               (order.notes ? '<div class="dlp2-customer-note">' + ICON.alert + '<span>Nota: ' + esc(order.notes) + '</span></div>' : '') +
             '</div>' +
@@ -846,6 +879,7 @@
             '<strong>' + esc(formatNowTime()) + '</strong>' +
             '<span>' + esc(formatNowDate()) + '</span>' +
           '</div>' +
+          ((window.DLP_PANELES_CONFIG.geo && window.DLP_PANELES_CONFIG.geo.enabled) ? '<button class="dlp2-btn-ghost" data-action="open-services" type="button">' + ICON.power + '<span>Servicios</span></button>' : '') +
           '<button class="dlp2-btn-ghost" data-action="force-refresh" type="button">' + ICON.sync + '<span>Sincronizar</span></button>' +
           '<a class="dlp2-btn-dark" href="' + esc(window.DLP_PANELES_CONFIG.logoutUrl || '#') + '">' + ICON.logout + '<span>Cerrar Sesion</span></a>' +
         '</div>' +
@@ -926,6 +960,20 @@
   // tienda), y el boton "Asignar" pide una confirmacion nativa antes de
   // llamar a la API (en vez de aplicar el cambio con solo elegir la opcion,
   // como hacia el <select> anterior).
+  function renderZoneHint(order) {
+    var h = state.geoHint;
+    if (!h || h.orderId !== order.id || !h.has_geo) {
+      return '';
+    }
+    if (!h.zone_store_id) {
+      return '<p class="dlp2-zone-hint dlp2-zone-hint-warn">La ubicacion del cliente ya no esta dentro de ninguna zona de cobertura.</p>';
+    }
+    if (Number(h.zone_store_id) === Number(order.store_id)) {
+      return '<p class="dlp2-zone-hint">La ubicacion del cliente pertenece a la zona de esta tienda.</p>';
+    }
+    return '<p class="dlp2-zone-hint dlp2-zone-hint-warn">Por ubicacion, este pedido corresponde a <strong>' + esc(h.zone_store_name) + '</strong>' + (h.zona ? ' (' + esc(h.zona) + ')' : '') + '.</p>';
+  }
+
   function renderReassignModal() {
     if (!state.reassignModalOrderId) {
       return '';
@@ -961,6 +1009,7 @@
           '</div>' +
           '<div class="dlp2-modal-body">' +
             '<p class="dlp2-modal-subtitle">Pedido #' + order.id + ' &middot; tienda actual: ' + esc(order.store_name || 'Sin tienda asignada') + '</p>' +
+            renderZoneHint(order) +
             '<div class="dlp2-modal-store-list">' + storesHtml + '</div>' +
           '</div>' +
           '<div class="dlp2-modal-footer">' +
@@ -1163,7 +1212,14 @@
       var reassignOrder = state.orders.find(function (o) { return o.id === Number(openReassignBtn.dataset.orderId); });
       state.reassignModalOrderId = Number(openReassignBtn.dataset.orderId);
       state.reassignSelectedStoreId = reassignOrder && reassignOrder.store_id ? Number(reassignOrder.store_id) : null;
+      state.geoHint = null;
       render();
+      if (reassignOrder && reassignOrder.geo) {
+        var hintOrderId = reassignOrder.id;
+        api('/pedido/' + hintOrderId + '/geo', 'GET').then(function (h) {
+          if (state.reassignModalOrderId === hintOrderId) { h.orderId = hintOrderId; state.geoHint = h; render(); }
+        }).catch(function () {});
+      }
       return;
     }
 
