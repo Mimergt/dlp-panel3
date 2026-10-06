@@ -1008,3 +1008,8 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
 
 ### Estado
 - Probado visualmente con un arnes local con API simulada (escritorio, movil, busqueda, delta). NO probado contra WordPress/WooCommerce real: validar tiempos de `/historial/indice` en produccion y subir purgando Cloudflare.
+
+## 1.12.2 — Compatible con HPOS
+- Las metas de pedido (tienda, tipo, prioridad, nota interna, NIT, motivo de cancelacion, hora de recogida) se leen/escriben ahora por el objeto del pedido (`$order->get_meta()` / `update_meta_data()`), no con `get_post_meta()`, asi funciona igual con posts clasicos y con las tablas de HPOS. El plugin declara compatibilidad `custom_order_tables`.
+- Historial: con HPOS el filtro por tienda de un usuario de tienda se hace en la consulta (`meta_query`); con posts clasicos se mantiene el filtrado por ids.
+- Dev (2026-10-06): WooCommerce 11.1.2 con almacenamiento CLASICO (no hay HPOS, 62k pedidos en posts). Probado: indice del historial (supervisor, 62k pedidos, 0,46 s), detalle, delta, tablero, prioridad/nota y reasignacion.

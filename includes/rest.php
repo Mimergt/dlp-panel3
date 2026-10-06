@@ -380,6 +380,12 @@ class DLP_Paneles_REST {
         return get_user_meta($user_id, '_dlp_paneles_supervisor', true) === '1';
     }
 
+    // true si WooCommerce guarda los pedidos en las tablas propias (HPOS).
+    public static function hpos_enabled() {
+        return class_exists('\\Automattic\\WooCommerce\\Utilities\\OrderUtil')
+            && \Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled();
+    }
+
     public static function get_user_store_ids($user_id) {
         $by_user_meta = self::get_user_assigned_store_ids_from_meta($user_id);
         if (!empty($by_user_meta)) {
@@ -459,7 +465,7 @@ class DLP_Paneles_REST {
             return false;
         }
 
-        $order_store_id = absint(get_post_meta($order->get_id(), 'extra_store_name', true));
+        $order_store_id = absint($order->get_meta('extra_store_name', true));
         return in_array($order_store_id, $store_ids, true);
     }
 
@@ -562,7 +568,7 @@ class DLP_Paneles_REST {
 
             $created = $order->get_date_created();
             $created_ts = $created ? strtotime($created->format('Y-m-d H:i:s')) : $now_ts;
-            $store_id = absint(get_post_meta($order_id, 'extra_store_name', true));
+            $store_id = absint($order->get_meta('extra_store_name', true));
 
             // Pedido Completado: el contador no debe seguir corriendo. Se usa la
             // fecha de finalizacion que WooCommerce ya guarda (_date_completed)
@@ -603,7 +609,7 @@ class DLP_Paneles_REST {
                 continue;
             }
 
-            $order_type = get_post_meta($order_id, 'woofood_order_type', true);
+            $order_type = $order->get_meta('woofood_order_type', true);
             if ($order_type !== 'pickup') {
                 $order_type = 'delivery';
             }
@@ -615,7 +621,7 @@ class DLP_Paneles_REST {
                 'status' => $status,
                 'group' => $group,
                 'order_type' => $order_type,
-                'pickup_time' => ($order_type === 'pickup' && is_numeric($pt = get_post_meta($order_id, 'woofood_time_to_deliver', true)) && (int) $pt > 1000000000) ? wp_date('g:i a', (int) $pt) : '',
+                'pickup_time' => ($order_type === 'pickup' && is_numeric($pt = $order->get_meta('woofood_time_to_deliver', true)) && (int) $pt > 1000000000) ? wp_date('g:i a', (int) $pt) : '',
                 'store_id' => $store_id,
                 'store_name' => $store_id ? get_the_title($store_id) : '',
                 'customer_name' => trim($order->get_billing_first_name() . ' ' . $order->get_billing_last_name()),
@@ -625,9 +631,9 @@ class DLP_Paneles_REST {
                 'city' => $order->get_billing_city(),
                 'elapsed_seconds' => max(0, $reference_ts - $created_ts),
                 'entry_time' => $created ? $created->format('H:i:s') : '',
-                'priority' => get_post_meta($order_id, '_dlp_priority', true) === '1',
+                'priority' => $order->get_meta('_dlp_priority', true) === '1',
                 'notes' => $order->get_customer_note(),
-                'internal_note' => get_post_meta($order_id, '_dlp_internal_note', true),
+                'internal_note' => $order->get_meta('_dlp_internal_note', true),
                 'payment_method_title' => $order->get_payment_method_title(),
                 'total' => (float) $order->get_total(),
                 'items' => self::get_order_items_payload($order),
@@ -638,9 +644,9 @@ class DLP_Paneles_REST {
                 // "billing_nit" y "billing_nitname" son metas personalizados
                 // de checkout (numero de NIT + nombre para facturacion), no
                 // estandar de WooCommerce.
-                'nit' => (string) get_post_meta($order_id, 'billing_nit', true),
-                'nit_nombre' => (string) get_post_meta($order_id, 'billing_nitname', true),
-                'cancel_reason' => self::is_cancelled_status($status) ? (string) get_post_meta($order_id, '_motivo_cancelacion_tienda', true) : '',
+                'nit' => (string) $order->get_meta('billing_nit', true),
+                'nit_nombre' => (string) $order->get_meta('billing_nitname', true),
+                'cancel_reason' => self::is_cancelled_status($status) ? (string) $order->get_meta('_motivo_cancelacion_tienda', true) : '',
             );
         }
 
@@ -737,7 +743,8 @@ class DLP_Paneles_REST {
 
         $order->update_status('cancelled');
         $order->add_order_note('Motivo de cancelacion: ' . $motivo);
-        update_post_meta($order_id, '_motivo_cancelacion_tienda', $motivo);
+        $order->update_meta_data('_motivo_cancelacion_tienda', $motivo);
+        $order->save_meta_data();
 
         return new WP_REST_Response(array(
             'ok' => true,
@@ -761,20 +768,22 @@ class DLP_Paneles_REST {
 
         $priority_param = $request->get_param('priority');
         if ($priority_param !== null) {
-            update_post_meta($order_id, '_dlp_priority', $priority_param ? '1' : '0');
+            $order->update_meta_data('_dlp_priority', $priority_param ? '1' : '0');
         }
 
         $internal_note_param = $request->get_param('internal_note');
         if ($internal_note_param !== null) {
             $internal_note = sanitize_textarea_field((string) $internal_note_param);
-            update_post_meta($order_id, '_dlp_internal_note', $internal_note);
+            $order->update_meta_data('_dlp_internal_note', $internal_note);
         }
+
+        $order->save_meta_data();
 
         return new WP_REST_Response(array(
             'ok' => true,
             'order_id' => $order_id,
-            'priority' => get_post_meta($order_id, '_dlp_priority', true) === '1',
-            'internal_note' => (string) get_post_meta($order_id, '_dlp_internal_note', true),
+            'priority' => $order->get_meta('_dlp_priority', true) === '1',
+            'internal_note' => (string) $order->get_meta('_dlp_internal_note', true),
         ));
     }
 
@@ -805,10 +814,10 @@ class DLP_Paneles_REST {
             return new WP_REST_Response(array('message' => 'Tienda invalida'), 400);
         }
 
-        update_post_meta($order_id, 'extra_store_name', $store_id);
-        update_post_meta($order_id, 'tienda_asignada', get_the_title($store_id));
+        $order->update_meta_data('extra_store_name', $store_id);
+        $order->update_meta_data('tienda_asignada', get_the_title($store_id));
 
-        // Actualizar solo post meta no cambia la fecha de modificacion del
+        // Actualizar solo meta no cambia la fecha de modificacion del
         // pedido; el historial sincroniza por date_modified, asi que se
         // marca explicitamente para que el cambio de tienda llegue al delta.
         $order->set_date_modified(time());

@@ -164,10 +164,23 @@ class DLP_Paneles_History {
         ));
 
         if (!$supervisor && !empty($ids)) {
-            update_meta_cache('post', $ids);
-            $ids = array_values(array_filter($ids, function ($id) use ($store_ids) {
-                return in_array(absint(get_post_meta($id, 'extra_store_name', true)), $store_ids, true);
-            }));
+            if (DLP_Paneles_REST::hpos_enabled()) {
+                // Con las tablas propias de WooCommerce el filtro por meta si se hace en la consulta.
+                $ids = wc_get_orders(array(
+                    'status' => $statuses,
+                    'date_created' => '>=' . $min_ts,
+                    'orderby' => 'date',
+                    'order' => 'DESC',
+                    'limit' => -1,
+                    'return' => 'ids',
+                    'meta_query' => array(array('key' => 'extra_store_name', 'value' => $store_ids, 'compare' => 'IN', 'type' => 'NUMERIC')),
+                ));
+            } else {
+                update_meta_cache('post', $ids);
+                $ids = array_values(array_filter($ids, function ($id) use ($store_ids) {
+                    return in_array(absint(get_post_meta($id, 'extra_store_name', true)), $store_ids, true);
+                }));
+            }
         }
 
         $page = max(1, absint($request->get_param('page')) ?: 1);
@@ -213,7 +226,7 @@ class DLP_Paneles_History {
             ? max(0, $completed->getTimestamp() - $created->getTimestamp())
             : 0;
 
-        $pt = get_post_meta($order_id, 'woofood_time_to_deliver', true);
+        $pt = $order->get_meta('woofood_time_to_deliver', true);
 
         return new WP_REST_Response(array(
             'id' => $order_id,
@@ -235,9 +248,9 @@ class DLP_Paneles_History {
             'total' => (float) $order->get_total(),
             'items' => DLP_Paneles_REST::get_order_items_payload($order),
             'items_count' => count($order->get_items()),
-            'nit' => (string) get_post_meta($order_id, 'billing_nit', true),
-            'nit_nombre' => (string) get_post_meta($order_id, 'billing_nitname', true),
-            'cancel_reason' => $status === 'cancelled' ? (string) get_post_meta($order_id, '_motivo_cancelacion_tienda', true) : '',
+            'nit' => (string) $order->get_meta('billing_nit', true),
+            'nit_nombre' => (string) $order->get_meta('billing_nitname', true),
+            'cancel_reason' => $status === 'cancelled' ? (string) $order->get_meta('_motivo_cancelacion_tienda', true) : '',
         ));
     }
 }
