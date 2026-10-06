@@ -15,7 +15,8 @@ class DLP_Paneles_App_Mode {
         }
 
         $slug = apply_filters('dlp_paneles_app_slug', 'orders');
-        if (!is_page($slug)) {
+        $is_history = self::is_history_request($slug);
+        if (!$is_history && !is_page($slug)) {
             return;
         }
 
@@ -36,9 +37,16 @@ class DLP_Paneles_App_Mode {
         $geo_file = DLP_PANELES_DIR . 'assets/js/panel-geo.js';
         $geo_url = DLP_PANELES_URL . 'assets/js/panel-geo.js?ver=' . rawurlencode(file_exists($geo_file) ? (string) filemtime($geo_file) : DLP_PANELES_VERSION);
 
+        $history_file = DLP_PANELES_DIR . 'assets/js/panel-history.js';
+        $history_url = DLP_PANELES_URL . 'assets/js/panel-history.js?ver=' . rawurlencode(file_exists($history_file) ? (string) filemtime($history_file) : DLP_PANELES_VERSION);
+
         $current_user = wp_get_current_user();
 
         $config = array(
+            'mode' => $is_history ? 'history' : 'board',
+            'userId' => get_current_user_id(),
+            'boardUrl' => esc_url_raw(home_url('/' . $slug . '/')),
+            'historyUrl' => esc_url_raw(home_url('/' . $slug . '/historial/')),
             'apiBase' => esc_url_raw(rest_url('dlp-paneles/v1')),
             'nonce' => wp_create_nonce('wp_rest'),
             'refreshSeconds' => 30,
@@ -57,7 +65,7 @@ class DLP_Paneles_App_Mode {
         echo '<head>';
         echo '<meta charset="' . esc_attr(get_bloginfo('charset')) . '">';
         echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
-        echo '<title>DLP Paneles</title>';
+        echo '<title>' . ($is_history ? 'DLP Historial de pedidos' : 'DLP Paneles') . '</title>';
         echo '<link rel="preconnect" href="https://fonts.googleapis.com">';
         echo '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>';
         echo '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">';
@@ -68,9 +76,28 @@ class DLP_Paneles_App_Mode {
         echo '<body class="dlp-paneles-app-mode">';
         echo '<div id="dlp-paneles-root"></div>';
         echo '<script src="' . esc_url($js_url) . '" defer></script>';
-        echo '<script src="' . esc_url($geo_url) . '" defer></script>';
+        if ($is_history) {
+            echo '<script src="' . esc_url($history_url) . '" defer></script>';
+        } else {
+            echo '<script src="' . esc_url($geo_url) . '" defer></script>';
+        }
         echo '</body>';
         echo '</html>';
         exit;
+    }
+
+    // /orders/historial/ no necesita una pagina de WordPress: se detecta por
+    // la ruta de la peticion (relativa a la raiz del sitio) para no obligar a
+    // crear una pagina hija ni a refrescar los enlaces permanentes.
+    private static function is_history_request($slug) {
+        $uri = isset($_SERVER['REQUEST_URI']) ? wp_unslash($_SERVER['REQUEST_URI']) : '';
+        $path = (string) wp_parse_url($uri, PHP_URL_PATH);
+        $home_path = (string) wp_parse_url(home_url('/'), PHP_URL_PATH);
+
+        if ($home_path !== '' && $home_path !== '/' && strpos($path, $home_path) === 0) {
+            $path = substr($path, strlen($home_path) - 1);
+        }
+
+        return trim($path, '/') === trim($slug, '/') . '/historial';
     }
 }

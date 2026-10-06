@@ -71,6 +71,29 @@
     userBlock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="17" x2="22" y1="8" y2="13"></line><line x1="22" x2="17" y1="8" y2="13"></line></svg>',
   };
 
+  // Modo historial (/orders/historial/): panel-history.js reutiliza estos
+  // renderers y no necesita el tablero, asi que no se registran listeners
+  // ni polling de este archivo.
+  if (window.DLP_PANELES_CONFIG.mode === 'history') {
+    window.DLP_UI = {
+      root: root,
+      ICON: ICON,
+      esc: esc,
+      formatMoney: formatMoney,
+      fmtCardTime: fmtCardTime,
+      api: api,
+      renderTypePill: renderTypePill,
+      renderPaymentBanner: renderPaymentBanner,
+      renderProductRow: renderProductRow,
+      renderProducts: renderProducts,
+      renderNitRow: renderNitRow,
+      renderPickupTime: renderPickupTime,
+      renderTimeCard: renderTimeCard,
+      isPickup: isPickup
+    };
+    return;
+  }
+
   function esc(str) {
     return String(str || '')
       .replace(/&/g, '&amp;')
@@ -889,6 +912,7 @@
             '<strong>' + esc(formatNowTime()) + '</strong>' +
             '<span>' + esc(formatNowDate()) + '</span>' +
           '</div>' +
+          (window.DLP_PANELES_CONFIG.historyUrl ? '<a class="dlp2-btn-ghost" href="' + esc(window.DLP_PANELES_CONFIG.historyUrl) + '">' + ICON.file + '<span>Historial</span></a>' : '') +
           ((window.DLP_PANELES_CONFIG.geo && window.DLP_PANELES_CONFIG.geo.enabled) ? '<button class="dlp2-btn-ghost" data-action="open-services" type="button">' + ICON.power + '<span>Servicios</span></button>' : '') +
           '<button class="dlp2-btn-ghost" data-action="force-refresh" type="button">' + ICON.sync + '<span>Sincronizar</span></button>' +
           '<a class="dlp2-btn-dark" href="' + esc(window.DLP_PANELES_CONFIG.logoutUrl || '#') + '">' + ICON.logout + '<span>Cerrar Sesion</span></a>' +

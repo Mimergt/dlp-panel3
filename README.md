@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.8.0
+- 1.12.0
 
 ## Shortcode
 - [dlp_paneles]
@@ -14,6 +14,8 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 - POST /wp-json/dlp-paneles/v1/pedido/{id}/cancelar
 - POST /wp-json/dlp-paneles/v1/pedido/{id}/meta
 - POST /wp-json/dlp-paneles/v1/pedido/{id}/tienda
+- GET /wp-json/dlp-paneles/v1/historial/indice (indice liviano: ?days=&page= descarga completa, ?since= solo cambios)
+- GET /wp-json/dlp-paneles/v1/historial/pedido/{id} (detalle de solo lectura)
 
 ## Incluido en 1.1.1
 - Reasignacion de tienda desde el detalle del pedido.
@@ -182,6 +184,14 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 ## Incluido en 1.11.1
 - Detalle del pedido (columna lateral): el titulo (#pedido, tipo, estado e ingreso) queda fijo al hacer scroll.
 - Se corrige el release 1.8.1 publicado por error: sobrescribio dlp-paneles.php (quitando `require_once includes/geo.php`, causa del error critico), panel.css, README y MEMORIA con versiones viejas, perdiendo lo de 1.9.0-1.11.0. Restaurado desde 1.11.0.
+
+## Incluido en 1.12.0 (historial de pedidos)
+- Nueva vista de solo consulta en `/orders/historial/` (sin pagina de WordPress; se detecta por la ruta). Boton "Historial" en el header del panel.
+- El navegador descarga una sola vez un indice liviano (id, estado, tipo, tienda, nombre, telefono, email, total, fecha) de los ultimos 30 dias (selector 7/30/90, tope en el servidor 90, filtro `dlp_paneles_history_max_days`) por paginas de 250, y luego solo pide los cambios (`since`, por `date_modified`) cada 60 s o al pulsar Sincronizar. Cache en `sessionStorage` (se borra al cerrar la pestana).
+- Buscador local e instantaneo: # de pedido, telefono, nombre y email (espera 150 ms, minimo 2 digitos / 3 letras). Filtros por Delivery/Pickup, tienda y (supervisor) estado.
+- Detalle completo del pedido (misma disposicion que el pedido expandido) cargado al hacer clic; sin acciones. Operadores ven solo completados de su tienda; el supervisor ve tambien cancelados.
+- Pedidos reasignados aparecen solo en la tienda de destino; `reassign_order_store` ahora marca `date_modified` para que el cambio llegue al delta.
+- Archivos nuevos: `includes/history.php`, `assets/js/panel-history.js`. `panel.js` expone `window.DLP_UI` en modo historial.
 
 ## Versionado acordado
 - Ajustes pequenos: 1.1.1, 1.1.2, 1.1.3

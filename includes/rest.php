@@ -808,6 +808,12 @@ class DLP_Paneles_REST {
         update_post_meta($order_id, 'extra_store_name', $store_id);
         update_post_meta($order_id, 'tienda_asignada', get_the_title($store_id));
 
+        // Actualizar solo post meta no cambia la fecha de modificacion del
+        // pedido; el historial sincroniza por date_modified, asi que se
+        // marca explicitamente para que el cambio de tienda llegue al delta.
+        $order->set_date_modified(time());
+        $order->save();
+
         return new WP_REST_Response(array(
             'ok' => true,
             'order_id' => $order_id,

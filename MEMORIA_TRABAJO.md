@@ -989,3 +989,22 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
 
 - Se agrego el titulo fijo (sticky) del detalle del pedido (`.dlp2-detail-top`, `top:-16px` por el padding del body).
 - INCIDENTE: el release 1.8.1 se armo desde una copia local desactualizada (`dlp-paneles/`, que estaba en 1.8.0 mientras el repo ya iba en 1.11.0 por otras sesiones) y se copiaron encima dlp-paneles.php, panel.css, README y MEMORIA. Eso quito `require_once includes/geo.php` y provoco un error critico de WordPress. Se restauraron esos 4 archivos desde 1.11.0 y se reaplico solo el sticky. Leccion: antes de publicar, sincronizar la copia local desde el clon `dlp-panel3` (fuente de verdad) y no al reves.
+
+
+## 2026-10-06 (1.12.0 - historial de pedidos /orders/historial/)
+
+### Resumen de conversacion
+- Operadores piden historico con buscador y detalle, de consulta. ~100 pedidos/dia en total; buscan por # de pedido, nombre, telefono y a veces email; sin HPOS en produccion (migraran a HPOS sin WooFood). Acordado: solo lectura, transferidos solo en la tienda destino, ventana por defecto 30 dias (max 90), detalle completo. El usuario propuso descargar una vez y luego actualizar solo lo nuevo.
+
+### Decisiones
+- Indice liviano descargado por paginas + delta por `date_modified`; busqueda en el navegador (no se consulta el servidor por tecla). Evita LIKE sobre postmeta sin indices. Detalle bajo demanda (`/historial/pedido/{id}`).
+- Ruta `/orders/historial/` detectada por REQUEST_URI en `app_mode.php` (no requiere pagina hija ni flush de permalinks).
+- Cache solo en `sessionStorage` (datos personales de clientes: no persistir mas alla de la pestana).
+- No se refactorizo `get_panel_data`: el detalle del historial duplica los campos necesarios en `history.php` (riesgo del incidente 1.8.1).
+- Cancelados solo para supervisor (mismo criterio que el tablero).
+
+### Archivos tocados
+- Nuevos: `includes/history.php`, `assets/js/panel-history.js`. Editados: `dlp-paneles.php` (1.12.0), `includes/app_mode.php`, `includes/rest.php` (date_modified al reasignar), `assets/js/panel.js` (export DLP_UI + boton Historial), `assets/css/panel.css`, README, MEMORIA.
+
+### Estado
+- Probado visualmente con un arnes local con API simulada (escritorio, movil, busqueda, delta). NO probado contra WordPress/WooCommerce real: validar tiempos de `/historial/indice` en produccion y subir purgando Cloudflare.
