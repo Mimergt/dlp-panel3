@@ -42,12 +42,28 @@ class DLP_Paneles_Geo {
 
         $lat = $order->get_meta('_dlp_lat');
         $lng = $order->get_meta('_dlp_lng');
-        if (!is_numeric($lat) || !is_numeric($lng)) {
-            return null;
-        }
 
         $slat = $store_id ? get_post_meta($store_id, 'extra_store_lat', true) : '';
         $slng = $store_id ? get_post_meta($store_id, 'extra_store_lng', true) : '';
+
+        if (!is_numeric($lat) || !is_numeric($lng)) {
+            // Pedido anterior al mapa (WooFood / zona escrita): sin coordenadas, pero con direccion escrita se
+            // ofrece Ruta y Waze buscando el texto (enlaces, sin servicios de pago ni consultas).
+            $text = DLP_Paneles_REST::format_full_address($order);
+            if ($text === '') {
+                return null;
+            }
+            return array(
+                'cubre_a' => '',
+                'lat' => null,
+                'lng' => null,
+                'query' => $text . ', Guatemala',
+                'zona' => (string) $order->get_billing_city(),
+                'source' => 'texto',
+                'store_lat' => is_numeric($slat) ? (float) $slat : null,
+                'store_lng' => is_numeric($slng) ? (float) $slng : null,
+            );
+        }
 
         $zs = (int) $order->get_meta('_dlp_tienda_zona');
 

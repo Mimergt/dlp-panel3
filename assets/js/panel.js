@@ -646,6 +646,15 @@
   // Ubicacion del pedido (delivery). Los enlaces de ruta son solo enlaces (cero peticiones);
   // el mapa se carga unicamente al pulsar "Ver mapa".
   function geoLinks(g) {
+    if (g.lat == null) {
+      // Pedido sin coordenadas: se busca la direccion escrita.
+      var q = encodeURIComponent(g.query || '');
+      return {
+        gm: 'https://www.google.com/maps/dir/?api=1&destination=' + q +
+          (g.store_lat != null && g.store_lng != null ? '&origin=' + g.store_lat + ',' + g.store_lng : '') + '&travelmode=driving',
+        wz: 'https://waze.com/ul?q=' + q + '&navigate=yes'
+      };
+    }
     var dest = g.lat + ',' + g.lng;
     var gm = 'https://www.google.com/maps/dir/?api=1&destination=' + dest +
       (g.store_lat != null && g.store_lng != null ? '&origin=' + g.store_lat + ',' + g.store_lng : '') + '&travelmode=driving';
@@ -663,7 +672,7 @@
       (g.zona ? '<div class="dlp2-geo-zone">' + ICON.pin + '<span>Zona: ' + esc(g.zona) + '</span></div>' : '') +
       (g.cubre_a ? '<div class="dlp2-geo-zone dlp2-geo-cover">' + ICON.pin + '<span>Cubriendo la zona de ' + esc(g.cubre_a) + '</span></div>' : '') +
       '<div class="dlp2-geo-actions">' +
-        '<button class="dlp2-geo-btn" type="button" data-action="open-geo" data-order-id="' + order.id + '" data-lat="' + g.lat + '" data-lng="' + g.lng + '" data-slat="' + (g.store_lat == null ? '' : g.store_lat) + '" data-slng="' + (g.store_lng == null ? '' : g.store_lng) + '" data-zona="' + esc(g.zona || '') + '">' + ICON.map + '<span>Ver mapa</span></button>' +
+        (g.lat == null ? '' : '<button class="dlp2-geo-btn" type="button" data-action="open-geo" data-order-id="' + order.id + '" data-lat="' + g.lat + '" data-lng="' + g.lng + '" data-slat="' + (g.store_lat == null ? '' : g.store_lat) + '" data-slng="' + (g.store_lng == null ? '' : g.store_lng) + '" data-zona="' + esc(g.zona || '') + '">' + ICON.map + '<span>Ver mapa</span></button>') +
         '<a class="dlp2-geo-btn" href="' + esc(l.gm) + '" target="_blank" rel="noopener">' + ICON.nav + '<span>Ruta</span></a>' +
         '<a class="dlp2-geo-btn" href="' + esc(l.wz) + '" target="_blank" rel="noopener">' + ICON.nav + '<span>Waze</span></a>' +
       '</div>' +
@@ -1270,7 +1279,7 @@
       state.reassignSelectedStoreId = reassignOrder && reassignOrder.store_id ? Number(reassignOrder.store_id) : null;
       state.geoHint = null;
       render();
-      if (reassignOrder && reassignOrder.geo) {
+      if (reassignOrder && reassignOrder.geo && reassignOrder.geo.lat != null) {
         var hintOrderId = reassignOrder.id;
         api('/pedido/' + hintOrderId + '/geo', 'GET').then(function (h) {
           if (state.reassignModalOrderId === hintOrderId) { h.orderId = hintOrderId; state.geoHint = h; render(); }
