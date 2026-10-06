@@ -1013,3 +1013,6 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
 - Las metas de pedido (tienda, tipo, prioridad, nota interna, NIT, motivo de cancelacion, hora de recogida) se leen/escriben ahora por el objeto del pedido (`$order->get_meta()` / `update_meta_data()`), no con `get_post_meta()`, asi funciona igual con posts clasicos y con las tablas de HPOS. El plugin declara compatibilidad `custom_order_tables`.
 - Historial: con HPOS el filtro por tienda de un usuario de tienda se hace en la consulta (`meta_query`); con posts clasicos se mantiene el filtrado por ids.
 - Dev (2026-10-06): WooCommerce 11.1.2 con almacenamiento CLASICO (no hay HPOS, 62k pedidos en posts). Probado: indice del historial (supervisor, 62k pedidos, 0,46 s), detalle, delta, tablero, prioridad/nota y reasignacion.
+
+## 1.13.0 — Estados propios del panel
+- `includes/statuses.php` registra `prep`, `dlv` y `rtp` (antes los daba WooCommerce Order Status Manager, inactivo/no compatible con HPOS). Si ese plugin esta activo, se aparta. Cuentan como pagados y entran en reportes. Dev ya usa HPOS (2026-10-06).
