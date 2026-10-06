@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.8.1
+- 1.8.0
 
 ## Shortcode
 - [dlp_paneles]
@@ -179,8 +179,9 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 ## Incluido en 1.8.0
 - Columna "Completada": nuevo boton (flecha) junto al contador para ocultar/mostrar todos los pedidos de la columna de un click, dejandola en blanco sin quitarla del tablero. Util para no distraer la vista con pedidos ya resueltos mientras se opera el resto del dia.
 
-## Incluido en 1.8.1
-- Detalle del pedido (columna lateral): el titulo (#pedido, tipo, estado e ingreso) queda fijo al hacer scroll, en vez de desaparecer con el contenido.
+## Incluido en 1.11.1
+- Detalle del pedido (columna lateral): el titulo (#pedido, tipo, estado e ingreso) queda fijo al hacer scroll.
+- Se corrige el release 1.8.1 publicado por error: sobrescribio dlp-paneles.php (quitando `require_once includes/geo.php`, causa del error critico), panel.css, README y MEMORIA con versiones viejas, perdiendo lo de 1.9.0-1.11.0. Restaurado desde 1.11.0.
 
 ## Versionado acordado
 - Ajustes pequenos: 1.1.1, 1.1.2, 1.1.3

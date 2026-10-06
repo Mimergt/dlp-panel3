@@ -985,9 +985,7 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
 - Listo para subir al hosting. Con esta correccion, el NIT y el nombre de facturacion deberian mostrarse correctamente en produccion.
 - Sigue pendiente el resto de la lista previa (items 3, 5-15 de iteraciones anteriores).
 
-## 2026-10-06 (iteracion 1.8.1 - titulo fijo en el detalle)
+## 2026-10-06 (1.11.1 - titulo fijo en el detalle + correccion de release roto)
 
-- Pedido: que el titulo del detalle (#pedido + Delivery + estado + Ingreso) quede fijo al hacer scroll.
-- `assets/css/panel.css`: `.dlp2-detail-top` ahora es `position: sticky; top: -16px` con margenes negativos que cubren el padding del body (el sticky respeta el padding del contenedor; con `top:0` se asomaba contenido en la franja superior), fondo solido y borde inferior. Probado con scroll real, sin errores de consola.
-- Archivos: dlp-paneles.php, README.md, MEMORIA_TRABAJO.md, assets/css/panel.css.
-- Pendiente de decision del usuario: opciones para agilizar el envio del pedido por WhatsApp (ver conversacion).
+- Se agrego el titulo fijo (sticky) del detalle del pedido (`.dlp2-detail-top`, `top:-16px` por el padding del body).
+- INCIDENTE: el release 1.8.1 se armo desde una copia local desactualizada (`dlp-paneles/`, que estaba en 1.8.0 mientras el repo ya iba en 1.11.0 por otras sesiones) y se copiaron encima dlp-paneles.php, panel.css, README y MEMORIA. Eso quito `require_once includes/geo.php` y provoco un error critico de WordPress. Se restauraron esos 4 archivos desde 1.11.0 y se reaplico solo el sticky. Leccion: antes de publicar, sincronizar la copia local desde el clon `dlp-panel3` (fuente de verdad) y no al reves.
