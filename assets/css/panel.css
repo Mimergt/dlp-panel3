@@ -736,10 +736,20 @@
   color: #fff;
 }
 
+/* Titulo del pedido (#id + tipo + estado + ingreso) fijo al hacer scroll en
+   el detalle. Los margenes negativos cubren el padding del body para que el
+   contenido no se vea pasando por encima/por los lados de la barra fija. */
 .dlp2-detail-top {
+  position: sticky;
+  top: -16px;
+  z-index: 3;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  margin: -16px -16px 0;
+  padding: 16px 16px 10px;
+  background: var(--dlp-dark-bg);
+  border-bottom: 1px solid var(--dlp-dark-border);
 }
 
 .dlp2-detail-title-row {
@@ -2014,43 +2024,3 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
-
-/* ===== 1.9.0: ubicacion del pedido y servicios ===== */
-.dlp2-geo-row { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
-.dlp2-geo-backdrop, .dlp2-geo-backdrop * { font-family: Inter, -apple-system, 'Segoe UI', sans-serif; }
-.dlp2-geo-zone { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #94a3b8; }
-.dlp2-geo-zone svg { width: 14px; height: 14px; }
-.dlp2-geo-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.dlp2-geo-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(148,163,184,.5); background: rgba(255,255,255,.95); color: #0f172a; font: 600 13px Inter, sans-serif; text-decoration: none; cursor: pointer; }
-.dlp2-geo-btn svg { width: 15px; height: 15px; }
-.dlp2-geo-btn:hover { background: #f1f5f9; }
-.dlp2-geo-modal { width: min(880px, 96vw); }
-.dlp2-geo-map { height: min(62vh, 520px); background: #e5e7eb; position: relative; }
-.dlp2-geo-loading { padding: 24px; text-align: center; color: #64748b; margin: 0; }
-.dlp2-geo-legend { display: flex; gap: 16px; padding: 10px 16px; font-size: 12px; color: #475569; }
-.dlp2-geo-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
-.dlp2-dot-cli { background: #e63946; } .dlp2-dot-sto { background: #111; }
-.dlp2-zone-hint { margin: 8px 0 0; padding: 8px 12px; border-radius: 8px; background: #ecfdf5; color: #065f46; font-size: 13px; }
-.dlp2-zone-hint-warn { background: #fff7ed; color: #9a3412; }
-.dlp2-svc-modal { width: min(760px, 96vw); }
-.dlp2-svc-search { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 10px; margin-bottom: 10px; font: 500 14px Inter, sans-serif; }
-.dlp2-svc-list { max-height: 60vh; overflow: auto; }
-.dlp2-svc-row { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 12px; align-items: start; padding: 12px 0; border-bottom: 1px solid #e2e8f0; }
-.dlp2-svc-name { font-weight: 700; }
-.dlp2-svc-cell { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
-.dlp2-svc-chip { padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
-.dlp2-svc-ok { background: #dcfce7; color: #166534; } .dlp2-svc-pause { background: #fef3c7; color: #92400e; }
-.dlp2-svc-off { background: #fee2e2; color: #991b1b; } .dlp2-svc-na { background: #e2e8f0; color: #475569; }
-.dlp2-svc-reason { color: #64748b; }
-.dlp2-svc-btn { padding: 6px 12px; font-size: 13px; }
-.dlp2-svc-form { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: #f8fafc; padding: 10px; border-radius: 10px; }
-.dlp2-svc-form[hidden] { display: none; }
-.dlp2-svc-form input, .dlp2-svc-form select { padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; }
-.dlp2-svc-hint { color: #64748b; font-size: 12px; margin: 10px 0 0; }
-@media (max-width: 640px) { .dlp2-svc-row { grid-template-columns: 1fr; } }
-
-.dlp2-svc-cover { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.dlp2-svc-form { grid-column: 1 / -1; }
-.dlp2-geo-cover { color: #b45309; font-weight: 600; }
-
-.dlp2-pickup-time .dlp2-address-value { font-weight: 800; }

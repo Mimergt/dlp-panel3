@@ -984,3 +984,10 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
 ### Estado
 - Listo para subir al hosting. Con esta correccion, el NIT y el nombre de facturacion deberian mostrarse correctamente en produccion.
 - Sigue pendiente el resto de la lista previa (items 3, 5-15 de iteraciones anteriores).
+
+## 2026-10-06 (iteracion 1.8.1 - titulo fijo en el detalle)
+
+- Pedido: que el titulo del detalle (#pedido + Delivery + estado + Ingreso) quede fijo al hacer scroll.
+- `assets/css/panel.css`: `.dlp2-detail-top` ahora es `position: sticky; top: -16px` con margenes negativos que cubren el padding del body (el sticky respeta el padding del contenedor; con `top:0` se asomaba contenido en la franja superior), fondo solido y borde inferior. Probado con scroll real, sin errores de consola.
+- Archivos: dlp-paneles.php, README.md, MEMORIA_TRABAJO.md, assets/css/panel.css.
+- Pendiente de decision del usuario: opciones para agilizar el envio del pedido por WhatsApp (ver conversacion).
