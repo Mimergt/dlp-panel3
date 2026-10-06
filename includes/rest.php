@@ -32,10 +32,22 @@ class DLP_Paneles_REST {
         $items = array();
 
         foreach ($order->get_items() as $item) {
+            $extras = self::get_item_extras($item);
+            $hidden = array();
+            foreach ($extras['rows'] as $row) {
+                $hidden[mb_strtolower($row['group'])] = true;
+                $hidden[mb_strtolower($row['name'])] = true;
+            }
+
             $meta = array();
             foreach ($item->get_formatted_meta_data() as $meta_item) {
+                $label = wp_strip_all_tags($meta_item->display_key);
+                // Metas internas de los extras (ya se muestran agrupadas en "extras").
+                if ($label === 'woofood_meta' || (!empty($hidden) && ($label === '' || isset($hidden[mb_strtolower($label)])))) {
+                    continue;
+                }
                 $meta[] = array(
-                    'label' => wp_strip_all_tags($meta_item->display_key),
+                    'label' => $label,
                     'value' => wp_strip_all_tags($meta_item->display_value),
                 );
             }
@@ -45,10 +57,64 @@ class DLP_Paneles_REST {
                 'quantity' => $item->get_quantity(),
                 'total' => (float) $item->get_total(),
                 'meta' => $meta,
+                'extras' => $extras['rows'],
+                'extras_total' => $extras['total'],
             );
         }
 
         return $items;
+    }
+
+    // Extras del producto en un formato unico, venga de donde venga:
+    // - WooCommerce Product Add-Ons (meta _pao_ids / _pao_total, por unidad), el sistema actual;
+    // - WooFood (meta woofood_meta con extra_options por categoria), pedidos historicos.
+    // Devuelve rows = [{group, name, price}] y total = suma de extras de TODA la linea (precio x cantidad).
+    private static function get_item_extras($item) {
+        $qty = max(1, (float) $item->get_quantity());
+        $rows = array();
+        $total = 0.0;
+
+        $pao = $item->get_meta('_pao_ids', true);
+        if (is_array($pao) && !empty($pao)) {
+            foreach ($pao as $p) {
+                if (!is_array($p) || !isset($p['key'])) {
+                    continue;
+                }
+                $price = isset($p['raw_price']) && is_numeric($p['raw_price']) ? (float) $p['raw_price'] : 0.0;
+                if (($p['price_type'] ?? '') === 'quantity_based' && isset($p['raw_value']) && is_numeric($p['raw_value'])) {
+                    $price *= (float) $p['raw_value'];
+                }
+                $rows[] = array(
+                    'group' => wp_strip_all_tags((string) $p['key']),
+                    'name' => wp_strip_all_tags((string) ($p['value'] ?? '')),
+                    'price' => round($price, 2),
+                );
+            }
+            $pao_total = $item->get_meta('_pao_total', true);
+            $per_unit = is_numeric($pao_total) ? (float) $pao_total : array_sum(array_column($rows, 'price'));
+            $total = $per_unit * $qty;
+
+            return array('rows' => $rows, 'total' => round($total, 2));
+        }
+
+        $wf = $item->get_meta('woofood_meta', true);
+        $wf = is_string($wf) ? json_decode($wf, true) : $wf;
+        if (is_array($wf) && !empty($wf['extra_options']) && is_array($wf['extra_options'])) {
+            foreach ($wf['extra_options'] as $category => $options) {
+                foreach ((array) $options as $o) {
+                    $price = isset($o['price_float']) && is_numeric($o['price_float']) ? (float) $o['price_float'] : 0.0;
+                    $rows[] = array(
+                        'group' => wp_strip_all_tags((string) (isset($o['category']) ? $o['category'] : $category)),
+                        'name' => wp_strip_all_tags((string) ($o['name'] ?? '')),
+                        'price' => round($price, 2),
+                    );
+                }
+            }
+            $per_unit = isset($wf['extra_options_price']) && is_numeric($wf['extra_options_price']) ? (float) $wf['extra_options_price'] : array_sum(array_column($rows, 'price'));
+            $total = $per_unit * $qty;
+        }
+
+        return array('rows' => $rows, 'total' => round($total, 2));
     }
 
     public static function format_full_address($order) {

@@ -494,8 +494,30 @@
     return { html: rows.join(''), modifiersTotal: modifiersTotal };
   }
 
+  // Extras ya normalizados por el servidor (Product Add-Ons o WooFood): se agrupan por nombre de grupo.
+  function renderExtras(extras) {
+    var order = [], groups = {};
+    (extras || []).forEach(function (e) {
+      if (!groups[e.group]) { groups[e.group] = []; order.push(e.group); }
+      groups[e.group].push(e);
+    });
+    return order.map(function (g) {
+      return '<div class="dlp2-product-mod">' +
+        '<div class="dlp2-product-mod-title">' + esc(capitalizeFirst(g)) + '</div>' +
+        groups[g].map(function (e) {
+          return '<div class="dlp2-product-mod-row"><span>&bull; ' + esc(e.name) + '</span>' +
+            (e.price > 0 ? '<span class="dlp2-product-mod-price">+' + esc(formatMoney(e.price)) + '</span>' : '') + '</div>';
+        }).join('') +
+      '</div>';
+    }).join('');
+  }
+
   function renderProductRow(item) {
     var metaResult = renderProductMeta(item.meta || []);
+    var hasExtras = Array.isArray(item.extras) && item.extras.length > 0;
+    if (hasExtras) {
+      metaResult = { html: renderExtras(item.extras) + metaResult.html, modifiersTotal: Number(item.extras_total || 0) + metaResult.modifiersTotal };
+    }
 
     var qty = Number(item.quantity || 1);
     var lineTotal = Number(item.total || 0);
