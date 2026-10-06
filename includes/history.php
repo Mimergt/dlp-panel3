@@ -150,36 +150,38 @@ class DLP_Paneles_History {
             return new WP_REST_Response($response);
         }
 
-        $args = array(
+        // wc_get_orders ignora meta_query en el almacenamiento clasico, asi
+        // que el filtro por tienda se aplica aqui sobre los ids (consulta
+        // barata: solo ids + una carga de metas) y solo se hidratan los
+        // pedidos de la pagina pedida.
+        $ids = wc_get_orders(array(
             'status' => $statuses,
             'date_created' => '>=' . $min_ts,
             'orderby' => 'date',
             'order' => 'DESC',
-            'limit' => self::INDEX_PAGE_SIZE,
-            'paged' => max(1, absint($request->get_param('page')) ?: 1),
-            'paginate' => true,
-            'return' => 'objects',
-        );
+            'limit' => -1,
+            'return' => 'ids',
+        ));
 
-        if (!$supervisor) {
-            $args['meta_query'] = array(
-                array(
-                    'key' => 'extra_store_name',
-                    'value' => $store_ids,
-                    'compare' => 'IN',
-                    'type' => 'NUMERIC',
-                ),
-            );
+        if (!$supervisor && !empty($ids)) {
+            update_meta_cache('post', $ids);
+            $ids = array_values(array_filter($ids, function ($id) use ($store_ids) {
+                return in_array(absint(get_post_meta($id, 'extra_store_name', true)), $store_ids, true);
+            }));
         }
 
-        $result = wc_get_orders($args);
+        $page = max(1, absint($request->get_param('page')) ?: 1);
+        $slice = array_slice($ids, ($page - 1) * self::INDEX_PAGE_SIZE, self::INDEX_PAGE_SIZE);
 
-        foreach ($result->orders as $order) {
-            $response['rows'][] = self::index_row($order);
+        foreach ($slice as $order_id) {
+            $order = wc_get_order($order_id);
+            if ($order) {
+                $response['rows'][] = self::index_row($order);
+            }
         }
 
-        $response['total'] = (int) $result->total;
-        $response['has_more'] = $args['paged'] < (int) $result->max_num_pages;
+        $response['total'] = count($ids);
+        $response['has_more'] = ($page * self::INDEX_PAGE_SIZE) < count($ids);
 
         return new WP_REST_Response($response);
     }

@@ -513,6 +513,9 @@
 
     api('/historial/pedido/' + id, 'GET', null, { retries: 1 })
       .then(function (data) {
+        if (!data || !data.id) {
+          throw new Error('respuesta inesperada del servidor');
+        }
         state.details[id] = data;
         if (state.selectedId === id) renderDetail();
       })
