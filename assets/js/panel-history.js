@@ -13,7 +13,7 @@
   // El indice se descarga una sola vez (por paginas) y despues solo se piden
   // los cambios desde la ultima sincronizacion. La busqueda corre aqui, sobre
   // ese indice, sin tocar el servidor en cada tecla.
-  var CACHE_KEY = 'dlp_hist_v1_' + (cfg.userId || 0);
+  var CACHE_KEY = 'dlp_hist_v2_' + (cfg.userId || 0);
   var DELTA_MS = 60000;
   var LIST_STEP = 40;
   var DAY = 86400;
