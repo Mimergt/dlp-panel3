@@ -629,13 +629,13 @@
 
     var hasAccount = !!order.customer_id;
     var blocked = !!order.customer_blocked;
-    var label = !hasAccount ? 'Cliente invitado (sin cuenta)' : (blocked ? 'Desbloquear Cliente' : 'Bloquear Cliente');
-    var disabledAttr = hasAccount ? '' : ' disabled title="Este pedido no tiene una cuenta de cliente asociada"';
+    var label = blocked ? 'Desbloquear Cliente' : 'Bloquear Cliente';
+    var disabledAttr = '';
     var extraClass = blocked ? ' dlp2-block-btn-active' : '';
 
     return '' +
       '<label class="dlp2-field">' +
-        '<span>Cuenta del cliente</span>' +
+        '<span>Cliente</span>' +
         '<button class="dlp2-toggle-btn' + extraClass + '" data-action="toggle-block-customer" data-order-id="' + order.id + '"' + disabledAttr + '>' + ICON.userBlock + '<span>' + label + '</span></button>' +
       '</label>';
   }
@@ -1383,7 +1383,7 @@
 
       var nextBlocked = !blockOrder.customer_blocked;
       var confirmMsg = nextBlocked ?
-        'Bloquear la cuenta de este cliente? No podra iniciar sesion en el sitio hasta que se desbloquee.' :
+        'Bloquear a este cliente? No podra crear pedidos nuevos (por correo, telefono ni cuenta) hasta que se desbloquee.' :
         'Desbloquear la cuenta de este cliente?';
 
       if (!confirm(confirmMsg)) {

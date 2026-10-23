@@ -3,7 +3,7 @@
  * Plugin Name: DLP Paneles
  * Plugin URI: https://github.com/Mimergt/dlp-panel3
  * Description: Panel operativo de pedidos para tiendas y supervisores.
- * Version: 1.13.3
+ * Version: 1.14.0
  * Author: Mimer - EPIC.gt
  * License: GPL2+
  * Text Domain: dlp-paneles

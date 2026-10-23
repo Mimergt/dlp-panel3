@@ -706,7 +706,9 @@ class DLP_Paneles_REST {
                 'items_count' => count($order->get_items()),
                 'geo' => DLP_Paneles_Geo::order_payload($order, $order_type, $store_id),
                 'customer_id' => $customer_id,
-                'customer_blocked' => $customer_id ? (get_user_meta($customer_id, 'is_active', true) === 'n') : false,
+                'customer_blocked' => function_exists('dlp_fe_af_order_blocked')
+                    ? dlp_fe_af_order_blocked($order)
+                    : ($customer_id ? (get_user_meta($customer_id, 'is_active', true) === 'n') : false),
                 // "billing_nit" y "billing_nitname" son metas personalizados
                 // de checkout (numero de NIT + nombre para facturacion), no
                 // estandar de WooCommerce.
@@ -920,12 +922,24 @@ class DLP_Paneles_REST {
             return new WP_REST_Response(array('message' => 'Solo un supervisor puede bloquear o desbloquear clientes'), 403);
         }
 
+        $block = (bool) $request->get_param('block');
+
+        // Con el módulo Antifraude (plugin dlp-frontend) se bloquea por correo, teléfono y cuenta,
+        // así también funciona con clientes invitados y impide crear pedidos nuevos.
+        if (function_exists('dlp_fe_af_order_set')) {
+            dlp_fe_af_order_set($order, $block, 'panel');
+            return new WP_REST_Response(array(
+                'ok' => true,
+                'order_id' => $order_id,
+                'customer_id' => absint($order->get_customer_id()),
+                'blocked' => $block,
+            ));
+        }
+
         $customer_id = absint($order->get_customer_id());
         if (!$customer_id) {
             return new WP_REST_Response(array('message' => 'Este pedido no tiene una cuenta de cliente asociada (compra como invitado)'), 400);
         }
-
-        $block = (bool) $request->get_param('block');
 
         if ($block) {
             update_user_meta($customer_id, 'is_active', 'n');
