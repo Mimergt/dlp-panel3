@@ -50,7 +50,7 @@
     loadLibs().then(function () {
       var box = el.querySelector('#dlp2-geo-map'); box.innerHTML = '';
       map = L.map(box, { center: [lat, lng], zoom: 16, minZoom: geo.minZoom, maxZoom: geo.maxZoom });
-      protomapsL.leafletLayer({ url: geo.tilesUrl, flavor: 'light', lang: 'es', attribution: 'EPIC.GT · <a href="https://protomaps.com" target="_blank" rel="noopener">Protomaps</a> © <a href="https://openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>' }).addTo(map);
+      protomapsL.leafletLayer({ url: geo.tilesUrl, flavor: 'light', lang: 'es', attribution: '<a href="https://epic.gt" target="_blank" rel="noopener"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="10" viewBox="0 0 15 10" role="img" aria-label="Guatemala" style="vertical-align:-1px;margin-right:3px;border:1px solid #cbd5e1"><rect width="5" height="10" fill="#4997D0"/><rect x="5" width="5" height="10" fill="#fff"/><rect x="10" width="5" height="10" fill="#4997D0"/><circle cx="7.5" cy="5" r="1.5" fill="#4d8a3a"/></svg>EPIC.GT</a> · <a href="https://protomaps.com" target="_blank" rel="noopener">Protomaps</a> © <a href="https://openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>' }).addTo(map);
       L.circleMarker([lat, lng], { radius: 10, color: '#fff', weight: 3, fillColor: '#e63946', fillOpacity: 1 }).addTo(map);
       if (hasStore) {
         L.circleMarker([slat, slng], { radius: 9, color: '#fff', weight: 3, fillColor: '#111', fillOpacity: 1 }).addTo(map);
