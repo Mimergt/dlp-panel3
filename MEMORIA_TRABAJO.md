@@ -1016,3 +1016,28 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
 
 ## 1.13.0 — Estados propios del panel
 - `includes/statuses.php` registra `prep`, `dlv` y `rtp` (antes los daba WooCommerce Order Status Manager, inactivo/no compatible con HPOS). Si ese plugin esta activo, se aparta. Cuentan como pagados y entran en reportes. Dev ya usa HPOS (2026-10-06).
+
+
+## 2026-10-30 (1.16.0 - Excel de pedidos desde el historial y el admin)
+
+### Resumen de conversacion
+- El usuario generaba los reportes con WP All Export Pro (lento, tumbaba el servidor, sin boton por tienda). Pidio que cada tienda descargue su Excel desde el historial, el supervisor todas, y una pagina de admin para descargar sin entrar a las tiendas.
+
+### Decisiones
+- Una fila por pedido, extras agrupados por tipo; mismas columnas que el Excel actual, sin las 4 calificaciones; conserva correo y NIT. Sin pedidos viejos de WooFood.
+- Fecha por creacion (igual que el historial). Panel: solo completados, max 92 dias. Admin: completados y opcionalmente cancelados, max 183 dias.
+- Descarga directa en la misma peticion (sin archivos guardados, sin segundo plano). Si el tiempo crece, agregar Action Scheduler solo para el admin.
+- Permisos en el servidor: tienda solo la suya (403 si pide otra), solo el supervisor ve "todas".
+- Costilla y Otros extras siempre presentes como columnas (no se sabe de antemano si se usan al escribir en streaming).
+- Direccion = direccion completa del panel (`format_full_address`), no solo `billing_address_2`. "Fecha y hora" ahora es la fecha de creacion, no `_paid_date`.
+- Grupos de extras se asignan por palabra clave del nombre del grupo (carne/bebida/complemento/costilla/box); los demas (ej. Aderesos) van a "Otros extras".
+- Device: webview de la app (`handl_landing_page` con `origin=webview&device=`) o meta `device`.
+
+### Archivos tocados
+- Nuevos: `includes/export.php`, `includes/export-admin.php`. Editados: `dlp-paneles.php` (1.16.0), `assets/js/panel-history.js`, `assets/css/panel.css`, README.
+
+### Pruebas (dev, HPOS, 2026-10-30)
+- Todas las tiendas, 90 dias: 3.310 filas, 14 s, 96 MB, 510 KB. Admin 6 meses con cancelados: 7.476 filas, 30 s, 96 MB, 1,2 MB. Usuario de tienda: solo su tienda (18 filas). Tienda ajena = 403, rango largo = 400, anonimo = 401, fechas invalidas rechazadas.
+- OJO: `wc_get_orders(['include'=>...])` mata el proceso en silencio en dev; se usa `wc_get_order($id)` por pedido.
+- NO probado: apertura del .xlsx en Excel/Numbers por el usuario, y la interfaz (boton/cuadro) en el navegador con sesion real. Produccion no se toco.
+- Respaldo previo en dev: `~/dlp-backups/dlp-panel3-1.15.0-pre-1.16.0.tgz`.

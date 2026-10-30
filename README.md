@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.12.0
+- 1.16.0
 
 ## Shortcode
 - [dlp_paneles]
@@ -16,6 +16,7 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 - POST /wp-json/dlp-paneles/v1/pedido/{id}/tienda
 - GET /wp-json/dlp-paneles/v1/historial/indice (indice liviano: ?days=&page= descarga completa, ?since= solo cambios)
 - GET /wp-json/dlp-paneles/v1/historial/pedido/{id} (detalle de solo lectura)
+- GET /wp-json/dlp-paneles/v1/historial/exportar?desde=YYYY-MM-DD&hasta=YYYY-MM-DD&tienda=ID (descarga .xlsx de pedidos completados; max 92 dias; tienda=0 = todas solo para supervisor)
 
 ## Incluido en 1.1.1
 - Reasignacion de tienda desde el detalle del pedido.
@@ -197,3 +198,9 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 - Ajustes pequenos: 1.1.1, 1.1.2, 1.1.3
 - Cambios medianos: 1.2.0, 1.3.0, 1.4.0
 - Cambios mayores: 2.0.0
+
+## Incluido en 1.16.0 (Excel de pedidos)
+- Boton "Descargar Excel" en `/orders/historial/`: cada tienda descarga el reporte de su tienda; el supervisor, el de todas o de cualquiera. Rango maximo 3 meses (92 dias), fechas por creacion del pedido en America/Guatemala, solo completados.
+- Pagina de admin WooCommerce > Reportes DLP (`manage_woocommerce`): cualquier tienda o todas, hasta 6 meses (183 dias), con opcion de incluir cancelados (agrega la columna Estado). Descarga por `admin-post.php` con nonce.
+- `includes/export.php`: escritor .xlsx en streaming (ZipArchive + XMLWriter, sin librerias) y exportador compartido. Una fila por pedido; productos en una celda ("2x Producto | 1x Otro") y extras agrupados por tipo (Carne, Bebida, Complemento, Carne (Box), Bebida (Box), Costilla, Otros extras). No se guarda ningun archivo en el servidor.
+- Sin calificaciones (decision del usuario). Pedidos viejos de WooFood: fuera de alcance por ahora.

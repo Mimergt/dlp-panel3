@@ -23,6 +23,12 @@
   var ICON_SEARCH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" y2="16.65"></line></svg>';
   var ICON_MAIL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m22 7-10 6L2 7"></path></svg>';
 
+  var ICON_DOWNLOAD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>';
+
+  // Excel de pedidos: el servidor valida tienda y rango (maximo 92 dias).
+  var EXPORT_MAX_DAYS = 92;
+  var exportBusy = false;
+
   var state = {
     rows: [],
     scope: 'tienda',
@@ -307,6 +313,7 @@
         '</div>' +
         '<div class="dlp2-header-right">' +
           '<a class="dlp2-btn-ghost" href="' + esc(cfg.boardUrl || '#') + '">' + ICON.back + '<span>Volver al panel</span></a>' +
+          '<button class="dlp2-btn-ghost" data-h="export" type="button">' + ICON_DOWNLOAD + '<span>Descargar Excel</span></button>' +
           '<button class="dlp2-btn-ghost" data-h="sync" type="button">' + ICON.sync + '<span>Sincronizar</span></button>' +
           '<a class="dlp2-btn-dark" href="' + esc(cfg.logoutUrl || '#') + '">' + ICON.logout + '<span>Cerrar Sesion</span></a>' +
         '</div>' +
@@ -527,6 +534,141 @@
       });
   }
 
+  // ---- descarga de Excel ----
+
+  function gtDate(offsetDays) {
+    var d = new Date(Date.now() + (offsetDays || 0) * DAY * 1000);
+    return d.toLocaleDateString('en-CA', { timeZone: 'America/Guatemala' });
+  }
+
+  function ymd(y, m, d) {
+    return new Date(Date.UTC(y, m, d)).toISOString().slice(0, 10);
+  }
+
+  function setExportRange(kind) {
+    var today = gtDate(0);
+    var p = today.split('-').map(Number);
+    var from = today;
+    var to = today;
+    if (kind === '7') from = gtDate(-6);
+    else if (kind === '30') from = gtDate(-29);
+    else if (kind === 'mes') from = ymd(p[0], p[1] - 1, 1);
+    else if (kind === 'mes-pasado') { from = ymd(p[0], p[1] - 2, 1); to = ymd(p[0], p[1] - 1, 0); }
+    document.getElementById('dlp2-exp-from').value = from;
+    document.getElementById('dlp2-exp-to').value = to;
+  }
+
+  function openExport() {
+    if (document.getElementById('dlp2-exp-modal')) return;
+
+    var multi = state.stores.length > 1;
+    var allLabel = state.scope === 'supervisor' ? 'Todas las tiendas' : 'Todas mis tiendas';
+    var storeField;
+    if (multi) {
+      storeField = '<label class="dlp2-exp-label" for="dlp2-exp-store">Tienda</label>' +
+        '<select id="dlp2-exp-store" class="dlp2-store-filter"><option value="0">' + allLabel + '</option>' +
+        state.stores.map(function (s) {
+          return '<option value="' + Number(s.id) + '">' + esc(s.name) + '</option>';
+        }).join('') + '</select>';
+    } else {
+      var only = state.stores[0];
+      storeField = '<label class="dlp2-exp-label">Tienda</label>' +
+        '<div class="dlp2-exp-fixed">' + esc(only ? only.name : 'Tu tienda') + '</div>' +
+        '<input type="hidden" id="dlp2-exp-store" value="' + (only ? Number(only.id) : 0) + '">';
+    }
+
+    var el = document.createElement('div');
+    el.id = 'dlp2-exp-modal';
+    el.className = 'dlp2-modal-backdrop';
+    el.innerHTML = '' +
+      '<div class="dlp2-modal" role="dialog" aria-modal="true" aria-label="Descargar Excel">' +
+        '<div class="dlp2-modal-header"><h3>Descargar Excel de pedidos</h3>' +
+          '<button class="dlp2-modal-close" data-h="exp-close" type="button" aria-label="Cerrar">' + ICON.close + '</button></div>' +
+        '<div class="dlp2-modal-body">' +
+          '<p class="dlp2-modal-subtitle">Pedidos completados, una fila por pedido. Rango maximo: 3 meses.</p>' +
+          storeField +
+          '<div class="dlp2-exp-dates">' +
+            '<div><label class="dlp2-exp-label" for="dlp2-exp-from">Desde</label><input id="dlp2-exp-from" class="dlp2-exp-input" type="date" /></div>' +
+            '<div><label class="dlp2-exp-label" for="dlp2-exp-to">Hasta</label><input id="dlp2-exp-to" class="dlp2-exp-input" type="date" /></div>' +
+          '</div>' +
+          '<div class="dlp2-exp-presets">' +
+            '<button class="dlp2-type-tab" data-h="exp-range" data-v="7" type="button">7 dias</button>' +
+            '<button class="dlp2-type-tab" data-h="exp-range" data-v="30" type="button">30 dias</button>' +
+            '<button class="dlp2-type-tab" data-h="exp-range" data-v="mes" type="button">Este mes</button>' +
+            '<button class="dlp2-type-tab" data-h="exp-range" data-v="mes-pasado" type="button">Mes pasado</button>' +
+          '</div>' +
+          '<p id="dlp2-exp-msg" class="dlp2-exp-msg"></p>' +
+        '</div>' +
+        '<div class="dlp2-modal-footer">' +
+          '<button class="dlp2-btn-ghost" data-h="exp-close" type="button">Cancelar</button>' +
+          '<button class="dlp2-btn-dark" id="dlp2-exp-go" data-h="exp-go" type="button">' + ICON_DOWNLOAD + '<span>Descargar</span></button>' +
+        '</div>' +
+      '</div>';
+    root.appendChild(el);
+    setExportRange('7');
+  }
+
+  function closeExport() {
+    if (exportBusy) return;
+    var el = document.getElementById('dlp2-exp-modal');
+    if (el) el.remove();
+  }
+
+  function exportMessage(text, isError) {
+    var msg = document.getElementById('dlp2-exp-msg');
+    if (!msg) return;
+    msg.textContent = text;
+    msg.className = 'dlp2-exp-msg' + (isError ? ' dlp2-exp-msg-error' : '');
+  }
+
+  function runExport() {
+    if (exportBusy) return;
+    var from = document.getElementById('dlp2-exp-from').value;
+    var to = document.getElementById('dlp2-exp-to').value;
+    var store = document.getElementById('dlp2-exp-store').value || '0';
+
+    if (!from || !to) { exportMessage('Elige las fechas.', true); return; }
+    if (to < from) { exportMessage('La fecha final es anterior a la inicial.', true); return; }
+    var days = Math.round((Date.parse(to) - Date.parse(from)) / (DAY * 1000)) + 1;
+    if (days > EXPORT_MAX_DAYS) { exportMessage('El rango maximo es de 3 meses (' + EXPORT_MAX_DAYS + ' dias).', true); return; }
+
+    var btn = document.getElementById('dlp2-exp-go');
+    exportBusy = true;
+    btn.disabled = true;
+    exportMessage('Generando el archivo... puede tardar unos segundos.', false);
+
+    var url = cfg.apiBase + '/historial/exportar?desde=' + encodeURIComponent(from) + '&hasta=' + encodeURIComponent(to) + '&tienda=' + encodeURIComponent(store);
+    fetch(url, { credentials: 'same-origin', headers: { 'X-WP-Nonce': cfg.nonce } })
+      .then(function (res) {
+        if (!res.ok) {
+          return res.json().catch(function () { return {}; }).then(function (body) {
+            throw new Error(body.message || ('Error ' + res.status));
+          });
+        }
+        var disp = res.headers.get('Content-Disposition') || '';
+        var match = /filename="([^"]+)"/.exec(disp);
+        return res.blob().then(function (blob) {
+          return { blob: blob, name: match ? match[1] : 'Pedidos-' + from + '-' + to + '.xlsx' };
+        });
+      })
+      .then(function (file) {
+        var link = document.createElement('a');
+        link.href = URL.createObjectURL(file.blob);
+        link.download = file.name;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(function () { URL.revokeObjectURL(link.href); }, 4000);
+        exportBusy = false;
+        closeExport();
+      })
+      .catch(function (err) {
+        exportBusy = false;
+        if (btn) btn.disabled = false;
+        exportMessage('No se pudo generar el Excel: ' + err.message, true);
+      });
+  }
+
   // ---- eventos ----
 
   var searchTimer = null;
@@ -583,10 +725,23 @@
       return;
     }
 
+    if (event.target.id === 'dlp2-exp-modal') {
+      closeExport();
+      return;
+    }
+
     var action = event.target.closest('[data-h]');
     if (!action || action.tagName === 'SELECT') return;
 
-    if (action.dataset.h === 'more') {
+    if (action.dataset.h === 'export') {
+      openExport();
+    } else if (action.dataset.h === 'exp-close') {
+      closeExport();
+    } else if (action.dataset.h === 'exp-range') {
+      setExportRange(action.dataset.v);
+    } else if (action.dataset.h === 'exp-go') {
+      runExport();
+    } else if (action.dataset.h === 'more') {
       state.limit += LIST_STEP;
       renderList();
     } else if (action.dataset.h === 'back') {

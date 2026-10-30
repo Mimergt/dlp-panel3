@@ -2302,3 +2302,14 @@
 @media (max-width: 640px) {
   #dlp2-hist-app .dlp2-header-right > * { flex: 1 1 auto; justify-content: center; min-width: 0; }
 }
+
+/* ===== 1.16.0: descarga de Excel en el historial ===== */
+.dlp2-exp-label { display: block; margin: 12px 0 6px; font-size: 12px; font-weight: 700; color: var(--dlp-text-muted); }
+.dlp2-exp-fixed { padding: 10px 12px; border: 1px solid var(--dlp-border); border-radius: 8px; font-size: 14px; font-weight: 600; color: var(--dlp-text); background: var(--dlp-bg); }
+.dlp2-modal-body .dlp2-store-filter { width: 100%; box-sizing: border-box; }
+.dlp2-exp-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.dlp2-exp-input { width: 100%; box-sizing: border-box; padding: 9px 10px; border: 1px solid var(--dlp-border); border-radius: 8px; font: 600 14px Inter, sans-serif; color: var(--dlp-text); background: #fff; }
+.dlp2-exp-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.dlp2-exp-msg { min-height: 18px; margin: 12px 0 0; font-size: 13px; color: var(--dlp-text-muted); }
+.dlp2-exp-msg-error { color: var(--dlp-red-text); font-weight: 600; }
+#dlp2-exp-go svg { width: 16px; height: 16px; }
