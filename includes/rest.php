@@ -535,6 +535,18 @@ class DLP_Paneles_REST {
         return in_array($order_store_id, $store_ids, true);
     }
 
+    /** Estado del horario general del sitio (lo define dlp-tiendas); null si el plugin no esta o esta apagado. */
+    private static function site_hours_info() {
+        if (!function_exists('dlp_tiendas_site_status')) {
+            return null;
+        }
+        $s = dlp_tiendas_site_status();
+        if (!$s['on']) {
+            return null;
+        }
+        return array('ok' => (bool) $s['ok'], 'reason' => $s['reason'], 'msg' => $s['msg']);
+    }
+
     public static function get_panel_data(WP_REST_Request $request) {
         $user_id = get_current_user_id();
         $supervisor = self::is_supervisor_user($user_id);
@@ -555,6 +567,7 @@ class DLP_Paneles_REST {
                     'stores' => array(),
                     'reassign_stores' => self::format_store_list(self::get_all_store_ids()),
                     'server_time' => current_time('mysql'),
+            'sitio' => self::site_hours_info(),
                     'pagination' => array('page' => 1, 'per_page' => 0, 'total' => 0, 'has_more' => false),
                 ));
             }
@@ -735,6 +748,7 @@ class DLP_Paneles_REST {
             // para un usuario de tienda normal solo trae la suya.
             'reassign_stores' => self::format_store_list(self::get_all_store_ids()),
             'server_time' => current_time('mysql'),
+            'sitio' => self::site_hours_info(),
             'pagination' => $pagination,
         ));
     }

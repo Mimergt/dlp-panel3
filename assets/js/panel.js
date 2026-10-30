@@ -951,7 +951,8 @@
       '</div>';
 
     document.getElementById('dlp2-netwarn-slot').innerHTML =
-      state.networkWarning ? '<div class="dlp-netwarn">' + esc(state.networkWarning) + '</div>' : '';
+      (state.site && !state.site.ok ? '<div class="dlp-netwarn dlp-sitewarn"><strong>Sitio cerrado por el horario general.</strong> No se reciben pedidos nuevos de clientes. ' + esc(state.site.msg || '') + '</div>' : '') +
+      (state.networkWarning ? '<div class="dlp-netwarn">' + esc(state.networkWarning) + '</div>' : '');
 
     document.getElementById('dlp2-board-slot').innerHTML = '' +
       '<div class="dlp2-layout">' +
@@ -1135,6 +1136,7 @@
         state.stores = Array.isArray(data.stores) ? data.stores : [];
         state.allStores = Array.isArray(data.reassign_stores) ? data.reassign_stores : [];
         state.scope = data.scope || 'tienda';
+        state.site = data.sitio || null;
         state.loadedAt = Date.now();
 
         var pagination = data.pagination || null;
