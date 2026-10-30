@@ -442,6 +442,10 @@ class DLP_Paneles_Export {
         @set_time_limit(300);
 
         $ids = self::order_ids($args['from_ts'], $args['to_ts'], $args['statuses'], $args['store_ids']);
+        if (empty($ids)) {
+            $what = $args['with_status'] ? 'pedidos' : 'pedidos completados';
+            return new WP_Error('dlp_export_empty', 'No hay ' . $what . ' del ' . $args['desde'] . ' al ' . $args['hasta'] . ' para esa selección. Prueba con otras fechas.', array('status' => 404));
+        }
         if (count($ids) > self::MAX_ROWS) {
             return new WP_Error('dlp_export_too_big', 'Hay ' . count($ids) . ' pedidos en ese rango; acota las fechas o la tienda.', array('status' => 400));
         }
