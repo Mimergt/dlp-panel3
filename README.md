@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.16.0
+- 1.17.1
 
 ## Shortcode
 - [dlp_paneles]
@@ -204,3 +204,15 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 - Pagina de admin WooCommerce > Reportes DLP (`manage_woocommerce`): cualquier tienda o todas, hasta 6 meses (183 dias), con opcion de incluir cancelados (agrega la columna Estado). Descarga por `admin-post.php` con nonce.
 - `includes/export.php`: escritor .xlsx en streaming (ZipArchive + XMLWriter, sin librerias) y exportador compartido. Una fila por pedido; productos en una celda ("2x Producto | 1x Otro") y extras agrupados por tipo (Carne, Bebida, Complemento, Carne (Box), Bebida (Box), Costilla, Otros extras). No se guarda ningun archivo en el servidor.
 - Sin calificaciones (decision del usuario). Pedidos viejos de WooFood: fuera de alcance por ahora.
+
+## Incluido en 1.17.0 (Excel: una fila por producto)
+- El Excel pasa de una fila por pedido a **una fila por producto del pedido** (los datos del pedido se repiten en cada fila). Columnas nuevas: ID producto, SKU, Cant., Total producto. Los extras siguen agrupados por tipo en cada linea.
+- Total pedido y "Envio y otros cargos" (total menos suma de productos) salen solo en la primera fila de cada pedido, para que sumar la columna no cuente dos veces.
+- Formato: encabezados por color (pedido / producto / extras / montos), sombreado alterno por pedido, filtros, primera fila y columna ID fijas, montos en Q.
+- Fila TOTALES al final de la hoja Pedidos con SUBTOTAL (se recalcula al filtrar).
+- Hoja "Resumen": generado por, fecha de generacion, rango, tienda(s) (o "Todas las tiendas"), estados, totales generales, por tienda, por producto y una explicacion de como esta armada la hoja.
+
+## Incluido en 1.17.1 (ajustes finales del Excel)
+- Se agrega Telefono del cliente. Se quitan ID producto, SKU, Envio y otros cargos y la fila TOTALES (los totales viven en la hoja Resumen).
+- Carne (Box), Bebida (Box) y Costilla pasan a "Otros extras" con su etiqueta delante (ej. "Carne (Box): Premium"); quedan Carne, Bebida, Complemento y Otros extras.
+- Hoja Resumen coherente: sin envio ni ID de producto, texto explicativo actualizado.

@@ -1041,3 +1041,25 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
 - OJO: `wc_get_orders(['include'=>...])` mata el proceso en silencio en dev; se usa `wc_get_order($id)` por pedido.
 - NO probado: apertura del .xlsx en Excel/Numbers por el usuario, y la interfaz (boton/cuadro) en el navegador con sesion real. Produccion no se toco.
 - Respaldo previo en dev: `~/dlp-backups/dlp-panel3-1.15.0-pre-1.16.0.tgz`.
+
+
+## 2026-10-30 (1.17.0 - Excel: una fila por producto, totales, hoja Resumen)
+
+### Decisiones
+- Reportes: necesitan mapear cada producto vendido, asi que una fila por linea de producto (plan B acordado con el usuario: libro de dos hojas Pedidos + Productos, no implementado).
+- Total pedido y cargos solo en la primera fila de cada pedido. "Envio y otros cargos" = total - suma de lineas (en dev da 0 en todos los pedidos: el envio es gratis; el SKU esta vacio en todos los productos, el ID de producto es la llave).
+- Fila TOTALES al final con SUBTOTAL (cache escrito + fullCalcOnLoad) y hoja "Resumen" con metadatos (quien, cuando, fechas, tiendas), totales, por tienda, por producto y texto explicativo.
+
+### Archivos tocados
+- `includes/export.php` (reescrito: escritor con dos hojas, estilos, formulas; filas por producto), textos en `includes/export-admin.php` y `assets/js/panel-history.js`, `dlp-paneles.php` (1.17.0), README.
+
+### Pruebas (dev)
+- Todas las tiendas, feb-abr: 3.157 pedidos / 5.635 filas, 14 s, 96 MB, 826 KB. Admin 6 meses con cancelados: 7.373 pedidos / 13.022 filas, 30 s, 2 MB. Totales del pie y del Resumen cuadran con la suma de las filas; ningun total repetido; XML bien formado; usuario de tienda y varias tiendas OK.
+- NO probado: apertura en Excel/Numbers (formulas, sombreado, merges) por el usuario.
+
+
+## 2026-10-30 (1.17.1 - ajustes finales del Excel)
+- Decisiones del usuario: agregar telefono; quitar ID producto, SKU, Envio y la fila TOTALES; Carne (Box), Bebida (Box) y Costilla dentro de "Otros extras"; Resumen coherente con eso.
+- Decision mia: los extras movidos a "Otros extras" llevan su etiqueta ("Carne (Box): Premium") para no confundirse con los aderezos; se puede quitar.
+- Se elimino el soporte de formulas y la barra de totales del escritor (`export.php`); la hoja "Por producto" del Resumen se agrupa por nombre.
+- Pruebas dev: 3.157 pedidos / 5.635 filas (13 s), 7.373 / 13.022 con cancelados (31 s); 24 columnas, 0 formulas, total pedido sin repetir, telefono en todas las filas.
