@@ -51,6 +51,8 @@ class DLP_Paneles_App_Mode {
             'nonce' => wp_create_nonce('wp_rest'),
             'refreshSeconds' => 30,
             'logoutUrl' => esc_url_raw(wp_logout_url(home_url('/'))),
+            // Tras cerrar sesion desde el panel se vuelve a la pantalla de inicio de sesion del panel.
+            'logoutRedirect' => esc_url_raw(wp_login_url(home_url('/' . $slug . '/'))),
             'brandTitle' => 'DEL PUENTE',
             'brandLogoUrl' => 'https://delpuente.com.gt/wp-content/uploads/2020/08/new-logo-web-dlp.png',
             'currentUserName' => $current_user->display_name ? $current_user->display_name : $current_user->user_login,

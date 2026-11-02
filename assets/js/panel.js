@@ -71,6 +71,42 @@
     userBlock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="17" x2="22" y1="8" y2="13"></line><line x1="22" x2="17" y1="8" y2="13"></line></svg>',
   };
 
+  // Cerrar sesion sin salir del panel: se cierra por la API y se vuelve a la
+  // pantalla de inicio de sesion. Si la API falla, se usa el enlace clasico de
+  // WordPress (que pide confirmacion en otra pagina). Aplica al tablero y al historial.
+  root.addEventListener('click', function (event) {
+    var btn = event.target.closest('[data-dlp-logout]');
+    if (!btn || btn.disabled) {
+      return;
+    }
+
+    var cfg = window.DLP_PANELES_CONFIG;
+    var label = btn.querySelector('span');
+    btn.disabled = true;
+    if (label) {
+      label.textContent = 'Saliendo...';
+    }
+
+    // Sin seguir redirecciones: aunque algun plugin responda con un 302, la sesion ya quedo cerrada.
+    // Solo si el servidor la rechaza (nonce vencido, error) se usa el enlace clasico de WordPress.
+    fetch(cfg.apiBase + '/sesion/salir', {
+      method: 'POST',
+      headers: { 'X-WP-Nonce': cfg.nonce },
+      credentials: 'same-origin',
+      redirect: 'manual',
+    })
+      .then(function (res) {
+        if (res.ok || res.type === 'opaqueredirect' || res.status === 302) {
+          window.location.href = cfg.logoutRedirect || cfg.boardUrl || '/';
+        } else {
+          window.location.href = cfg.logoutUrl || '/';
+        }
+      })
+      .catch(function () {
+        window.location.href = cfg.logoutUrl || '/';
+      });
+  });
+
   // Modo historial (/orders/historial/): panel-history.js reutiliza estos
   // renderers y no necesita el tablero, asi que no se registran listeners
   // ni polling de este archivo.
@@ -946,7 +982,7 @@
           (window.DLP_PANELES_CONFIG.historyUrl ? '<a class="dlp2-btn-ghost" href="' + esc(window.DLP_PANELES_CONFIG.historyUrl) + '">' + ICON.file + '<span>Historial</span></a>' : '') +
           ((window.DLP_PANELES_CONFIG.geo && window.DLP_PANELES_CONFIG.geo.enabled) ? '<button class="dlp2-btn-ghost" data-action="open-services" type="button">' + ICON.power + '<span>Servicios</span></button>' : '') +
           '<button class="dlp2-btn-ghost" data-action="force-refresh" type="button">' + ICON.sync + '<span>Sincronizar</span></button>' +
-          '<a class="dlp2-btn-dark" href="' + esc(window.DLP_PANELES_CONFIG.logoutUrl || '#') + '">' + ICON.logout + '<span>Cerrar Sesion</span></a>' +
+          '<button class="dlp2-btn-dark" data-dlp-logout type="button">' + ICON.logout + '<span>Cerrar Sesion</span></button>' +
         '</div>' +
       '</div>';
 

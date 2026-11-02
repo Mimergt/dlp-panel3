@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.18.0
+- 1.19.0
 
 ## Shortcode
 - [dlp_paneles]
@@ -220,3 +220,9 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 ## Incluido en 1.18.0 (Excel por fecha de completado)
 - El Excel filtra por la fecha en que se completo el pedido (antes, la de creacion). Los cancelados, que no tienen fecha de completado, se filtran por su fecha de creacion (solo en el admin). La columna "Fecha y hora" muestra la fecha usada.
 - 1.17.2: si el rango no tiene pedidos se muestra un aviso en vez de descargar un archivo vacio.
+
+## Incluido en 1.19.0 (roles propios y cerrar sesion desde el panel)
+- Roles nuevos `dlp_tienda` ("Tienda DLP") y `dlp_supervisor` ("Supervisor DLP"), ambos solo con `read` (sin acceso a WooCommerce). Los administradores (`manage_options`) siguen siendo supervisores. El rol heredado `multistore_user` se sigue reconociendo como usuario de tienda mientras convivan. La tienda de cada usuario sigue en la meta `extra_store_user` de la tienda (se asigna en Tiendas > Usuario operador).
+- WP-CLI: `wp dlp-paneles migrar-roles [--ejecutar]` pasa los usuarios `multistore_user` a `dlp_tienda` (sin `--ejecutar` solo simula).
+- Pagina "Reportes DLP" (admin): ahora es un menu propio y solo para supervisores (administrador o Supervisor DLP). Antes usaba `manage_woocommerce`, que tambien tiene el rol heredado de tienda.
+- Cerrar sesion sin salir del panel: `POST /dlp-paneles/v1/sesion/salir`; el boton ya no es un enlace a wp-login.php. LoginWP (peters-login-redirect) redirigia y cortaba la peticion en el hook `wp_logout`; la llamada quita ese gancho. Tras salir se vuelve al inicio de sesion del panel (`logoutRedirect`).

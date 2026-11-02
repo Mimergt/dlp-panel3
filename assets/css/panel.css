@@ -2313,3 +2313,6 @@
 .dlp2-exp-msg { min-height: 18px; margin: 12px 0 0; font-size: 13px; color: var(--dlp-text-muted); }
 .dlp2-exp-msg-error { color: var(--dlp-red-text); font-weight: 600; }
 #dlp2-exp-go svg { width: 16px; height: 16px; }
+
+/* ===== 1.19.0: cerrar sesion desde el panel (boton en vez de enlace) ===== */
+.dlp2-btn-dark:disabled { opacity: 0.6; cursor: wait; }

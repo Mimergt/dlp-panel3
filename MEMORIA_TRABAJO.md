@@ -1071,3 +1071,13 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
 - OJO: el filtro `date_completed` de `wc_get_orders` solo se probo con HPOS (dev); en almacenamiento clasico (produccion hoy) no se probo.
 - Pruebas dev: San Cristobal 27-oct..2-nov = 2 pedidos; todas = 6; con cancelados = 16; feb-abr = 3.192 pedidos en 13 s.
 - Tambien en dev: #159087 es un completado sin tienda asignada y total 0.
+
+
+## 2026-11-02 (1.19.0 - roles propios, supervisor de prueba, cerrar sesion)
+- Hallazgo: el rol heredado `multistore_user` tiene `manage_woocommerce`, y la pagina Reportes DLP (1.16-1.18) la usaba como permiso: un usuario de tienda con acceso a wp-admin podia descargar el Excel de cualquier tienda. Corregido: ahora solo supervisores (`DLP_Paneles_REST::is_supervisor_user`). Produccion no se toco.
+- Roles `dlp_tienda` y `dlp_supervisor` (solo `read`) en `includes/roles.php`. Dev: los 36 usuarios `multistore_user` migrados con `wp dlp-paneles migrar-roles --ejecutar`; el rol viejo sigue definido, sin usuarios. Respaldo de la lista previa en `~/dlp-backups/usuarios-multistore-antes-de-roles-dlp.csv` (servidor dev) y de los plugins (`dlp-panel3-1.18.0-pre-1.19.0.tgz`, `dlp-tiendas-0.16.3-pre-0.16.4.tgz`).
+- Usuario supervisor de prueba en dev: `supervisor.prueba` (rol Supervisor DLP). La clave esta en `~/.config/dlp-tiendas/dev-supervisor.txt` (local, chmod 600), no en el chat ni el repo.
+- dlp-tiendas 0.16.4: el selector "Usuario operador" de la tienda lista `dlp_tienda` y `multistore_user` (`role__in`).
+- Cerrar sesion: LoginWP (peters-login-redirect) hace `wp_redirect()+exit` en `wp_logout` (prioridad 1); era la causa de que el boton llevara a otra pagina. La ruta `sesion/salir` quita ese gancho (por clase del closure) y ademas ignora redirecciones; el JS tolera un 302 y solo cae al enlace clasico si el servidor rechaza.
+- Pruebas dev: rol por usuario (supervisor 35 tiendas; tienda 1; shop_manager sin panel); tienda pidiendo otra tienda = 403; login HTTP real con el supervisor de prueba, `POST sesion/salir` = 200 {"ok":true}, cookie vieja = 403.
+- NO probado: el boton en el navegador (no inicio sesion con credenciales en la UI). Observado: LoginWP manda a los supervisores a la portada tras iniciar sesion, ignorando `redirect_to=/orders/`.

@@ -257,6 +257,13 @@ class DLP_Paneles_REST {
             'permission_callback' => array(__CLASS__, 'can_access_panel'),
         ));
 
+        // Cerrar sesion sin pasar por la pagina de confirmacion de wp-login.php.
+        register_rest_route('dlp-paneles/v1', '/sesion/salir', array(
+            'methods' => WP_REST_Server::CREATABLE,
+            'callback' => array(__CLASS__, 'logout'),
+            'permission_callback' => 'is_user_logged_in',
+        ));
+
         register_rest_route('dlp-paneles/v1', '/servicios', array(
             'methods' => WP_REST_Server::READABLE,
             'callback' => array(__CLASS__, 'get_services'),
@@ -287,6 +294,29 @@ class DLP_Paneles_REST {
                 'minutos' => array('required' => false, 'type' => 'integer'),
             ),
         ));
+    }
+
+    public static function logout() {
+        // Plugins como LoginWP redirigen y cortan la peticion (wp_redirect + exit) en el hook wp_logout.
+        // Aqui el destino lo decide el panel: se quita ese gancho (identificado por su clase) y, por si
+        // otro plugin hace algo parecido, se ignoran las redirecciones durante esta llamada.
+        global $wp_filter;
+        if (!empty($wp_filter['wp_logout']->callbacks)) {
+            foreach ($wp_filter['wp_logout']->callbacks as $priority => $callbacks) {
+                foreach ($callbacks as $callback) {
+                    $fn = $callback['function'];
+                    if ($fn instanceof Closure) {
+                        $scope = (new ReflectionFunction($fn))->getClosureScopeClass();
+                        if ($scope && stripos($scope->getName(), 'LoginWP') === 0) {
+                            remove_action('wp_logout', $fn, $priority);
+                        }
+                    }
+                }
+            }
+        }
+        add_filter('wp_redirect', '__return_false', 999);
+        wp_logout();
+        return new WP_REST_Response(array('ok' => true));
     }
 
     // Tienda que le corresponde a la ubicacion del pedido segun los poligonos (para avisar al reasignar).
@@ -434,7 +464,10 @@ class DLP_Paneles_REST {
         }
 
         $roles = (array) $user->roles;
-        if (in_array('multistore_user', $roles, true)) {
+        if (in_array(DLP_Paneles_Roles::SUPERVISOR, $roles, true)) {
+            return true;
+        }
+        if (array_intersect(DLP_Paneles_Roles::store_roles(), $roles)) {
             return false;
         }
 

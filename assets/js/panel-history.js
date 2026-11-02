@@ -315,7 +315,7 @@
           '<a class="dlp2-btn-ghost" href="' + esc(cfg.boardUrl || '#') + '">' + ICON.back + '<span>Volver al panel</span></a>' +
           '<button class="dlp2-btn-ghost" data-h="export" type="button">' + ICON_DOWNLOAD + '<span>Descargar Excel</span></button>' +
           '<button class="dlp2-btn-ghost" data-h="sync" type="button">' + ICON.sync + '<span>Sincronizar</span></button>' +
-          '<a class="dlp2-btn-dark" href="' + esc(cfg.logoutUrl || '#') + '">' + ICON.logout + '<span>Cerrar Sesion</span></a>' +
+          '<button class="dlp2-btn-dark" data-dlp-logout type="button">' + ICON.logout + '<span>Cerrar Sesion</span></button>' +
         '</div>' +
       '</div>';
   }

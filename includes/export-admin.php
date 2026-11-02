@@ -5,12 +5,11 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Pagina de admin "Reportes DLP" (WooCommerce > Reportes DLP): descarga el
+ * Pagina de admin "Reportes DLP": descarga el
  * Excel de pedidos de cualquier tienda, o de todas, sin entrar a los paneles.
  * A diferencia del panel, aqui se pueden incluir pedidos cancelados.
  */
 class DLP_Paneles_Export_Admin {
-    const CAP = 'manage_woocommerce';
     const ACTION = 'dlp_paneles_export';
     const PAGE = 'dlp-reportes';
 
@@ -19,8 +18,17 @@ class DLP_Paneles_Export_Admin {
         add_action('admin_post_' . self::ACTION, array(__CLASS__, 'handle_download'));
     }
 
+    // Solo supervisores (administradores o rol Supervisor DLP). No se usa manage_woocommerce:
+    // el rol heredado de WooFood para las tiendas tambien lo tiene.
+    private static function allowed() {
+        return is_user_logged_in() && DLP_Paneles_REST::is_supervisor_user(get_current_user_id());
+    }
+
     public static function register_menu() {
-        add_submenu_page('woocommerce', 'Reportes DLP', 'Reportes DLP', self::CAP, self::PAGE, array(__CLASS__, 'render_page'));
+        if (!self::allowed()) {
+            return;
+        }
+        add_menu_page('Reportes DLP', 'Reportes DLP', 'read', self::PAGE, array(__CLASS__, 'render_page'), 'dashicons-media-spreadsheet', 58);
     }
 
     private static function stores() {
@@ -32,7 +40,7 @@ class DLP_Paneles_Export_Admin {
     }
 
     public static function render_page() {
-        if (!current_user_can(self::CAP)) {
+        if (!self::allowed()) {
             wp_die('No tienes permiso para ver esta pagina.');
         }
 
@@ -122,7 +130,7 @@ class DLP_Paneles_Export_Admin {
     }
 
     public static function handle_download() {
-        if (!current_user_can(self::CAP)) {
+        if (!self::allowed()) {
             wp_die('No tienes permiso para descargar este reporte.', '', array('response' => 403));
         }
         check_admin_referer(self::ACTION);

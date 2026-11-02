@@ -49,6 +49,7 @@ class DLP_Paneles_Shortcode {
             'nonce' => wp_create_nonce('wp_rest'),
             'refreshSeconds' => 30,
             'logoutUrl' => esc_url_raw(wp_logout_url(home_url('/'))),
+            'logoutRedirect' => esc_url_raw(wp_login_url((string) get_permalink() ?: home_url('/'))),
             'brandTitle' => 'DEL PUENTE',
             'brandLogoUrl' => 'https://delpuente.com.gt/wp-content/uploads/2020/08/new-logo-web-dlp.png',
             'currentUserName' => $current_user->display_name ? $current_user->display_name : $current_user->user_login,
