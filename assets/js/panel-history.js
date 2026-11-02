@@ -585,7 +585,7 @@
         '<div class="dlp2-modal-header"><h3>Descargar Excel de pedidos</h3>' +
           '<button class="dlp2-modal-close" data-h="exp-close" type="button" aria-label="Cerrar">' + ICON.close + '</button></div>' +
         '<div class="dlp2-modal-body">' +
-          '<p class="dlp2-modal-subtitle">Pedidos completados, una fila por producto. Rango maximo: 3 meses.</p>' +
+          '<p class="dlp2-modal-subtitle">Pedidos completados en esas fechas, una fila por producto. Rango maximo: 3 meses.</p>' +
           storeField +
           '<div class="dlp2-exp-dates">' +
             '<div><label class="dlp2-exp-label" for="dlp2-exp-from">Desde</label><input id="dlp2-exp-from" class="dlp2-exp-input" type="date" /></div>' +

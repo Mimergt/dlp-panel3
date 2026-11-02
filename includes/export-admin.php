@@ -42,7 +42,7 @@ class DLP_Paneles_Export_Admin {
         ?>
         <div class="wrap">
             <h1>Reportes DLP</h1>
-            <p>Descarga el Excel de pedidos. Una fila por producto del pedido, con los extras agrupados por tipo (Carne, Bebida, Complemento y Otros extras) y una hoja "Resumen" con los totales y la explicacion del archivo. Rango maximo: 6 meses. Las fechas son las de creacion del pedido, hora de Guatemala.</p>
+            <p>Descarga el Excel de pedidos. Una fila por producto del pedido, con los extras agrupados por tipo (Carne, Bebida, Complemento y Otros extras) y una hoja "Resumen" con los totales y la explicacion del archivo. Rango maximo: 6 meses. Las fechas son las de completado del pedido (en los cancelados, la de creacion), hora de Guatemala.</p>
             <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" id="dlp-export-form">
                 <input type="hidden" name="action" value="<?php echo esc_attr(self::ACTION); ?>">
                 <?php wp_nonce_field(self::ACTION); ?>

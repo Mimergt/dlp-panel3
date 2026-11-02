@@ -1063,3 +1063,11 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
 - Decision mia: los extras movidos a "Otros extras" llevan su etiqueta ("Carne (Box): Premium") para no confundirse con los aderezos; se puede quitar.
 - Se elimino el soporte de formulas y la barra de totales del escritor (`export.php`); la hoja "Por producto" del Resumen se agrupa por nombre.
 - Pruebas dev: 3.157 pedidos / 5.635 filas (13 s), 7.373 / 13.022 con cancelados (31 s); 24 columnas, 0 formulas, total pedido sin repetir, telefono en todas las filas.
+
+
+## 2026-11-02 (1.18.0 - Excel por fecha de completado)
+- El usuario completo pedidos de San Cristobal (creados el 8 y 21 de oct) y el reporte del 27-oct al 2-nov salia vacio porque filtraba por fecha de creacion. Decision: filtrar por fecha de completado (como WP All Export); sin selector.
+- Cancelados (solo admin): sin fecha de completado, se filtran por creacion; la columna "Fecha y hora" usa completado en completados y creacion en cancelados. Orden de filas por ID (no estrictamente cronologico por completado).
+- OJO: el filtro `date_completed` de `wc_get_orders` solo se probo con HPOS (dev); en almacenamiento clasico (produccion hoy) no se probo.
+- Pruebas dev: San Cristobal 27-oct..2-nov = 2 pedidos; todas = 6; con cancelados = 16; feb-abr = 3.192 pedidos en 13 s.
+- Tambien en dev: #159087 es un completado sin tienda asignada y total 0.

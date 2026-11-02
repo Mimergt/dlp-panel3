@@ -488,12 +488,27 @@ class DLP_Paneles_Export {
         );
     }
 
-    // Ids de pedidos por fecha de creacion (igual que el historial), orden cronologico.
+    // Ids de pedidos del rango. Los completados se filtran por fecha de completado; los demas
+    // estados (cancelados), que no tienen esa fecha, por fecha de creacion. Orden por id.
     private static function order_ids($from_ts, $to_ts, array $statuses, $store_ids) {
+        $ids = array();
+        if (in_array('completed', $statuses, true)) {
+            $ids = self::query_ids(array('completed'), 'date_completed', $from_ts, $to_ts, $store_ids);
+        }
+        $others = array_values(array_diff($statuses, array('completed')));
+        if (!empty($others)) {
+            $ids = array_merge($ids, self::query_ids($others, 'date_created', $from_ts, $to_ts, $store_ids));
+        }
+        $ids = array_values(array_unique($ids));
+        sort($ids);
+        return $ids;
+    }
+
+    private static function query_ids(array $statuses, $date_key, $from_ts, $to_ts, $store_ids) {
         $query = array(
             'status' => $statuses,
-            'date_created' => $from_ts . '...' . $to_ts,
-            'orderby' => 'date',
+            $date_key => $from_ts . '...' . $to_ts,
+            'orderby' => 'ID',
             'order' => 'ASC',
             'limit' => -1,
             'return' => 'ids',
@@ -617,7 +632,11 @@ class DLP_Paneles_Export {
 
     // Filas del pedido: una por producto. Acumula los totales del resumen en $stats.
     private static function build_rows($order, $with_status, array &$stats) {
-        $created = $order->get_date_created();
+        // Fecha del reporte: la de completado; en cancelados (sin esa fecha), la de creacion.
+        $created = $order->get_date_completed();
+        if (!$created || $order->get_status() !== 'completed') {
+            $created = $order->get_date_created();
+        }
 
         $store_id = absint($order->get_meta('extra_store_name', true));
         $store = $store_id ? self::store_title($store_id) : trim((string) $order->get_meta('tienda_asignada', true));
@@ -740,7 +759,7 @@ class DLP_Paneles_Export {
         $add(array());
         $add(array(array('v' => 'Generado por', 's' => 13), $by));
         $add(array(array('v' => 'Fecha de generación', 's' => 13), wp_date('Y-m-d H:i') . ' (hora de Guatemala)'));
-        $add(array(array('v' => 'Rango de fechas', 's' => 13), 'Del ' . $args['desde'] . ' al ' . $args['hasta'] . ' (fecha de creación del pedido)'));
+        $add(array(array('v' => 'Rango de fechas', 's' => 13), 'Del ' . $args['desde'] . ' al ' . $args['hasta'] . ($args['with_status'] ? ' (fecha de completado; en los cancelados, la de creación)' : ' (fecha de completado del pedido)')));
         $add(array(array('v' => 'Tienda(s)', 's' => 13), $store_label));
         $add(array(array('v' => 'Estados', 's' => 13), $states));
         $add(array());
@@ -779,7 +798,7 @@ class DLP_Paneles_Export {
         $text('Columnas naranja: extras elegidos en ese producto, separados por tipo (Carne, Bebida, Complemento). "Otros extras" reúne lo demás: aderezos y las opciones de Carne (Box), Bebida (Box) y Costilla, que llevan su etiqueta delante (por ejemplo "Carne (Box): Premium"). Los extras corresponden a la línea completa: si la cantidad es mayor a 1, no se distingue qué extras eligió para cada unidad.');
         $text('Columna morada: Total pedido sale solo en la primera fila de cada pedido, así que al sumar la columna nada se cuenta dos veces.');
         $text('Para contar pedidos, cuenta los valores de la columna Total pedido (o los IDs distintos). Para contar productos vendidos, usa Producto junto con Cant. Los totales de esta hoja Resumen son siempre los del reporte completo.');
-        $text('Las fechas y horas son de Guatemala. El monto de cada producto es el de la línea del pedido, con sus extras ya incluidos.');
+        $text('La fecha de cada pedido es la de completado (en los cancelados, la de creación). Las fechas y horas son de Guatemala. El monto de cada producto es el de la línea del pedido, con sus extras ya incluidos.');
 
         return array(
             'rows' => $rows,

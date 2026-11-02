@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.17.1
+- 1.18.0
 
 ## Shortcode
 - [dlp_paneles]
@@ -216,3 +216,7 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 - Se agrega Telefono del cliente. Se quitan ID producto, SKU, Envio y otros cargos y la fila TOTALES (los totales viven en la hoja Resumen).
 - Carne (Box), Bebida (Box) y Costilla pasan a "Otros extras" con su etiqueta delante (ej. "Carne (Box): Premium"); quedan Carne, Bebida, Complemento y Otros extras.
 - Hoja Resumen coherente: sin envio ni ID de producto, texto explicativo actualizado.
+
+## Incluido en 1.18.0 (Excel por fecha de completado)
+- El Excel filtra por la fecha en que se completo el pedido (antes, la de creacion). Los cancelados, que no tienen fecha de completado, se filtran por su fecha de creacion (solo en el admin). La columna "Fecha y hora" muestra la fecha usada.
+- 1.17.2: si el rango no tiene pedidos se muestra un aviso en vez de descargar un archivo vacio.
