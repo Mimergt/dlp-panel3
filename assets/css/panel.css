@@ -1276,95 +1276,7 @@
 }
 
 /* Gestion */
-.dlp2-management-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-.dlp2-field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.dlp2-field span {
-  font-size: 11px;
-  color: var(--dlp-dark-muted);
-}
-
-.dlp2-field select {
-  height: 32px;
-  padding: 0 8px;
-  background: var(--dlp-dark-card);
-  border: 1px solid var(--dlp-dark-border);
-  border-radius: 4px;
-  color: #fff;
-  font-size: 11px;
-}
-
-.dlp2-current-store {
-  height: 32px;
-  display: flex;
-  align-items: center;
-  padding: 0 8px;
-  background: var(--dlp-dark-card);
-  border: 1px solid var(--dlp-dark-border);
-  border-radius: 4px;
-  color: #fff;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.dlp2-toggle-btn {
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  background: var(--dlp-dark-card);
-  border: 1px solid var(--dlp-dark-border);
-  color: #E6EEF6;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.dlp2-toggle-btn:hover {
-  background: #2C4560;
-}
-
-.dlp2-toggle-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.dlp2-toggle-btn:disabled:hover {
-  background: var(--dlp-dark-card);
-}
-
 /* Cliente ya bloqueado: resaltado en rojo para que se note a simple vista. */
-.dlp2-toggle-btn.dlp2-block-btn-active {
-  background: rgba(239, 68, 68, 0.16);
-  border-color: rgba(239, 68, 68, 0.4);
-  color: #FCA5A5;
-}
-
-.dlp2-toggle-btn.dlp2-block-btn-active:hover {
-  background: rgba(239, 68, 68, 0.24);
-}
-
-.dlp2-toggle-btn.dlp2-block-btn-active svg {
-  color: #FCA5A5;
-}
-
-.dlp2-toggle-btn svg {
-  color: var(--dlp-brand);
-  width: 12px;
-  height: 12px;
-}
-
 .dlp2-note-row {
   display: flex;
   align-items: center;
@@ -1385,39 +1297,6 @@
 
 .dlp2-note-row input::placeholder {
   color: var(--dlp-dark-muted);
-}
-
-.dlp2-note-save {
-  height: 32px;
-  padding: 0 14px;
-  background: #2C4560;
-  border: 1px solid var(--dlp-dark-border);
-  color: #E6EEF6;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.dlp2-note-save:hover {
-  background: #345373;
-}
-
-.dlp2-cancel-link {
-  margin-top: 2px;
-  align-self: center;
-  background: none;
-  border: 0;
-  color: var(--dlp-dark-muted);
-  font-size: 12px;
-  font-weight: 600;
-  text-decoration: underline;
-  cursor: pointer;
-  padding: 4px;
-}
-
-.dlp2-cancel-link:hover {
-  color: #FCA5A5;
 }
 
 /* Vista expandida "Pedido": overlay persistente que se anima con una
@@ -1731,30 +1610,6 @@
   letter-spacing: 0.02em;
 }
 
-.dlp2-actions-card-body {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.dlp2-actions-card-body .dlp2-field select,
-.dlp2-actions-card-body .dlp2-toggle-btn {
-  height: 34px;
-}
-
-.dlp2-cancel-link-block {
-  align-self: stretch;
-  text-align: center;
-  padding: 8px;
-  border-radius: 6px;
-  background: rgba(239, 68, 68, 0.08);
-  text-decoration: none;
-}
-
-.dlp2-cancel-link-block:hover {
-  background: rgba(239, 68, 68, 0.14);
-}
-
 /* Progreso de preparacion (3 pasos) */
 .dlp2-prep-progress {
   padding: 12px 14px;
@@ -1910,10 +1765,6 @@
   .dlp2-type-tabs {
     width: 100%;
     justify-content: space-between;
-  }
-
-  .dlp2-management-grid {
-    grid-template-columns: 1fr;
   }
 
   .dlp2-expanded-products {
@@ -2394,3 +2245,127 @@
 .dlp2-storepick-row input { width: 16px; height: 16px; margin: 0; cursor: pointer; flex-shrink: 0; }
 .dlp2-storepick-row-all { margin-bottom: 4px; border-bottom: 1px solid var(--dlp-border); border-radius: 6px 6px 0 0; }
 .dlp2-storepick-empty { padding: 10px 8px; font-size: 12px; color: var(--dlp-text-muted); }
+
+/* ===== 1.21.0: Tareas (acordeon), botones de accion y cancelar ===== */
+.dlp2-tasks {
+  flex-shrink: 0;
+  border: 1px solid var(--dlp-dark-border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+}
+.dlp2-tasks-head {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  padding: 12px 14px;
+  background: var(--dlp-dark-card);
+  border: 0;
+  color: #E6EEF6;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.dlp2-tasks-head:hover { background: #2C4560; }
+.dlp2-tasks-head > svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--dlp-brand); }
+.dlp2-tasks-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 0 1 auto; }
+.dlp2-tasks-title { font-size: 13px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #fff; }
+.dlp2-tasks-sub { font-size: 11px; color: var(--dlp-dark-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dlp2-tasks.is-open .dlp2-tasks-sub { display: none; }
+.dlp2-task-chip {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.2);
+  color: #CBD5E1;
+  font-size: 10px;
+  font-weight: 700;
+}
+.dlp2-task-chip-flag { background: rgba(245, 158, 11, 0.2); color: #FCD34D; }
+.dlp2-task-chip-red { background: rgba(239, 68, 68, 0.2); color: #FCA5A5; }
+.dlp2-tasks-hint {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid rgba(147, 197, 253, 0.45);
+  border-radius: 999px;
+  color: #93C5FD;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.dlp2-tasks-hint svg { width: 14px; height: 14px; transition: transform 0.2s ease; }
+.dlp2-tasks.is-open .dlp2-tasks-hint svg { transform: rotate(180deg); }
+.dlp2-tasks-hint-open { display: none; }
+.dlp2-tasks.is-open .dlp2-tasks-hint-open { display: inline; }
+.dlp2-tasks.is-open .dlp2-tasks-hint-closed { display: none; }
+.dlp2-tasks-body { display: none; padding: 4px 14px 12px; border-top: 1px solid var(--dlp-dark-border); }
+.dlp2-tasks.is-open .dlp2-tasks-body { display: block; }
+.dlp2-task-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+.dlp2-task-row:last-child { border-bottom: 0; padding-bottom: 0; }
+.dlp2-task-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dlp2-task-title { font-size: 11px; color: var(--dlp-dark-muted); }
+.dlp2-task-value { font-size: 13px; font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dlp2-task-btn {
+  height: 36px;
+  padding: 0 14px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #2C4560;
+  border: 1px solid #4A6683;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+}
+.dlp2-task-btn:hover { background: #345373; border-color: #6B8BAA; }
+.dlp2-task-btn svg { width: 14px; height: 14px; }
+.dlp2-task-btn.is-on { background: rgba(245, 158, 11, 0.18); border-color: rgba(245, 158, 11, 0.55); color: #FCD34D; }
+.dlp2-task-btn-danger { background: rgba(239, 68, 68, 0.14); border-color: rgba(239, 68, 68, 0.55); color: #FCA5A5; }
+.dlp2-task-btn-danger:hover { background: rgba(239, 68, 68, 0.26); border-color: rgba(239, 68, 68, 0.8); }
+.dlp2-task-btn-primary { background: #3B82F6; border-color: #3B82F6; }
+.dlp2-task-btn-primary:hover { background: #2563EB; border-color: #2563EB; }
+.dlp2-task-btn:disabled { opacity: 0.75; cursor: not-allowed; }
+.dlp2-task-btn:disabled:hover { background: rgba(239, 68, 68, 0.14); border-color: rgba(239, 68, 68, 0.55); }
+.dlp2-task-row-note { flex-direction: column; align-items: stretch; gap: 6px; }
+.dlp2-task-row-note .dlp2-note-row input { height: 36px; border-radius: 8px; }
+.dlp2-cancel-btn {
+  flex-shrink: 0;
+  width: 100%;
+  height: 42px;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #DC2626;
+  border: 1px solid #DC2626;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.dlp2-cancel-btn:hover { background: #B91C1C; border-color: #B91C1C; }
+.dlp2-cancel-btn svg { width: 15px; height: 15px; }
+@media (max-width: 640px) {
+  .dlp2-tasks-sub { display: none; }
+  .dlp2-task-row:not(.dlp2-task-row-note) { flex-wrap: wrap; }
+  .dlp2-task-row:not(.dlp2-task-row-note) .dlp2-task-btn { width: 100%; }
+}

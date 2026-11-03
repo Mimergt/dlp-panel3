@@ -35,6 +35,7 @@
     typeFilter: 'all',
     storeFilter: [],
     storeMenuOpen: false,
+    tasksOpen: false,
     storeSearch: '',
     expandedOrderId: null,
     columnLimits: { processing: COLUMN_INITIAL_LIMIT, shipped: COLUMN_INITIAL_LIMIT, completed: COLUMN_INITIAL_LIMIT, cancelled: COLUMN_INITIAL_LIMIT },
@@ -69,6 +70,7 @@
     back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" x2="5" y1="12" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>',
     close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" x2="6" y1="6" y2="18"></line><line x1="6" x2="18" y1="6" y2="18"></line></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>',
+    tasks: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11"></path><path d="M9 12h11"></path><path d="M9 18h11"></path><path d="m3 6 1 1 2-2"></path><path d="m3 12 1 1 2-2"></path><path d="m3 18 1 1 2-2"></path></svg>',
     chevronDown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>',
     userBlock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="17" x2="22" y1="8" y2="13"></line><line x1="22" x2="17" y1="8" y2="13"></line></svg>',
   };
@@ -703,24 +705,74 @@
       '</div>';
   }
 
-  // Solo visible para supervisores: bloquea/desbloquea la cuenta del cliente
-  // (via el meta que usa el plugin User Blocker), no solo este pedido.
-  function renderBlockCustomerButton(order) {
-    if (state.scope !== 'supervisor') {
-      return '';
+  // "Tareas": acordeon (cerrado por defecto) con las acciones de gestion del pedido y, debajo,
+  // el boton de cancelar siempre visible. Se usa en el detalle lateral y en la vista expandida.
+  // Bloquear cliente: cualquier usuario que vea el pedido puede bloquear (por correo, telefono y
+  // cuenta, via el modulo antifraude); desbloquear no se hace desde los paneles.
+  function taskRow(title, value, buttonHtml) {
+    return '' +
+      '<div class="dlp2-task-row">' +
+        '<div class="dlp2-task-info">' +
+          '<span class="dlp2-task-title">' + title + '</span>' +
+          (value ? '<span class="dlp2-task-value">' + value + '</span>' : '') +
+        '</div>' +
+        buttonHtml +
+      '</div>';
+  }
+
+  function renderTasks(order) {
+    var open = !!state.tasksOpen;
+    var blocked = !!order.customer_blocked;
+    var id = order.id;
+
+    var chips = '';
+    if (order.priority) {
+      chips += '<span class="dlp2-task-chip dlp2-task-chip-flag">Prioridad</span>';
+    }
+    if (blocked) {
+      chips += '<span class="dlp2-task-chip dlp2-task-chip-red">Cliente bloqueado</span>';
+    }
+    if (order.internal_note) {
+      chips += '<span class="dlp2-task-chip">Con nota</span>';
     }
 
-    var hasAccount = !!order.customer_id;
-    var blocked = !!order.customer_blocked;
-    var label = blocked ? 'Desbloquear Cliente' : 'Bloquear Cliente';
-    var disabledAttr = '';
-    var extraClass = blocked ? ' dlp2-block-btn-active' : '';
+    var clientValue = esc(order.customer_name || 'Consumidor final') + (order.phone ? ' &middot; ' + esc(order.phone) : '');
+    var blockBtn = blocked ?
+      '<button class="dlp2-task-btn dlp2-task-btn-danger" type="button" disabled title="Solo se desbloquea desde el administrador del sitio">' + ICON.userBlock + '<span>Cliente bloqueado</span></button>' :
+      '<button class="dlp2-task-btn dlp2-task-btn-danger" data-action="toggle-block-customer" data-order-id="' + id + '" type="button">' + ICON.userBlock + '<span>Bloquear cliente</span></button>';
+
+    var body = '' +
+      taskRow('Tienda asignada', esc(order.store_name || 'Sin tienda asignada'),
+        '<button class="dlp2-task-btn" data-action="open-reassign-modal" data-order-id="' + id + '" type="button">' + ICON.store + '<span>Asignar a otra tienda</span></button>') +
+      taskRow('Prioridad de orden', order.priority ? 'Prioritario' : 'Normal',
+        '<button class="dlp2-task-btn' + (order.priority ? ' is-on' : '') + '" data-action="toggle-priority" data-order-id="' + id + '" type="button">' + ICON.flag + '<span>' + (order.priority ? 'Quitar prioridad' : 'Marcar prioridad') + '</span></button>') +
+      taskRow('Cliente', clientValue, blockBtn) +
+      '<div class="dlp2-task-row dlp2-task-row-note">' +
+        '<div class="dlp2-task-info"><span class="dlp2-task-title">Nota interna</span></div>' +
+        '<div class="dlp2-note-row">' +
+          '<input type="text" data-field="internal_note" placeholder="Agregar nota interna rapida..." value="' + esc(order.internal_note || '') + '" />' +
+          '<button class="dlp2-task-btn dlp2-task-btn-primary" data-action="save-note" data-order-id="' + id + '" type="button">Guardar</button>' +
+        '</div>' +
+      '</div>';
 
     return '' +
-      '<label class="dlp2-field">' +
-        '<span>Cliente</span>' +
-        '<button class="dlp2-toggle-btn' + extraClass + '" data-action="toggle-block-customer" data-order-id="' + order.id + '"' + disabledAttr + '>' + ICON.userBlock + '<span>' + label + '</span></button>' +
-      '</label>';
+      '<div class="dlp2-tasks' + (open ? ' is-open' : '') + '">' +
+        '<button class="dlp2-tasks-head" data-action="toggle-tasks" type="button" aria-expanded="' + (open ? 'true' : 'false') + '">' +
+          ICON.tasks +
+          '<span class="dlp2-tasks-text">' +
+            '<span class="dlp2-tasks-title">Tareas</span>' +
+            '<span class="dlp2-tasks-sub">Tienda, prioridad, bloquear cliente y nota</span>' +
+          '</span>' +
+          chips +
+          '<span class="dlp2-tasks-hint">' +
+            '<span class="dlp2-tasks-hint-closed">Ver tareas</span><span class="dlp2-tasks-hint-open">Ocultar</span>' +
+            ICON.chevronDown +
+          '</span>' +
+        '</button>' +
+        '<div class="dlp2-tasks-body">' + body + '</div>' +
+      '</div>' +
+      (isFinalStatus(order.status) ? '' :
+        '<button class="dlp2-cancel-btn" data-action="cancel" data-order-id="' + id + '" type="button">' + ICON.close + '<span>Cancelar pedido</span></button>');
   }
 
   // "billing_nit" y "billing_nit_nombre" son metas personalizados de
@@ -837,61 +889,14 @@
             '</div>' +
           '</div>' +
 
-          '<div class="dlp2-section">' +
-            '<span class="dlp2-section-title">Gestion de Tienda y Supervisor</span>' +
-            '<div class="dlp2-management-grid">' +
-              '<label class="dlp2-field">' +
-                '<span>Tienda asignada</span>' +
-                '<div class="dlp2-current-store">' + esc(order.store_name || 'Sin tienda asignada') + '</div>' +
-                '<button class="dlp2-toggle-btn" data-action="open-reassign-modal" data-order-id="' + order.id + '" type="button">' + ICON.store + '<span>Asignar a otra Tienda</span></button>' +
-              '</label>' +
-              '<label class="dlp2-field">' +
-                '<span>Prioridad de orden</span>' +
-                '<button class="dlp2-toggle-btn" data-action="toggle-priority" data-order-id="' + order.id + '">' + ICON.flag + '<span>' + (order.priority ? 'Quitar Prioridad' : 'Marcar Prioridad') + '</span></button>' +
-              '</label>' +
-              renderBlockCustomerButton(order) +
-            '</div>' +
-            '<div class="dlp2-note-row">' +
-              '<input type="text" data-field="internal_note" placeholder="Agregar nota interna rapida..." value="' + esc(order.internal_note || '') + '" />' +
-              '<button class="dlp2-note-save" data-action="save-note" data-order-id="' + order.id + '">Guardar</button>' +
-            '</div>' +
-          '</div>' +
-
-          (isFinalStatus(order.status) ? '' :
-            '<button class="dlp2-cancel-link" data-action="cancel" data-order-id="' + order.id + '">Cancelar pedido</button>') +
+          renderTasks(order) +
 
         '</div>' +
       '</aside>';
   }
 
   function renderActionsCard(order) {
-    return '' +
-      '<div class="dlp2-panel-card">' +
-        '<div class="dlp2-panel-card-header">' +
-          '<div class="dlp2-panel-card-header-left"><span>Acciones</span></div>' +
-        '</div>' +
-        '<div class="dlp2-actions-card-body">' +
-          '<label class="dlp2-field">' +
-            '<span>Tienda asignada</span>' +
-            '<div class="dlp2-current-store">' + esc(order.store_name || 'Sin tienda asignada') + '</div>' +
-            '<button class="dlp2-toggle-btn" data-action="open-reassign-modal" data-order-id="' + order.id + '" type="button">' + ICON.store + '<span>Asignar a otra Tienda</span></button>' +
-          '</label>' +
-          '<label class="dlp2-field">' +
-            '<span>Prioridad de orden</span>' +
-            '<button class="dlp2-toggle-btn" data-action="toggle-priority" data-order-id="' + order.id + '">' + ICON.flag + '<span>' + (order.priority ? 'Quitar Prioridad' : 'Marcar Prioridad') + '</span></button>' +
-          '</label>' +
-          renderBlockCustomerButton(order) +
-          '<label class="dlp2-field">' +
-            '<span>Bitacora interna</span>' +
-            '<div class="dlp2-note-row">' +
-              '<input type="text" data-field="internal_note" placeholder="Agregar nota interna rapida..." value="' + esc(order.internal_note || '') + '" />' +
-              '<button class="dlp2-note-save" data-action="save-note" data-order-id="' + order.id + '">Guardar</button>' +
-            '</div>' +
-          '</label>' +
-          (isFinalStatus(order.status) ? '' :
-            '<button class="dlp2-cancel-link dlp2-cancel-link-block" data-action="cancel" data-order-id="' + order.id + '">Cancelar pedido</button>') +
-        '</div>' +
-      '</div>';
+    return '<div class="dlp2-tasks-wrap">' + renderTasks(order) + '</div>';
   }
 
   function renderExpandedOrder(order) {
@@ -1345,6 +1350,19 @@
   });
 
   root.addEventListener('click', function (event) {
+    var tasksBtn = event.target.closest('[data-action="toggle-tasks"]');
+    if (tasksBtn) {
+      state.tasksOpen = !state.tasksOpen;
+      document.querySelectorAll('.dlp2-tasks').forEach(function (box) {
+        box.classList.toggle('is-open', state.tasksOpen);
+        var head = box.querySelector('.dlp2-tasks-head');
+        if (head) {
+          head.setAttribute('aria-expanded', state.tasksOpen ? 'true' : 'false');
+        }
+      });
+      return;
+    }
+
     var menuBtn = event.target.closest('[data-action="store-menu"]');
     if (menuBtn) {
       state.storeMenuOpen = !state.storeMenuOpen;
@@ -1529,28 +1547,18 @@
 
     if (action === 'toggle-block-customer') {
       var blockOrder = state.orders.find(function (item) { return item.id === orderId; });
-      if (!blockOrder) {
+      if (!blockOrder || blockOrder.customer_blocked) {
         return;
       }
 
-      if (!blockOrder.customer_id) {
-        alert('Este pedido no tiene una cuenta de cliente asociada (compra como invitado), no se puede bloquear.');
+      if (!confirm('Bloquear a este cliente? No podra crear pedidos nuevos (por correo, telefono ni cuenta). Desde los paneles no se puede desbloquear: solo desde el administrador del sitio.')) {
         return;
       }
 
-      var nextBlocked = !blockOrder.customer_blocked;
-      var confirmMsg = nextBlocked ?
-        'Bloquear a este cliente? No podra crear pedidos nuevos (por correo, telefono ni cuenta) hasta que se desbloquee.' :
-        'Desbloquear la cuenta de este cliente?';
-
-      if (!confirm(confirmMsg)) {
-        return;
-      }
-
-      api('/pedido/' + orderId + '/cliente-bloqueo', 'POST', { block: nextBlocked })
+      api('/pedido/' + orderId + '/cliente-bloqueo', 'POST', { block: true })
         .then(function () { loadPanel(); })
         .catch(function (error) {
-          alert('No se pudo actualizar el bloqueo del cliente: ' + error.message);
+          alert('No se pudo bloquear al cliente: ' + error.message);
         });
       return;
     }

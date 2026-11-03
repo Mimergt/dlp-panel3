@@ -1090,3 +1090,12 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
 - Probado en una pagina local con datos simulados (escritorio, celular, 0/1/2 tiendas, buscador, Escape, clic fuera, usuario de tienda) y desplegado en dev (1.20.0); la API del panel responde 35 tiendas al supervisor de prueba. No probado con los pedidos reales de dev en el navegador (sin sesion en la UI).
 - Respaldo en dev: `~/dlp-backups/dlp-panel3-1.19.0-pre-1.20.0.tgz`.
 - Pendiente (no pedido): mismo selector multiple en el historial; recordar la seleccion al recargar.
+
+
+## 2026-11-02 (1.21.0 - Tareas, cancelar visible y bloqueo de cliente para todos)
+- Pedido del usuario: la seccion de gestion pasa a "Tareas" (acordeon, cerrado por defecto pero claro que se puede abrir, una fila por opcion, botones mas marcados), boton para bloquear usuario, y "Cancelar pedido" mas visible; para todas las tiendas.
+- Decisiones: las tiendas pueden bloquear; NADIE desbloquea desde los paneles (solo administrador del sitio). Estado abierto/cerrado compartido entre pedidos (`state.tasksOpen`); el acordeon se abre sin repintar (para no perder el scroll del detalle).
+- Hallazgos: el boton de bloquear existia solo para supervisores (JS y servidor); el JS tenia un aviso viejo que impedia bloquear invitados aunque el antifraude (1.14.0) los soporta: quitado.
+- Codigo: `renderTasks`/`taskRow` (reemplazan el bloque lateral, `renderActionsCard` y `renderBlockCustomerButton`), icono `tasks`, CSS nuevo (`.dlp2-tasks*`, `.dlp2-task-*`, `.dlp2-cancel-btn`) y limpieza de estilos sin uso; `toggle_customer_block` en `includes/rest.php`.
+- Pruebas: pagina local con datos simulados (escritorio/celular, tienda/supervisor, vista expandida, bloqueado/prioridad/nota, invitado) y dev con pedido temporal (tienda bloquea 200 y deja nota; tienda y supervisor desbloquear 403; otra tienda 403; pedido borrado y desbloqueado). No probado: la UI con sesion real en el navegador.
+- Respaldo en dev: `~/dlp-backups/dlp-panel3-1.20.0-pre-1.21.0.tgz`.

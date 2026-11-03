@@ -965,11 +965,15 @@ class DLP_Paneles_REST {
             return new WP_REST_Response(array('message' => 'No autorizado para este pedido'), 403);
         }
 
-        if (!self::is_supervisor_user($user_id)) {
-            return new WP_REST_Response(array('message' => 'Solo un supervisor puede bloquear o desbloquear clientes'), 403);
+        // Cualquier usuario que vea el pedido (tienda o supervisor) puede bloquear al cliente;
+        // desbloquear no se hace desde los paneles, solo desde el administrador del sitio.
+        $block = (bool) $request->get_param('block');
+        if (!$block) {
+            return new WP_REST_Response(array('message' => 'Los clientes bloqueados solo se desbloquean desde el administrador del sitio'), 403);
         }
 
-        $block = (bool) $request->get_param('block');
+        $user = wp_get_current_user();
+        $order->add_order_note('Cliente bloqueado desde el panel por ' . ($user->display_name ?: $user->user_login) . '.');
 
         // Con el módulo Antifraude (plugin dlp-frontend) se bloquea por correo, teléfono y cuenta,
         // así también funciona con clientes invitados y impide crear pedidos nuevos.
