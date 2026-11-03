@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.19.0
+- 1.20.0
 
 ## Shortcode
 - [dlp_paneles]
@@ -226,3 +226,9 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 - WP-CLI: `wp dlp-paneles migrar-roles [--ejecutar]` pasa los usuarios `multistore_user` a `dlp_tienda` (sin `--ejecutar` solo simula).
 - Pagina "Reportes DLP" (admin): ahora es un menu propio y solo para supervisores (administrador o Supervisor DLP). Antes usaba `manage_woocommerce`, que tambien tiene el rol heredado de tienda.
 - Cerrar sesion sin salir del panel: `POST /dlp-paneles/v1/sesion/salir`; el boton ya no es un enlace a wp-login.php. LoginWP (peters-login-redirect) redirigia y cortaba la peticion en el hook `wp_logout`; la llamada quita ese gancho. Tras salir se vuelve al inicio de sesion del panel (`logoutRedirect`).
+
+## Incluido en 1.20.0 (barra superior del panel)
+- Filtro de tiendas con seleccion multiple: boton "Todas las tiendas / Nombre / N tiendas" con panel de casillas y buscador (vacio = todas). El panel sigue abierto durante los refrescos automaticos; se cierra con clic fuera o Escape. Los contadores de Todos / Delivery / Pickup cuentan solo las tiendas elegidas.
+- El supervisor ya no ve el nombre de la tienda en la barra (los usuarios de tienda si).
+- La barra ya no se corta: altura minima en vez de fija, el filtro queda junto a los tabs y baja de linea sin recortarse; "DEL PUENTE" no se parte.
+- El selector de tienda del historial no cambio.

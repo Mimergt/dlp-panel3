@@ -33,7 +33,9 @@
     firstLoadDone: false,
     loadedAt: 0,
     typeFilter: 'all',
-    storeFilter: '',
+    storeFilter: [],
+    storeMenuOpen: false,
+    storeSearch: '',
     expandedOrderId: null,
     columnLimits: { processing: COLUMN_INITIAL_LIMIT, shipped: COLUMN_INITIAL_LIMIT, completed: COLUMN_INITIAL_LIMIT, cancelled: COLUMN_INITIAL_LIMIT },
     currentPageSize: PAGE_SIZE_STEPS[0],
@@ -301,35 +303,80 @@
       '</div>';
   }
 
+  // Filtro de tienda con seleccion multiple: lista de ids; vacia = todas las tiendas.
+  function selectedStoreIds() {
+    return Array.isArray(state.storeFilter) ? state.storeFilter : [];
+  }
+
+  function orderInStores(order) {
+    var ids = selectedStoreIds();
+    return !ids.length || ids.indexOf(Number(order.store_id)) !== -1;
+  }
+
   function filteredOrders() {
     return state.orders.filter(function (order) {
       var typeOk = state.typeFilter === 'all' || order.order_type === state.typeFilter;
-      var storeOk = !state.storeFilter || Number(order.store_id) === Number(state.storeFilter);
-      return typeOk && storeOk;
+      return typeOk && orderInStores(order);
     });
   }
 
+  function storeFilterLabel() {
+    var ids = selectedStoreIds();
+    if (!ids.length) {
+      return 'Todas las tiendas';
+    }
+    if (ids.length === 1) {
+      var only = state.stores.find(function (store) { return Number(store.id) === ids[0]; });
+      return only ? only.name : '1 tienda';
+    }
+    return ids.length + ' tiendas';
+  }
+
+  // Filas del selector: "Todas" + una casilla por tienda (filtradas por el buscador).
+  function renderStoreOptions() {
+    var ids = selectedStoreIds();
+    var query = String(state.storeSearch || '').toLowerCase().trim();
+    var rows = state.stores.filter(function (store) {
+      return !query || String(store.name || '').toLowerCase().indexOf(query) !== -1;
+    }).map(function (store) {
+      var checked = ids.indexOf(Number(store.id)) !== -1 ? ' checked' : '';
+      return '<label class="dlp2-storepick-row"><input type="checkbox" data-store-id="' + Number(store.id) + '"' + checked + '><span>' + esc(store.name) + '</span></label>';
+    }).join('');
+
+    return rows || '<div class="dlp2-storepick-empty">Ninguna tienda coincide.</div>';
+  }
+
   // Filtro de tienda: solo tiene sentido mostrarlo cuando el usuario ve
-  // pedidos de mas de una tienda (supervisor, o multistore_user con varias
+  // pedidos de mas de una tienda (supervisor, o usuario de tienda con varias
   // tiendas asignadas). Se pinta junto a los tabs de Delivery/Pickup.
   function renderStoreFilter() {
     if (!Array.isArray(state.stores) || state.stores.length <= 1) {
       return '';
     }
 
-    var options = '<option value="">Todas las tiendas</option>' +
-      state.stores.map(function (store) {
-        var selected = String(Number(store.id)) === String(state.storeFilter) ? ' selected' : '';
-        return '<option value="' + Number(store.id) + '"' + selected + '>' + esc(store.name) + '</option>';
-      }).join('');
+    var open = state.storeMenuOpen;
+    var none = selectedStoreIds().length === 0;
+    var menu = open ?
+      '<div class="dlp2-storepick-menu">' +
+        '<input class="dlp2-storepick-search" type="search" data-store-search placeholder="Buscar tienda" autocomplete="off" value="' + esc(state.storeSearch) + '">' +
+        '<label class="dlp2-storepick-row dlp2-storepick-row-all"><input type="checkbox" data-store-all' + (none ? ' checked' : '') + '><span>Todas las tiendas</span></label>' +
+        '<div class="dlp2-storepick-list" data-store-list>' + renderStoreOptions() + '</div>' +
+      '</div>' : '';
 
-    return '<select class="dlp2-store-filter" data-action="store-filter">' + options + '</select>';
+    return '' +
+      '<div class="dlp2-storepick' + (open ? ' is-open' : '') + '">' +
+        '<button class="dlp2-storepick-btn" data-action="store-menu" type="button" aria-haspopup="true" aria-expanded="' + (open ? 'true' : 'false') + '">' +
+          ICON.store + '<span>' + esc(storeFilterLabel()) + '</span>' + ICON.chevronDown +
+        '</button>' +
+        menu +
+      '</div>';
   }
 
   function renderTypeTabs() {
-    var all = state.orders.length;
-    var deliveryCount = state.orders.filter(function (o) { return o.order_type !== 'pickup'; }).length;
-    var pickupCount = state.orders.filter(function (o) { return o.order_type === 'pickup'; }).length;
+    var scoped = state.orders.filter(orderInStores);
+    var all = scoped.length;
+    var deliveryCount = scoped.filter(function (o) { return o.order_type !== 'pickup'; }).length;
+    var pickupCount = scoped.filter(function (o) { return o.order_type === 'pickup'; }).length;
 
     function tab(key, label, icon, count, countClass) {
       var active = state.typeFilter === key ? ' dlp2-type-tab-active' : '';
@@ -965,11 +1012,17 @@
       return visible.filter(function (o) { return o.group === status; }).length;
     };
 
+    // Al repintar la barra (refresco automatico cada 30 s) se conserva el foco del buscador de tiendas y el scroll de su lista.
+    var activeEl = document.activeElement;
+    var searchHadFocus = !!(activeEl && activeEl.hasAttribute && activeEl.hasAttribute('data-store-search'));
+    var oldList = document.querySelector('[data-store-list]');
+    var listScroll = oldList ? oldList.scrollTop : 0;
+
     document.getElementById('dlp2-header-slot').innerHTML = '' +
       '<div class="dlp2-header">' +
         '<div class="dlp2-header-left">' +
           '<span class="dlp2-brand">' + esc(window.DLP_PANELES_CONFIG.brandTitle || 'DEL PUENTE') + '</span>' +
-          '<span class="dlp2-location">' + ICON.pin + '<span>' + esc(getStoreLabel()) + '</span></span>' +
+          (state.scope === 'supervisor' ? '' : '<span class="dlp2-location">' + ICON.pin + '<span>' + esc(getStoreLabel()) + '</span></span>') +
           (window.DLP_PANELES_CONFIG.currentUserName ?
             '<span class="dlp2-location dlp2-current-user">' + ICON.user + '<span>' + esc(window.DLP_PANELES_CONFIG.currentUserName) + '</span></span>' : '') +
         '</div>' +
@@ -985,6 +1038,18 @@
           '<button class="dlp2-btn-dark" data-dlp-logout type="button">' + ICON.logout + '<span>Cerrar Sesion</span></button>' +
         '</div>' +
       '</div>';
+
+    var newList = document.querySelector('[data-store-list]');
+    if (newList) {
+      newList.scrollTop = listScroll;
+    }
+    if (searchHadFocus) {
+      var search = document.querySelector('[data-store-search]');
+      if (search) {
+        search.focus();
+        search.setSelectionRange(search.value.length, search.value.length);
+      }
+    }
 
     document.getElementById('dlp2-netwarn-slot').innerHTML =
       (state.site && !state.site.ok ? '<div class="dlp-netwarn dlp-sitewarn"><strong>Sitio cerrado por el horario general.</strong> No se reciben pedidos nuevos de clientes. ' + esc(state.site.msg || '') + '</div>' : '') +
@@ -1172,6 +1237,9 @@
         state.stores = Array.isArray(data.stores) ? data.stores : [];
         state.allStores = Array.isArray(data.reassign_stores) ? data.reassign_stores : [];
         state.scope = data.scope || 'tienda';
+        state.storeFilter = selectedStoreIds().filter(function (id) {
+          return state.stores.some(function (store) { return Number(store.id) === id; });
+        });
         state.site = data.sitio || null;
         state.loadedAt = Date.now();
 
@@ -1226,9 +1294,24 @@
   }
 
   root.addEventListener('change', function (event) {
-    var storeFilterSelect = event.target.closest('[data-action="store-filter"]');
-    if (storeFilterSelect) {
-      state.storeFilter = storeFilterSelect.value ? Number(storeFilterSelect.value) : '';
+    var allBox = event.target.closest('[data-store-all]');
+    if (allBox) {
+      state.storeFilter = [];
+      render();
+      return;
+    }
+
+    var storeBox = event.target.closest('[data-store-id]');
+    if (storeBox) {
+      var storeId = Number(storeBox.dataset.storeId);
+      var current = selectedStoreIds().slice();
+      var at = current.indexOf(storeId);
+      if (storeBox.checked && at === -1) {
+        current.push(storeId);
+      } else if (!storeBox.checked && at !== -1) {
+        current.splice(at, 1);
+      }
+      state.storeFilter = current;
       render();
       return;
     }
@@ -1240,7 +1323,43 @@
     }
   });
 
+  // Buscador del selector de tiendas: solo se repinta la lista, no toda la barra (para no perder el foco).
+  root.addEventListener('input', function (event) {
+    var search = event.target.closest('[data-store-search]');
+    if (!search) {
+      return;
+    }
+    state.storeSearch = search.value;
+    var list = document.querySelector('[data-store-list]');
+    if (list) {
+      list.innerHTML = renderStoreOptions();
+    }
+  });
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape' && state.storeMenuOpen) {
+      state.storeMenuOpen = false;
+      state.storeSearch = '';
+      render();
+    }
+  });
+
   root.addEventListener('click', function (event) {
+    var menuBtn = event.target.closest('[data-action="store-menu"]');
+    if (menuBtn) {
+      state.storeMenuOpen = !state.storeMenuOpen;
+      state.storeSearch = '';
+      render();
+      return;
+    }
+
+    // Clic fuera del selector de tiendas: se cierra y el clic sigue su curso normal.
+    if (state.storeMenuOpen && !event.target.closest('.dlp2-storepick')) {
+      state.storeMenuOpen = false;
+      state.storeSearch = '';
+      render();
+    }
+
     var typeTab = event.target.closest('[data-type-filter]');
     if (typeTab) {
       state.typeFilter = typeTab.dataset.typeFilter;

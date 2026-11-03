@@ -53,11 +53,13 @@
 
 /* Header */
 .dlp2-header {
-  height: 64px;
+  min-height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding: 6px 20px;
   background: #fff;
   border-bottom: 1px solid var(--dlp-border);
 }
@@ -72,7 +74,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .dlp2-type-tabs {
@@ -157,6 +159,7 @@
 }
 
 .dlp2-brand {
+  white-space: nowrap;
   font-size: 22px;
   font-weight: 800;
   color: var(--dlp-brand);
@@ -1876,6 +1879,21 @@
 }
 
 @media (max-width: 640px) {
+  .dlp2-header-center {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .dlp2-storepick-btn {
+    max-width: none;
+  }
+
+  .dlp2-storepick-menu {
+    left: 0;
+    right: auto;
+    width: min(300px, 88vw);
+  }
+
   .dlp2-header {
     height: auto;
     flex-direction: column;
@@ -2316,3 +2334,63 @@
 
 /* ===== 1.19.0: cerrar sesion desde el panel (boton en vez de enlace) ===== */
 .dlp2-btn-dark:disabled { opacity: 0.6; cursor: wait; }
+
+/* ===== 1.20.0: filtro de tiendas con seleccion multiple ===== */
+.dlp2-storepick { position: relative; }
+.dlp2-storepick-btn {
+  height: 36px;
+  max-width: 220px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid var(--dlp-border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--dlp-text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.dlp2-storepick-btn > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dlp2-storepick-btn svg { flex-shrink: 0; color: var(--dlp-text-muted); }
+.dlp2-storepick.is-open .dlp2-storepick-btn { border-color: var(--dlp-blue); }
+.dlp2-storepick-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  width: 280px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid var(--dlp-border);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(10, 20, 35, 0.18);
+}
+.dlp2-storepick-search {
+  width: 100%;
+  box-sizing: border-box;
+  height: 34px;
+  margin-bottom: 6px;
+  padding: 0 10px;
+  border: 1px solid var(--dlp-border);
+  border-radius: 8px;
+  font: 500 13px Inter, sans-serif;
+  color: var(--dlp-text);
+}
+.dlp2-storepick-list { max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; }
+.dlp2-storepick-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dlp-text);
+  cursor: pointer;
+}
+.dlp2-storepick-row:hover { background: var(--dlp-bg); }
+.dlp2-storepick-row input { width: 16px; height: 16px; margin: 0; cursor: pointer; flex-shrink: 0; }
+.dlp2-storepick-row-all { margin-bottom: 4px; border-bottom: 1px solid var(--dlp-border); border-radius: 6px 6px 0 0; }
+.dlp2-storepick-empty { padding: 10px 8px; font-size: 12px; color: var(--dlp-text-muted); }

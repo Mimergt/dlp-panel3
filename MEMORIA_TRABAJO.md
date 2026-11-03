@@ -1081,3 +1081,12 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
 - Cerrar sesion: LoginWP (peters-login-redirect) hace `wp_redirect()+exit` en `wp_logout` (prioridad 1); era la causa de que el boton llevara a otra pagina. La ruta `sesion/salir` quita ese gancho (por clase del closure) y ademas ignora redirecciones; el JS tolera un 302 y solo cae al enlace clasico si el servidor rechaza.
 - Pruebas dev: rol por usuario (supervisor 35 tiendas; tienda 1; shop_manager sin panel); tienda pidiendo otra tienda = 403; login HTTP real con el supervisor de prueba, `POST sesion/salir` = 200 {"ok":true}, cookie vieja = 403.
 - NO probado: el boton en el navegador (no inicio sesion con credenciales en la UI). Observado: LoginWP manda a los supervisores a la portada tras iniciar sesion, ignorando `redirect_to=/orders/`.
+
+
+## 2026-11-02 (1.20.0 - barra superior del panel del supervisor)
+- Pedido del usuario: la barra del supervisor se veia mal (tabs cortados, selector en segunda fila, "DEL PUENTE" partido); quitar el nombre de tienda y poder elegir varias tiendas.
+- Hecho: `state.storeFilter` ahora es una lista de ids (vacia = todas); selector con casillas y buscador (`renderStoreFilter`, `renderStoreOptions`); contadores de tabs por tiendas elegidas; pildora de tienda oculta si `state.scope === 'supervisor'`; CSS: header con `min-height` y `flex-wrap`, `.dlp2-header-center` sin salto de linea (con salto en movil), panel alineado a la derecha del boton (izquierda en movil).
+- render() repinta la barra cada refresco: se conserva el foco del buscador y el scroll de la lista; el buscador filtra la lista sin repintar toda la barra.
+- Probado en una pagina local con datos simulados (escritorio, celular, 0/1/2 tiendas, buscador, Escape, clic fuera, usuario de tienda) y desplegado en dev (1.20.0); la API del panel responde 35 tiendas al supervisor de prueba. No probado con los pedidos reales de dev en el navegador (sin sesion en la UI).
+- Respaldo en dev: `~/dlp-backups/dlp-panel3-1.19.0-pre-1.20.0.tgz`.
+- Pendiente (no pedido): mismo selector multiple en el historial; recordar la seleccion al recargar.
