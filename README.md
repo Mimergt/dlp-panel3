@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.21.0
+- 1.22.0
 
 ## Shortcode
 - [dlp_paneles]
@@ -237,3 +237,7 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 - La seccion "Gestion de Tienda y Supervisor" (detalle lateral) y la tarjeta "Acciones" (vista expandida) pasan a un solo componente "Tareas": acordeon cerrado por defecto, con boton "Ver tareas / Ocultar" y etiquetas de resumen cuando esta cerrado (Prioridad, Cliente bloqueado, Con nota). Una fila por tarea con su boton: Asignar a otra tienda, Marcar/Quitar prioridad, Bloquear cliente y Nota interna (Guardar). Es igual para tiendas y supervisores.
 - "Cancelar pedido" pasa de enlace a boton rojo de ancho completo debajo del acordeon.
 - Bloquear cliente: lo puede hacer cualquier usuario que vea el pedido (por correo, telefono y cuenta, via el modulo antifraude; tambien invitados; el aviso JS que lo impedia se quito) y deja una nota en el pedido. Desbloquear NO se puede desde los paneles (ni el supervisor): solo desde el administrador del sitio (403 en `POST /pedido/{id}/cliente-bloqueo` con `block=false`). Un cliente ya bloqueado se muestra como boton desactivado "Cliente bloqueado".
+
+## Incluido en 1.22.0 (bloquear cliente desde el historial)
+- Boton rojo "Bloquear cliente" en la barra superior del detalle de `/orders/historial/` (tiendas: pedidos de su tienda; supervisor: cualquiera, tambien cancelados). Pide confirmacion, bloquea por correo, telefono y cuenta (modulo antifraude, tambien invitados), deja nota en el pedido y pasa a "Cliente bloqueado" (desactivado). Desde los paneles no se puede desbloquear.
+- `GET /historial/pedido/{id}` ahora devuelve `customer_id` y `customer_blocked`.

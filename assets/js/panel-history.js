@@ -452,6 +452,11 @@
     if (order.payment_method_title) meta.push('<span class="dlp2-expanded-paid">' + ICON.check + '<span>' + esc(order.payment_method_title) + '</span></span>');
     if (order.store_name) meta.push('<span><strong>Tienda:</strong> ' + esc(order.store_name) + '</span>');
 
+    // Bloquear cliente (por correo, telefono y cuenta). Desde los paneles no se puede desbloquear.
+    var blockButton = order.customer_blocked ?
+      '<button class="dlp2-block-cta is-blocked" type="button" disabled title="Solo se desbloquea desde el administrador del sitio">' + ICON.userBlock + '<span>Cliente bloqueado</span></button>' :
+      '<button class="dlp2-block-cta" data-h="block" data-id="' + order.id + '" type="button">' + ICON.userBlock + '<span>Bloquear cliente</span></button>';
+
     el.innerHTML = '' +
       '<div class="dlp2-expanded-topbar">' +
         '<div class="dlp2-expanded-top-row">' +
@@ -460,7 +465,7 @@
             '<h1 class="dlp2-expanded-title">Pedido #' + order.id + '</h1>' +
             '<div class="dlp2-expanded-badges">' + UI.renderTypePill(order, false) + statusPill(order.group) + '</div>' +
           '</div>' +
-          '<div class="dlp2-expanded-right"><span class="dlp2-hist-readonly">Solo consulta</span></div>' +
+          '<div class="dlp2-expanded-right">' + blockButton + '<span class="dlp2-hist-readonly">Solo consulta</span></div>' +
         '</div>' +
         '<div class="dlp2-expanded-meta">' + meta.join('<span class="dlp2-expanded-meta-sep">&bull;</span>') + '</div>' +
       '</div>' +
@@ -669,6 +674,31 @@
       });
   }
 
+  function blockCustomer(btn) {
+    var id = Number(btn.dataset.id);
+    var order = state.details[id];
+    if (!order || order.customer_blocked) return;
+
+    if (!confirm('Bloquear a este cliente? No podra crear pedidos nuevos (por correo, telefono ni cuenta). Desde los paneles no se puede desbloquear: solo desde el administrador del sitio.')) {
+      return;
+    }
+
+    var label = btn.querySelector('span');
+    btn.disabled = true;
+    if (label) label.textContent = 'Bloqueando...';
+
+    api('/pedido/' + id + '/cliente-bloqueo', 'POST', { block: true })
+      .then(function () {
+        order.customer_blocked = true;
+        if (state.selectedId === id) renderDetail();
+      })
+      .catch(function (err) {
+        btn.disabled = false;
+        if (label) label.textContent = 'Bloquear cliente';
+        alert('No se pudo bloquear al cliente: ' + err.message);
+      });
+  }
+
   // ---- eventos ----
 
   var searchTimer = null;
@@ -733,7 +763,9 @@
     var action = event.target.closest('[data-h]');
     if (!action || action.tagName === 'SELECT') return;
 
-    if (action.dataset.h === 'export') {
+    if (action.dataset.h === 'block') {
+      blockCustomer(action);
+    } else if (action.dataset.h === 'export') {
       openExport();
     } else if (action.dataset.h === 'exp-close') {
       closeExport();

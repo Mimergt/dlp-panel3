@@ -227,6 +227,7 @@ class DLP_Paneles_History {
             : 0;
 
         $pt = $order->get_meta('woofood_time_to_deliver', true);
+        $customer_id = absint($order->get_customer_id());
 
         return new WP_REST_Response(array(
             'id' => $order_id,
@@ -251,6 +252,11 @@ class DLP_Paneles_History {
             'nit' => (string) $order->get_meta('billing_nit', true),
             'nit_nombre' => (string) $order->get_meta('billing_nitname', true),
             'cancel_reason' => $status === 'cancelled' ? (string) $order->get_meta('_motivo_cancelacion_tienda', true) : '',
+            // Para el boton "Bloquear cliente" del detalle (mismo criterio que el tablero).
+            'customer_id' => $customer_id,
+            'customer_blocked' => function_exists('dlp_fe_af_order_blocked')
+                ? dlp_fe_af_order_blocked($order)
+                : ($customer_id ? (get_user_meta($customer_id, 'is_active', true) === 'n') : false),
         ));
     }
 }

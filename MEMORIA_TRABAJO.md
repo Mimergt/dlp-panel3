@@ -1099,3 +1099,10 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
 - Codigo: `renderTasks`/`taskRow` (reemplazan el bloque lateral, `renderActionsCard` y `renderBlockCustomerButton`), icono `tasks`, CSS nuevo (`.dlp2-tasks*`, `.dlp2-task-*`, `.dlp2-cancel-btn`) y limpieza de estilos sin uso; `toggle_customer_block` en `includes/rest.php`.
 - Pruebas: pagina local con datos simulados (escritorio/celular, tienda/supervisor, vista expandida, bloqueado/prioridad/nota, invitado) y dev con pedido temporal (tienda bloquea 200 y deja nota; tienda y supervisor desbloquear 403; otra tienda 403; pedido borrado y desbloqueado). No probado: la UI con sesion real en el navegador.
 - Respaldo en dev: `~/dlp-backups/dlp-panel3-1.20.0-pre-1.21.0.tgz`.
+
+
+## 2026-11-02 (1.22.0 - bloquear cliente desde el historial)
+- Pedido del usuario ("super importante"): poder bloquear clientes desde el historial, con boton bien visible.
+- Se reutiliza `POST /pedido/{id}/cliente-bloqueo` (permiso: quien puede ver el pedido; nadie desbloquea). Cambios: `history.php` (`customer_id`, `customer_blocked` en el detalle), `panel-history.js` (`blockButton` en `renderDetail`, `blockCustomer`), CSS `.dlp2-block-cta`. Sin marca de "bloqueado" en la lista (el indice liviano no la trae; seria una consulta por pedido).
+- Pruebas: pagina local simulando el historial (cuenta/invitado, ya bloqueado, cancelado, error del servidor, celular) y dev (detalle devuelve los campos como tienda y como supervisor). El bloqueo en si ya se probo con pedido temporal en 1.21.0. No probado: la UI con sesion real.
+- Respaldo en dev: `~/dlp-backups/dlp-panel3-1.21.0-pre-1.22.0.tgz`.
