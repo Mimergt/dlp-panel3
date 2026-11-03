@@ -484,8 +484,8 @@
             (order.full_address ? '<div class="dlp2-customer-address">' + ICON.pin + '<div><span class="dlp2-address-label">' + esc(addressLabel) + '</span><span class="dlp2-address-value">' + esc(order.full_address) + '</span></div></div>' : '') +
             UI.renderPickupTime(order) +
             UI.renderNitRow(order) +
-            (order.notes ? '<div class="dlp2-customer-note">' + ICON.alert + '<span>Nota: ' + esc(order.notes) + '</span></div>' : '') +
-          '</div>' +
+            UI.renderCustomerComment(order) +
+                      '</div>' +
           '<div class="dlp2-expanded-totals">' +
             '<div class="dlp2-expanded-totals-row"><span>Cantidad de items</span><span>' + Number(order.items_count || items.length) + '</span></div>' +
             '<div class="dlp2-expanded-totals-divider"></div>' +
@@ -679,7 +679,7 @@
     var order = state.details[id];
     if (!order || order.customer_blocked) return;
 
-    if (!confirm('Bloquear a este cliente? No podra crear pedidos nuevos (por correo, telefono ni cuenta). Desde los paneles no se puede desbloquear: solo desde el administrador del sitio.')) {
+    if (!confirm('Bloquear a este cliente? No podra crear pedidos nuevos (por correo, telefono ni cuenta).')) {
       return;
     }
 

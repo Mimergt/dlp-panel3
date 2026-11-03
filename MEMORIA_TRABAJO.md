@@ -1106,3 +1106,15 @@ Esta lista se debe mantener actualizada a medida que se van resolviendo items. M
 - Se reutiliza `POST /pedido/{id}/cliente-bloqueo` (permiso: quien puede ver el pedido; nadie desbloquea). Cambios: `history.php` (`customer_id`, `customer_blocked` en el detalle), `panel-history.js` (`blockButton` en `renderDetail`, `blockCustomer`), CSS `.dlp2-block-cta`. Sin marca de "bloqueado" en la lista (el indice liviano no la trae; seria una consulta por pedido).
 - Pruebas: pagina local simulando el historial (cuenta/invitado, ya bloqueado, cancelado, error del servidor, celular) y dev (detalle devuelve los campos como tienda y como supervisor). El bloqueo en si ya se probo con pedido temporal en 1.21.0. No probado: la UI con sesion real.
 - Respaldo en dev: `~/dlp-backups/dlp-panel3-1.21.0-pre-1.22.0.tgz`.
+
+
+## 2026-11-02 (1.23.0 - comentarios del cliente destacados)
+- Pedido del usuario: los comentarios del cliente pasaban desapercibidos (nota pequena al final de la tarjeta del cliente; ~20.000 de 62.000 pedidos de dev traen comentario). Decisiones: bloque ambar grande arriba del detalle (3 vistas), franja con primera linea en las tarjetas del tablero, comentarios de producto destacados por etiqueta (`/coment|nota|observ|instruc/i`), rojo reservado para bloquear/cancelar. Sin franja en la lista del historial (el indice liviano no trae el comentario).
+- Tambien: se quito de la confirmacion de bloqueo la frase "Desde los paneles no se puede desbloquear: solo desde el administrador del sitio." (por indicacion del usuario).
+- Codigo: `renderCustomerComment` (exportado a `DLP_UI` para el historial), icono `comment`, `renderProductMeta`, `renderCards`, CSS `.dlp2-comment*`, `.dlp2-card-comment`, `.dlp2-product-comment*`.
+- Pruebas: paginas locales con datos simulados (tablero supervisor/tienda, detalle, vista expandida, historial, comentario corto/largo/con saltos, de producto, sin comentario, celular) y dev (pedido de prueba #159206 con comentario de cliente y del producto "Sin cebolla"). No probado: UI con sesion real.
+- Respaldo en dev: `~/dlp-backups/dlp-panel3-1.22.0-pre-1.23.0.tgz`.
+
+### 1.23.1 (mismo dia)
+- Al usuario no le gusto el bloque grande arriba ("muy visible"; le gustaba donde estaba antes): el comentario vuelve al final de la tarjeta del cliente (despues del NIT) en las 3 vistas, con un recuadro ambar moderado (12 px). Se mantienen la franja con la primera linea en las tarjetas del tablero y el recuadro de comentarios de producto (no objetados; quitarlos es un cambio pequeno si molestan).
+- Respaldo en dev: `~/dlp-backups/dlp-panel3-1.23.0-pre-1.23.1.tgz`. 1.23.0 y 1.23.1 se confirman juntos (1.23.0 nunca se commiteo).

@@ -3,7 +3,7 @@
 Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y supervisor).
 
 ## Version actual
-- 1.22.0
+- 1.23.1
 
 ## Shortcode
 - [dlp_paneles]
@@ -241,3 +241,9 @@ Plugin WordPress para operacion de pedidos en alto volumen (roles tienda y super
 ## Incluido en 1.22.0 (bloquear cliente desde el historial)
 - Boton rojo "Bloquear cliente" en la barra superior del detalle de `/orders/historial/` (tiendas: pedidos de su tienda; supervisor: cualquiera, tambien cancelados). Pide confirmacion, bloquea por correo, telefono y cuenta (modulo antifraude, tambien invitados), deja nota en el pedido y pasa a "Cliente bloqueado" (desactivado). Desde los paneles no se puede desbloquear.
 - `GET /historial/pedido/{id}` ahora devuelve `customer_id` y `customer_blocked`.
+
+## Incluido en 1.23.0 (comentarios del cliente destacados)
+- Comentario del pedido (nota del checkout): recuadro ambar moderado "Comentario del cliente" (12 px en negrita, respeta saltos de linea) al final de la tarjeta del cliente, en el detalle lateral, la vista expandida y el detalle del historial. (1.23.0 lo puso arriba en un bloque grande; en 1.23.1 volvio a su lugar de siempre por indicacion del usuario.)
+- Tarjetas del tablero (columnas Procesando y Enviada): franja ambar con la primera linea del comentario cuando el pedido lo trae. La lista del historial no la lleva (el indice liviano no incluye el comentario).
+- Comentarios dentro de un producto (metas "Comentarios", "Comentarios adicionales", "Nota", "Observaciones"...): recuadro ambar dentro del producto en vez de una fila gris.
+- La confirmacion de "Bloquear cliente" ya no menciona el desbloqueo (el boton desactivado conserva su ayuda al pasar el cursor).

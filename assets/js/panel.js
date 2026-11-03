@@ -70,6 +70,7 @@
     back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" x2="5" y1="12" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>',
     close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" x2="6" y1="6" y2="18"></line><line x1="6" x2="18" y1="6" y2="18"></line></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>',
+    comment: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path><line x1="8" x2="16" y1="9" y2="9"></line><line x1="8" x2="13" y1="13" y2="13"></line></svg>',
     tasks: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11"></path><path d="M9 12h11"></path><path d="M9 18h11"></path><path d="m3 6 1 1 2-2"></path><path d="m3 12 1 1 2-2"></path><path d="m3 18 1 1 2-2"></path></svg>',
     chevronDown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>',
     userBlock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="17" x2="22" y1="8" y2="13"></line><line x1="22" x2="17" y1="8" y2="13"></line></svg>',
@@ -129,6 +130,7 @@
       renderNitRow: renderNitRow,
       renderPickupTime: renderPickupTime,
       renderTimeCard: renderTimeCard,
+      renderCustomerComment: renderCustomerComment,
       isPickup: isPickup
     };
     return;
@@ -286,6 +288,20 @@
     return title.indexOf('efectivo') !== -1 ||
       title.indexOf('contra entrega') !== -1 ||
       title.indexOf('cash') !== -1;
+  }
+
+  // Comentario que el cliente escribio en el pedido (instrucciones de entrega, vuelto, etc.):
+  // recuadro ambar al final de la tarjeta del cliente. Sin comentario, no se pinta nada.
+  function renderCustomerComment(order) {
+    var text = String(order.notes || '').trim();
+    if (!text) {
+      return '';
+    }
+    return '' +
+      '<div class="dlp2-comment">' +
+        '<div class="dlp2-comment-head">' + ICON.comment + '<span>Comentario del cliente</span></div>' +
+        '<div class="dlp2-comment-text">' + esc(text) + '</div>' +
+      '</div>';
   }
 
   function renderPaymentBanner(order) {
@@ -508,6 +524,7 @@
             (order.full_address ? '<div class="dlp2-card-address">' + ICON.pin + '<span>' + esc(order.full_address) + '</span></div>' : '') +
             '<div class="dlp2-card-row">' + ICON.user + '<span>' + esc(order.customer_name || 'Consumidor final') + '</span></div>' +
             '<div class="dlp2-card-row">' + ICON.phone + '<span>' + esc(order.phone || '-') + '</span></div>' +
+            (String(order.notes || '').trim() ? '<div class="dlp2-card-comment" title="' + esc(order.notes) + '">' + ICON.comment + '<span>' + esc(String(order.notes).trim().split('\n')[0]) + '</span></div>' : '') +
             '<div class="dlp2-card-bottom">' +
               '<span class="dlp2-badge-store">' + ICON.store + '<span>' + esc(order.store_name || 'Sin tienda') + '</span></span>' +
               (order.priority ? '<span class="dlp2-badge-priority">' + ICON.flag + '<span>Prioridad</span></span>' : '') +
@@ -563,6 +580,13 @@
           '</div>'
         );
         i += 2;
+        continue;
+      }
+
+      // Comentario escrito por el cliente en el producto (ej. "Comentarios: sin cebolla"): se destaca.
+      if (/coment|nota|observ|instruc/i.test(current.label || '') && String(current.value || '').trim()) {
+        rows.push('<div class="dlp2-product-comment"><span class="dlp2-product-comment-label">' + ICON.comment + '<span>' + esc(current.label) + '</span></span><span class="dlp2-product-comment-text">' + esc(current.value) + '</span></div>');
+        i += 1;
         continue;
       }
 
@@ -885,8 +909,8 @@
               renderPickupTime(order) +
               renderGeoRow(order) +
               renderNitRow(order) +
-              (order.notes ? '<div class="dlp2-customer-note">' + ICON.alert + '<span>Nota: ' + esc(order.notes) + '</span></div>' : '') +
-            '</div>' +
+              renderCustomerComment(order) +
+                          '</div>' +
           '</div>' +
 
           renderTasks(order) +
@@ -956,8 +980,8 @@
               renderPickupTime(order) +
               renderGeoRow(order) +
               renderNitRow(order) +
-              (order.notes ? '<div class="dlp2-customer-note">' + ICON.alert + '<span>Nota: ' + esc(order.notes) + '</span></div>' : '') +
-            '</div>' +
+              renderCustomerComment(order) +
+                          '</div>' +
             '<div class="dlp2-expanded-totals">' +
               '<div class="dlp2-expanded-totals-row"><span>Cantidad de items</span><span>' + Number(order.items_count || items.length) + '</span></div>' +
               '<div class="dlp2-expanded-totals-divider"></div>' +
@@ -1551,7 +1575,7 @@
         return;
       }
 
-      if (!confirm('Bloquear a este cliente? No podra crear pedidos nuevos (por correo, telefono ni cuenta). Desde los paneles no se puede desbloquear: solo desde el administrador del sitio.')) {
+      if (!confirm('Bloquear a este cliente? No podra crear pedidos nuevos (por correo, telefono ni cuenta).')) {
         return;
       }
 
