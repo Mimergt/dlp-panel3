@@ -679,7 +679,7 @@
     var order = state.details[id];
     if (!order || order.customer_blocked) return;
 
-    if (!confirm('Bloquear a este cliente? No podra crear pedidos nuevos (por correo, telefono ni cuenta).')) {
+    if (!confirm('Bloquear a este cliente? No podra crear pedidos nuevos (por correo, telefono ni cuenta). Si este pedido esta en curso, se cancelara.')) {
       return;
     }
 
@@ -688,8 +688,9 @@
     if (label) label.textContent = 'Bloqueando...';
 
     api('/pedido/' + id + '/cliente-bloqueo', 'POST', { block: true })
-      .then(function () {
+      .then(function (res) {
         order.customer_blocked = true;
+        if (res && res.order_cancelled) order.status = 'cancelled';
         if (state.selectedId === id) renderDetail();
       })
       .catch(function (err) {

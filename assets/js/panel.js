@@ -1575,7 +1575,7 @@
         return;
       }
 
-      if (!confirm('Bloquear a este cliente? No podra crear pedidos nuevos (por correo, telefono ni cuenta).')) {
+      if (!confirm('Bloquear a este cliente? No podra crear pedidos nuevos (por correo, telefono ni cuenta). Si este pedido esta en curso, se cancelara.')) {
         return;
       }
 

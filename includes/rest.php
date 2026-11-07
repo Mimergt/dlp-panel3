@@ -975,6 +975,17 @@ class DLP_Paneles_REST {
         $user = wp_get_current_user();
         $order->add_order_note('Cliente bloqueado desde el panel por ' . ($user->display_name ?: $user->user_login) . '.');
 
+        // Si el pedido esta en curso, al bloquear al cliente se cancela (mismo flujo que "Cancelar").
+        $cancelled = false;
+        if (in_array($order->get_status(), array('processing', 'dlv', 'rtp'), true)) {
+            $motivo = 'Cliente bloqueado desde el panel';
+            $order->update_status('cancelled');
+            $order->add_order_note('Motivo de cancelacion: ' . $motivo);
+            $order->update_meta_data('_motivo_cancelacion_tienda', $motivo);
+            $order->save_meta_data();
+            $cancelled = true;
+        }
+
         // Con el módulo Antifraude (plugin dlp-frontend) se bloquea por correo, teléfono y cuenta,
         // así también funciona con clientes invitados y impide crear pedidos nuevos.
         if (function_exists('dlp_fe_af_order_set')) {
@@ -984,6 +995,7 @@ class DLP_Paneles_REST {
                 'order_id' => $order_id,
                 'customer_id' => absint($order->get_customer_id()),
                 'blocked' => $block,
+                'order_cancelled' => $cancelled,
             ));
         }
 
@@ -1004,6 +1016,7 @@ class DLP_Paneles_REST {
             'order_id' => $order_id,
             'customer_id' => $customer_id,
             'blocked' => $block,
+            'order_cancelled' => $cancelled,
         ));
     }
 }
