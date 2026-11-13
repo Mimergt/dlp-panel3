@@ -1180,21 +1180,22 @@
       return '';
     }
 
-    var storesHtml = (state.allStores || []).map(function (store) {
+    var selId = Number(state.reassignSelectedStoreId);
+    var selStore = (state.allStores || []).find(function (st) { return Number(st.id) === selId; });
+    var optsHtml = (state.allStores || []).map(function (store) {
       var storeId = Number(store.id);
-      var checked = storeId === Number(state.reassignSelectedStoreId) ? ' checked' : '';
-      var selectedClass = storeId === Number(state.reassignSelectedStoreId) ? ' dlp2-modal-store-selected' : '';
       var isCurrent = storeId === Number(order.store_id);
-      return '' +
-        '<label class="dlp2-modal-store-row' + selectedClass + '">' +
-          '<input type="radio" name="reassign-store" value="' + storeId + '" data-action="select-reassign-store"' + checked + ' />' +
-          '<span>' + esc(store.name) + (isCurrent ? ' <em>(tienda actual)</em>' : '') + '</span>' +
-        '</label>';
+      return '<button type="button" class="dlp2-combo-opt' + (storeId === selId ? ' is-selected' : '') + '" data-reassign-opt="' + storeId + '" data-name="' + esc(store.name) + '">' +
+        '<span>' + esc(store.name) + '</span>' + (isCurrent ? '<em>tienda actual</em>' : '') +
+      '</button>';
     }).join('');
 
-    if (!storesHtml) {
-      storesHtml = '<p class="dlp2-empty">No hay tiendas disponibles.</p>';
-    }
+    var storesHtml = optsHtml
+      ? '<div class="dlp2-combo" data-reassign-combo>' +
+          '<input type="text" class="dlp2-combo-input" data-reassign-search placeholder="Escribe para buscar una tienda..." autocomplete="off" value="' + esc(selStore ? selStore.name : '') + '" />' +
+          '<div class="dlp2-combo-list" data-reassign-list hidden>' + optsHtml + '<p class="dlp2-combo-empty" data-reassign-empty hidden>Sin resultados</p></div>' +
+        '</div>'
+      : '<p class="dlp2-empty">No hay tiendas disponibles.</p>';
 
     return '' +
       '<div class="dlp2-modal-backdrop">' +
@@ -1206,11 +1207,11 @@
           '<div class="dlp2-modal-body">' +
             '<p class="dlp2-modal-subtitle">Pedido #' + order.id + ' &middot; tienda actual: ' + esc(order.store_name || 'Sin tienda asignada') + '</p>' +
             renderZoneHint(order) +
-            '<div class="dlp2-modal-store-list">' + storesHtml + '</div>' +
+            '<label class="dlp2-combo-label">Nueva tienda</label>' + storesHtml +
           '</div>' +
           '<div class="dlp2-modal-footer">' +
             '<button class="dlp2-btn-ghost" data-action="close-reassign-modal" type="button">Cancelar</button>' +
-            '<button class="dlp2-btn-dark" data-action="confirm-reassign-store" data-order-id="' + order.id + '" type="button"' + (state.reassignSelectedStoreId ? '' : ' disabled') + '>Asignar</button>' +
+            '<button class="dlp2-btn-dark" data-action="confirm-reassign-store" data-order-id="' + order.id + '" type="button"' + ((state.reassignSelectedStoreId && Number(state.reassignSelectedStoreId) !== Number(order.store_id)) ? '' : ' disabled') + '>Asignar</button>' +
           '</div>' +
         '</div>' +
       '</div>';
@@ -1345,11 +1346,88 @@
       return;
     }
 
-    var storeRadio = event.target.closest('[data-action="select-reassign-store"]');
-    if (storeRadio) {
-      state.reassignSelectedStoreId = Number(storeRadio.value);
-      render();
+  });
+
+  // Selector de tienda del modal "Asignar a otra tienda": buscador con lista desplegable.
+  // Elegir una tienda NO re-renderiza la pantalla (asi no se pierde el scroll ni la seleccion).
+  function reassignNorm(t) {
+    return String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  }
+
+  function reassignFilter(combo, term) {
+    var q = reassignNorm(term).trim();
+    var shown = 0;
+    combo.querySelectorAll('[data-reassign-opt]').forEach(function (opt) {
+      var match = !q || reassignNorm(opt.dataset.name).indexOf(q) !== -1;
+      opt.hidden = !match;
+      if (match) { shown++; }
+    });
+    var empty = combo.querySelector('[data-reassign-empty]');
+    if (empty) { empty.hidden = shown > 0; }
+  }
+
+  function reassignOpenList(combo, filterTerm) {
+    var list = combo.querySelector('[data-reassign-list]');
+    reassignFilter(combo, filterTerm || '');
+    list.hidden = false;
+    var sel = list.querySelector('.is-selected');
+    if (sel && !filterTerm) { list.scrollTop = Math.max(0, sel.offsetTop - 60); }
+  }
+
+  function reassignPick(combo, opt) {
+    var id = Number(opt.dataset.reassignOpt);
+    state.reassignSelectedStoreId = id;
+    combo.querySelectorAll('[data-reassign-opt]').forEach(function (o) { o.classList.toggle('is-selected', o === opt); });
+    combo.querySelector('[data-reassign-search]').value = opt.dataset.name;
+    combo.querySelector('[data-reassign-list]').hidden = true;
+    var order = state.orders.find(function (o) { return o.id === state.reassignModalOrderId; });
+    var btn = document.querySelector('[data-action="confirm-reassign-store"]');
+    if (btn) { btn.disabled = !order || id === Number(order.store_id); }
+  }
+
+  root.addEventListener('focusin', function (event) {
+    var input = event.target.closest('[data-reassign-search]');
+    if (!input) { return; }
+    input.select();
+    reassignOpenList(input.closest('[data-reassign-combo]'), '');
+  });
+
+  root.addEventListener('input', function (event) {
+    var input = event.target.closest('[data-reassign-search]');
+    if (!input) { return; }
+    reassignOpenList(input.closest('[data-reassign-combo]'), input.value);
+  });
+
+  root.addEventListener('keydown', function (event) {
+    var input = event.target.closest('[data-reassign-search]');
+    if (!input) { return; }
+    var combo = input.closest('[data-reassign-combo]');
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      var first = combo.querySelector('[data-reassign-opt]:not([hidden])');
+      if (first) { reassignPick(combo, first); }
+    } else if (event.key === 'Escape') {
+      event.stopPropagation();
+      combo.querySelector('[data-reassign-list]').hidden = true;
     }
+  });
+
+  root.addEventListener('click', function (event) {
+    var opt = event.target.closest('[data-reassign-opt]');
+    if (opt) {
+      reassignPick(opt.closest('[data-reassign-combo]'), opt);
+      return;
+    }
+    // Clic fuera del selector: cerrar la lista y volver a mostrar la tienda elegida.
+    document.querySelectorAll('[data-reassign-combo]').forEach(function (combo) {
+      if (combo.contains(event.target)) { return; }
+      var list = combo.querySelector('[data-reassign-list]');
+      if (list && !list.hidden) {
+        list.hidden = true;
+        var sel = combo.querySelector('.is-selected');
+        combo.querySelector('[data-reassign-search]').value = sel ? sel.dataset.name : '';
+      }
+    });
   });
 
   // Buscador del selector de tiendas: solo se repinta la lista, no toda la barra (para no perder el foco).
