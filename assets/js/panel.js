@@ -488,9 +488,12 @@
   function renderCards(status) {
     var isMini = status === 'completed' || status === 'cancelled';
 
+    // Los pedidos con prioridad suben al inicio de la columna (orden estable: dentro de cada grupo se respeta el orden original).
     var all = filteredOrders().filter(function (order) {
       return order.group === status;
-    });
+    }).map(function (order, i) { return { order: order, i: i }; }).sort(function (a, b) {
+      return (b.order.priority ? 1 : 0) - (a.order.priority ? 1 : 0) || a.i - b.i;
+    }).map(function (x) { return x.order; });
 
     var limit = state.columnLimits[status] || COLUMN_INITIAL_LIMIT;
     var visible = all.slice(0, limit);

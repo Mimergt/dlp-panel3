@@ -252,6 +252,13 @@
   background: #23384f;
 }
 
+.dlp2-btn-ghost.dlp2-btn-blue { background: #2563eb; border-color: #2563eb; color: #fff; }
+.dlp2-btn-ghost.dlp2-btn-blue svg { color: #fff; }
+.dlp2-btn-ghost.dlp2-btn-blue:hover { background: #1d4ed8; border-color: #1d4ed8; }
+.dlp2-btn-ghost.dlp2-btn-green { background: #16a34a; border-color: #16a34a; color: #fff; }
+.dlp2-btn-ghost.dlp2-btn-green svg { color: #fff; }
+.dlp2-btn-ghost.dlp2-btn-green:hover { background: #15803d; border-color: #15803d; }
+
 /* Network warning (compartido con estilos previos) */
 .dlp-netwarn {
   margin: 10px 16px 0;
