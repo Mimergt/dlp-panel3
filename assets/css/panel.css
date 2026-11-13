@@ -2529,3 +2529,11 @@
 .dlp2-burger[open] .dlp2-acc-closed { display: none; }
 .dlp2-burger > .dlp2-x-section { margin-top: 0; padding-top: 0; background: transparent; }
 .dlp2-expanded-totals-left { margin-top: 0; }
+
+.dlp2-patty { vertical-align: -3px; display: inline-block; }
+.dlp2-x-ico .dlp2-patty { width: 20px; height: 20px; }
+.dlp2-x-flat { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
+.dlp2-sum-item { display: inline-flex; align-items: center; gap: 4px; }
+.dlp2-sum-p { color: #6EE7B7; font-weight: 800; font-size: 12px; }
+
+.dlp2-burger[open] .dlp2-burger-sum { display: none; }

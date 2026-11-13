@@ -615,10 +615,12 @@
     return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
   }
 
+  var PATTY_ICON = '<svg class="dlp2-patty" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><ellipse cx="12" cy="14.5" rx="10" ry="5.2" fill="#6b3416"/><ellipse cx="12" cy="11.8" rx="10" ry="5.2" fill="#9a4f26"/><path d="M5.5 11.5c1.2-1.1 2.4-1.1 3.6 0M10.5 13c1.2-1.1 2.4-1.1 3.6 0M14.5 10.6c1.2-1.1 2.4-1.1 3.6 0" stroke="#5a2a0e" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>';
+
   function classifyExtra(group) {
     var g = xNorm(group);
     if (/quitar|ingrediente/.test(g)) { return { kind: 'remove', title: 'Quitar ingredientes:', icon: '🚫', rank: 9 }; }
-    if (/carne/.test(g)) { return { kind: 'meat', title: 'Cambio Carne', icon: '🥩', rank: 1 }; }
+    if (/carne/.test(g)) { return { kind: 'meat', title: 'Cambio Carne', icon: PATTY_ICON, rank: 1 }; }
     if (/bebida/.test(g)) {
       return /extra/.test(g) ? { kind: 'drinkx', title: 'Bebida Extra', icon: '🥤', rank: 4 } : { kind: 'drink', title: 'Bebida', icon: '🥤', rank: 3 };
     }
@@ -675,13 +677,20 @@
   function sectionSummaryHtml(rows) {
     var parts = [];
     ['meat', 'side', 'drink', 'drinkx'].forEach(function (kind) {
-      rows.forEach(function (r) { if (r.c.kind === kind) { parts.push('<span>' + r.c.icon + ' ' + extraValueHtml(r.e.name) + '</span>'); } });
+      rows.forEach(function (r) {
+        if (r.c.kind === kind) {
+          parts.push('<span class="dlp2-sum-item">' + r.c.icon + ' ' + extraValueHtml(r.e.name) +
+            (Number(r.e.price) > 0 ? ' <b class="dlp2-sum-p">+' + esc(formatMoney(r.e.price)) + '</b>' : '') + '</span>');
+        }
+      });
     });
     var removed = rows.filter(function (r) { return r.c.kind === 'remove'; }).length;
     var other = rows.filter(function (r) { return r.c.kind === 'other'; }).length;
     if (other) { parts.push('<span>➕ ' + other + ' extra' + (other > 1 ? 's' : '') + '</span>'); }
     var html = parts.join('<span class="dlp2-sum-dot">&middot;</span>');
     if (removed) { html += '<span class="dlp2-sum-remove">🚫 ' + removed + ' sin</span>'; }
+    var extraSum = rows.reduce(function (a, r) { return a + (Number(r.e.price) > 0 ? Number(r.e.price) : 0); }, 0);
+    if (extraSum > 0) { html += '<span class="dlp2-sum-price">+' + esc(formatMoney(extraSum)) + ' extras</span>'; }
     return html;
   }
 
@@ -695,7 +704,7 @@
     return sections.map(function (sec) {
       var title = sec.prefix ? '<span class="dlp2-x-section-title">' + esc(sec.prefix) + '</span>' : '';
       if (!multi) {
-        return '<div class="dlp2-x-section">' + title + renderExtraSection(sec.rows) + '</div>';
+        return '<div class="dlp2-x-flat">' + renderExtraSection(sec.rows) + '</div>';
       }
       // Varias hamburguesas en un mismo producto: cada una es un acordeon con su resumen.
       var key = ctx.key + ':' + sec.prefix;
