@@ -31,6 +31,8 @@
     scope: 'tienda',
     networkWarning: '',
     firstLoadDone: false,
+    lastSig: null,
+    modalKey: null,
     loadedAt: 0,
     typeFilter: 'all',
     storeFilter: [],
@@ -1136,7 +1138,13 @@
       overlay.classList.remove('is-visible');
     }
 
-    document.getElementById('dlp2-modal-slot').innerHTML = renderReassignModal();
+    // El modal solo se repinta cuando cambia (abrir/cerrar o llegar la sugerencia de zona), no en cada refresco:
+    // asi no se pierde lo que se esta escribiendo o la lista abierta.
+    var modalKey = state.reassignModalOrderId ? (state.reassignModalOrderId + '|' + (state.geoHint ? '1' : '0')) : '';
+    if (modalKey !== state.modalKey) {
+      state.modalKey = modalKey;
+      document.getElementById('dlp2-modal-slot').innerHTML = renderReassignModal();
+    }
   }
 
   // Modal para reasignar un pedido a otra tienda: lista las tiendas (todas
@@ -1209,6 +1217,11 @@
   // tarjeta de tiempo del detalle) cada segundo, sin re-renderizar todo el
   // panel (evita perder foco en inputs y es mas barato que un render() completo).
   function updateLiveTimes() {
+    var clock = root.querySelector('.dlp2-datetime strong');
+    if (clock) {
+      var now = formatNowTime();
+      if (clock.textContent !== now) { clock.textContent = now; }
+    }
     if (!state.orders.length) {
       return;
     }
@@ -1243,12 +1256,50 @@
     refreshTimeCard(document.getElementById('dlp2-expanded-overlay'), state.expandedOrderId);
   }
 
+  // Repinta conservando el scroll de columnas/detalle, lo escrito en notas y el foco (el refresco automatico
+  // no debe "resetear" lo que la persona esta haciendo).
+  var UI_SCROLL_SELECTORS = ['.dlp2-column-cards', '.dlp2-detail-body', '.dlp2-expanded-col', '.dlp2-board'];
+
+  function renderKeepingUi() {
+    var saved = UI_SCROLL_SELECTORS.map(function (sel) {
+      return Array.prototype.map.call(root.querySelectorAll(sel), function (el) { return el.scrollTop; });
+    });
+    var notes = Array.prototype.map.call(root.querySelectorAll('[data-field]'), function (el) {
+      return { field: el.getAttribute('data-field'), value: el.value };
+    });
+    var active = document.activeElement;
+    var activeIdx = -1, selStart = 0, selEnd = 0;
+    if (active && active.hasAttribute && active.hasAttribute('data-field') && root.contains(active)) {
+      activeIdx = Array.prototype.indexOf.call(root.querySelectorAll('[data-field]'), active);
+      selStart = active.selectionStart; selEnd = active.selectionEnd;
+    }
+
+    render();
+
+    UI_SCROLL_SELECTORS.forEach(function (sel, i) {
+      var els = root.querySelectorAll(sel);
+      if (els.length !== saved[i].length) { return; }
+      Array.prototype.forEach.call(els, function (el, j) { el.scrollTop = saved[i][j]; });
+    });
+    var fields = root.querySelectorAll('[data-field]');
+    if (fields.length === notes.length) {
+      Array.prototype.forEach.call(fields, function (el, i) {
+        if (notes[i].field === el.getAttribute('data-field') && notes[i].value !== el.value) { el.value = notes[i].value; }
+      });
+      if (activeIdx > -1 && fields[activeIdx]) {
+        fields[activeIdx].focus();
+        try { fields[activeIdx].setSelectionRange(selStart, selEnd); } catch (e) {}
+      }
+    }
+  }
+
   function loadPanel(pageSize) {
     var size = pageSize || state.currentPageSize || PAGE_SIZE_STEPS[0];
     var path = '/panel?page=1&per_page=' + size;
 
     return api(path, 'GET', null, { retries: 2, retryDelayMs: 1200 })
       .then(function (data) {
+        var warnWas = !!state.networkWarning;
         state.networkWarning = '';
         state.orders = Array.isArray(data.orders) ? data.orders : [];
         state.counts = data.counts || { processing: 0, shipped: 0, completed: 0, cancelled: 0 };
@@ -1286,8 +1337,17 @@
           }
         }
 
+        // Solo se repinta si algo cambio (el tiempo transcurrido corre aparte, cada segundo).
+        var sig = JSON.stringify([
+          state.orders.map(function (o) { var c = Object.assign({}, o); delete c.elapsed_seconds; return c; }),
+          state.counts, state.stores, state.allStores, state.scope, state.site
+        ]);
+        var changed = sig !== state.lastSig || !state.firstLoadDone || warnWas;
+        state.lastSig = sig;
         state.firstLoadDone = true;
-        render();
+        if (changed) {
+          renderKeepingUi();
+        }
 
         // Si el backend indica que quedan mas pedidos por traer, se sigue
         // escalando al siguiente tamano de pagina (10 -> 25 -> 50 -> ...)
@@ -1303,10 +1363,10 @@
 
         if (!state.firstLoadDone) {
           state.networkWarning = 'No se pudo cargar el panel. Revisa tu sesion o conexion e intenta recargar.';
-          render();
+          renderKeepingUi();
         } else {
           state.networkWarning = 'Conexion inestable. Reintentando refresco automatico...';
-          render();
+          renderKeepingUi();
         }
       });
   }
@@ -1315,7 +1375,7 @@
     var allBox = event.target.closest('[data-store-all]');
     if (allBox) {
       state.storeFilter = [];
-      render();
+      renderKeepingUi();
       return;
     }
 
