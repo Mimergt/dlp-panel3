@@ -158,7 +158,22 @@
     });
   }
 
+  // Repinta conservando el scroll de la lista y del detalle (el refresco automatico no debe resetear lo que se esta viendo).
+  function renderKeepingScroll() {
+    var sels = ['#dlp2-hist-list', '#dlp2-hist-detail', '#dlp2-hist-detail .dlp2-detail-body', '#dlp2-hist-detail .dlp2-expanded-col'];
+    var saved = sels.map(function (sel) {
+      return Array.prototype.map.call(root.querySelectorAll(sel), function (el) { return el.scrollTop; });
+    });
+    renderAll();
+    sels.forEach(function (sel, i) {
+      var els = root.querySelectorAll(sel);
+      if (els.length !== saved[i].length) return;
+      Array.prototype.forEach.call(els, function (el, j) { el.scrollTop = saved[i][j]; });
+    });
+  }
+
   function delta() {
+    var deltaChanged = false;
     state.syncing = true;
     renderStatus();
 
@@ -180,6 +195,7 @@
         (data.removed || []).forEach(function (id) { delete byId[id]; });
         (data.rows || []).forEach(function (r) { byId[r.id] = prepare(r); delete state.details[r.id]; });
 
+        deltaChanged = !!((data.removed || []).length || (data.rows || []).length);
         state.rows = Object.keys(byId).map(function (k) { return byId[k]; });
         sortRows();
         purgeOld();
@@ -192,7 +208,12 @@
         state.error = 'Conexion inestable. Se reintentara automaticamente.';
       }).then(function () {
         state.syncing = false;
-        renderAll();
+        // Sin cambios (y sin error) solo se actualiza la linea de estado: la lista y el detalle no se tocan.
+        if (!deltaChanged && !state.error) {
+          renderStatus();
+        } else {
+          renderKeepingScroll();
+        }
       });
   }
 
