@@ -805,20 +805,9 @@
   // Ubicacion del pedido (delivery). Los enlaces de ruta son solo enlaces (cero peticiones);
   // el mapa se carga unicamente al pulsar "Ver mapa".
   function geoLinks(g) {
-    if (g.lat == null) {
-      // Pedido sin coordenadas: se busca la direccion escrita.
-      var q = encodeURIComponent(g.query || '');
-      return {
-        gm: 'https://www.google.com/maps/dir/?api=1&destination=' + q +
-          (g.store_lat != null && g.store_lng != null ? '&origin=' + g.store_lat + ',' + g.store_lng : '') + '&travelmode=driving',
-        wz: 'https://waze.com/ul?q=' + q + '&navigate=yes'
-      };
-    }
-    var dest = g.lat + ',' + g.lng;
-    var gm = 'https://www.google.com/maps/dir/?api=1&destination=' + dest +
-      (g.store_lat != null && g.store_lng != null ? '&origin=' + g.store_lat + ',' + g.store_lng : '') + '&travelmode=driving';
-    var wz = 'https://waze.com/ul?ll=' + dest + '&navigate=yes';
-    return { gm: gm, wz: wz };
+    // Abre la ubicacion del cliente en Google Maps (coordenadas si hay; si no, la direccion escrita).
+    var dest = g.lat == null ? encodeURIComponent(g.query || '') : (g.lat + ',' + g.lng);
+    return { gm: 'https://www.google.com/maps/search/?api=1&query=' + dest };
   }
 
   function renderGeoRow(order) {
@@ -832,8 +821,7 @@
       (g.cubre_a ? '<div class="dlp2-geo-zone dlp2-geo-cover">' + ICON.pin + '<span>Cubriendo la zona de ' + esc(g.cubre_a) + '</span></div>' : '') +
       '<div class="dlp2-geo-actions">' +
         (g.lat == null ? '' : '<button class="dlp2-geo-btn" type="button" data-action="open-geo" data-order-id="' + order.id + '" data-lat="' + g.lat + '" data-lng="' + g.lng + '" data-slat="' + (g.store_lat == null ? '' : g.store_lat) + '" data-slng="' + (g.store_lng == null ? '' : g.store_lng) + '" data-zona="' + esc(g.zona || '') + '">' + ICON.map + '<span>Ver mapa</span></button>') +
-        '<a class="dlp2-geo-btn" href="' + esc(l.gm) + '" target="_blank" rel="noopener">' + ICON.nav + '<span>Ruta</span></a>' +
-        '<a class="dlp2-geo-btn" href="' + esc(l.wz) + '" target="_blank" rel="noopener">' + ICON.nav + '<span>Waze</span></a>' +
+        '<a class="dlp2-geo-btn" href="' + esc(l.gm) + '" target="_blank" rel="noopener">' + ICON.nav + '<span>Maps</span></a>' +
       '</div>' +
     '</div>';
   }
