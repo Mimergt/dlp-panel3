@@ -2506,3 +2506,26 @@
 .dlp2-x-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .dlp2-x-chip { padding: 3px 10px; border-radius: 999px; background: rgba(239,68,68,.2); color: #FECACA; font-weight: 700; font-size: 13px; text-decoration: line-through; text-decoration-color: rgba(254,202,202,.6); }
 .dlp2-expanded-totals-below { margin-top: 14px; }
+
+/* ---- Acordeones de productos y hamburguesas ---- */
+.dlp2-product-acc > summary, .dlp2-burger > summary { list-style: none; cursor: pointer; }
+.dlp2-product-acc > summary::-webkit-details-marker, .dlp2-burger > summary::-webkit-details-marker { display: none; }
+.dlp2-product-acc > summary { display: flex; align-items: center; gap: 12px; }
+.dlp2-product-titlebox { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+.dlp2-product-sum, .dlp2-burger-sum { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 12.5px; color: #CBD5E1; font-weight: 600; }
+.dlp2-sum-dot { color: #64748B; }
+.dlp2-sum-remove { padding: 1px 8px; border-radius: 999px; background: rgba(239,68,68,.2); color: #FECACA; font-weight: 800; }
+.dlp2-sum-price { padding: 1px 8px; border-radius: 999px; background: rgba(16,185,129,.16); color: #6EE7B7; font-weight: 800; }
+.dlp2-product-sumprice { font-weight: 800; font-size: 15px; color: #fff; white-space: nowrap; }
+.dlp2-acc-chevron { width: 9px; height: 9px; border-right: 2px solid #94A3B8; border-bottom: 2px solid #94A3B8; transform: rotate(45deg); transition: transform .2s; flex-shrink: 0; margin: 0 4px 3px 2px; }
+.dlp2-product-acc[open] > summary .dlp2-acc-chevron { transform: rotate(-135deg); margin-top: 4px; }
+.dlp2-product-acc[open] > summary { padding-bottom: 8px; border-bottom: 1px solid rgba(148,163,184,.2); margin-bottom: 4px; }
+.dlp2-burger { margin-top: 6px; border-radius: 10px; background: rgba(255,255,255,.035); }
+.dlp2-burger > summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 10px; }
+.dlp2-burger-head { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.dlp2-acc-btn { flex-shrink: 0; font-size: 12px; font-weight: 700; color: #93C5FD; border: 1px solid rgba(147,197,253,.4); border-radius: 999px; padding: 4px 10px; }
+.dlp2-acc-open { display: none; }
+.dlp2-burger[open] .dlp2-acc-open { display: inline; }
+.dlp2-burger[open] .dlp2-acc-closed { display: none; }
+.dlp2-burger > .dlp2-x-section { margin-top: 0; padding-top: 0; background: transparent; }
+.dlp2-expanded-totals-left { margin-top: 0; }

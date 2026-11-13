@@ -24,6 +24,7 @@
 
   var state = {
     orders: [],
+    openAcc: {},
     selectedOrderId: null,
     counts: { processing: 0, shipped: 0, completed: 0, cancelled: 0 },
     stores: [],
@@ -634,7 +635,7 @@
   // para que cada sandwich muestre su carne, complemento, bebida e ingredientes a quitar.
   function renderExtraSection(rows) {
     var html = '';
-    rows.sort(function (a, b) { return a.c.rank - b.c.rank || a.i - b.i; });
+    rows = rows.slice().sort(function (a, b) { return a.c.rank - b.c.rank || a.i - b.i; });
     var removed = rows.filter(function (r) { return r.c.kind === 'remove'; });
 
     rows.forEach(function (r) {
@@ -658,7 +659,7 @@
     return html;
   }
 
-  function renderExtras(extras) {
+  function extraSections(extras) {
     var sections = [], byKey = {};
     (extras || []).forEach(function (e, i) {
       var m = String(e.group || '').match(/^(.+?):\s*(.+)$/);
@@ -667,19 +668,67 @@
       if (!byKey[prefix]) { byKey[prefix] = { prefix: prefix, rows: [] }; sections.push(byKey[prefix]); }
       byKey[prefix].rows.push({ c: classifyExtra(base), e: e, i: i });
     });
+    return sections;
+  }
 
-    var multi = sections.length > 1 || (sections.length === 1 && sections[0].prefix);
+  // Resumen corto de una hamburguesa: carne / complemento / bebida y cuantos ingredientes se quitan.
+  function sectionSummaryHtml(rows) {
+    var parts = [];
+    ['meat', 'side', 'drink', 'drinkx'].forEach(function (kind) {
+      rows.forEach(function (r) { if (r.c.kind === kind) { parts.push('<span>' + r.c.icon + ' ' + extraValueHtml(r.e.name) + '</span>'); } });
+    });
+    var removed = rows.filter(function (r) { return r.c.kind === 'remove'; }).length;
+    var other = rows.filter(function (r) { return r.c.kind === 'other'; }).length;
+    if (other) { parts.push('<span>➕ ' + other + ' extra' + (other > 1 ? 's' : '') + '</span>'); }
+    var html = parts.join('<span class="dlp2-sum-dot">&middot;</span>');
+    if (removed) { html += '<span class="dlp2-sum-remove">🚫 ' + removed + ' sin</span>'; }
+    return html;
+  }
+
+  function accOpen(key) { return state.openAcc && state.openAcc[key] ? ' open' : ''; }
+
+  function renderProductBody(item, ctx) {
+    var sections = extraSections(item.extras);
+    var multi = sections.length > 1;
+    if (!sections.length) { return ''; }
+
     return sections.map(function (sec) {
-      return (multi && sec.prefix ? '<div class="dlp2-x-section"><span class="dlp2-x-section-title">' + esc(sec.prefix) + '</span>' : '<div class="dlp2-x-section">') +
-        renderExtraSection(sec.rows) + '</div>';
+      var title = sec.prefix ? '<span class="dlp2-x-section-title">' + esc(sec.prefix) + '</span>' : '';
+      if (!multi) {
+        return '<div class="dlp2-x-section">' + title + renderExtraSection(sec.rows) + '</div>';
+      }
+      // Varias hamburguesas en un mismo producto: cada una es un acordeon con su resumen.
+      var key = ctx.key + ':' + sec.prefix;
+      return '<details class="dlp2-burger" data-acc="' + esc(key) + '"' + accOpen(key) + '>' +
+        '<summary><span class="dlp2-burger-head">' + (title || '<span class="dlp2-x-section-title">Hamburguesa</span>') +
+          '<span class="dlp2-burger-sum">' + sectionSummaryHtml(sec.rows) + '</span></span>' +
+          '<span class="dlp2-acc-btn"><span class="dlp2-acc-closed">Ver detalle</span><span class="dlp2-acc-open">Ocultar</span></span></summary>' +
+        '<div class="dlp2-x-section">' + renderExtraSection(sec.rows) + '</div>' +
+      '</details>';
     }).join('');
   }
 
-  function renderProductRow(item) {
+  // Resumen del producto cerrado (acordeon del detalle lateral).
+  function productSummaryHtml(item) {
+    var sections = extraSections(item.extras);
+    if (!sections.length) { return ''; }
+    if (sections.length === 1) { return sectionSummaryHtml(sections[0].rows); }
+    var removed = 0;
+    sections.forEach(function (sec) { removed += sec.rows.filter(function (r) { return r.c.kind === 'remove'; }).length; });
+    var html = '<span>🍔 ' + sections.length + ' hamburguesas</span>';
+    if (removed) { html += '<span class="dlp2-sum-remove">🚫 ' + removed + ' sin</span>'; }
+    if (Number(item.extras_total) > 0) { html += '<span class="dlp2-sum-price">+' + esc(formatMoney(item.extras_total)) + ' extras</span>'; }
+    return html;
+  }
+
+  function renderProductRow(item, idx, ctx) {
+    ctx = (ctx && typeof ctx === 'object' && !Array.isArray(ctx)) ? ctx : {};
+    ctx.key = (ctx.scope || 'x') + ':' + (ctx.orderId || 0) + ':' + (idx || 0);
+
     var metaResult = renderProductMeta(item.meta || []);
     var hasExtras = Array.isArray(item.extras) && item.extras.length > 0;
     if (hasExtras) {
-      metaResult = { html: renderExtras(item.extras) + metaResult.html, modifiersTotal: Number(item.extras_total || 0) + metaResult.modifiersTotal };
+      metaResult = { html: renderProductBody(item, ctx) + metaResult.html, modifiersTotal: Number(item.extras_total || 0) + metaResult.modifiersTotal };
     }
 
     var qty = Number(item.quantity || 1);
@@ -693,6 +742,23 @@
       (item.image ? '<img class="dlp2-product-thumb" src="' + esc(item.image) + '" alt="" loading="lazy" />' : '') +
       '<span class="dlp2-product-qty">' + qty + '</span></span>';
 
+    var bodyHtml = (metaResult.html ? '<div class="dlp2-product-meta">' + metaResult.html + '</div>' : '') +
+      '<div class="dlp2-product-linetotal"><span>Total del Producto</span><span class="dlp2-product-price">' + esc(formatMoney(lineTotal)) + '</span></div>';
+
+    if (ctx.accordion) {
+      var sum = productSummaryHtml(item);
+      return '' +
+        '<details class="dlp2-product dlp2-product-acc" data-acc="' + esc(ctx.key) + '"' + accOpen(ctx.key) + '>' +
+          '<summary class="dlp2-product-top">' + lead +
+            '<span class="dlp2-product-titlebox"><span class="dlp2-product-name">' + esc(item.name) + '</span>' +
+              (sum ? '<span class="dlp2-product-sum">' + sum + '</span>' : '') + '</span>' +
+            '<span class="dlp2-product-sumprice">' + esc(formatMoney(lineTotal)) + '</span>' +
+            '<span class="dlp2-acc-chevron"></span>' +
+          '</summary>' +
+          bodyHtml +
+        '</details>';
+    }
+
     return '' +
       '<div class="dlp2-product">' +
         '<div class="dlp2-product-top">' +
@@ -700,8 +766,7 @@
           '<span class="dlp2-product-name">' + esc(item.name) + '</span>' +
           '<span class="dlp2-product-baseprice">' + esc(formatMoney(baseUnit)) + ' x ' + qty + '</span>' +
         '</div>' +
-        (metaResult.html ? '<div class="dlp2-product-meta">' + metaResult.html + '</div>' : '') +
-        '<div class="dlp2-product-linetotal"><span>Total del Producto</span><span class="dlp2-product-price">' + esc(formatMoney(lineTotal)) + '</span></div>' +
+        bodyHtml +
       '</div>';
   }
 
@@ -712,7 +777,7 @@
       return '';
     }
 
-    var rows = items.map(renderProductRow).join('');
+    var rows = items.map(function (it, i) { return renderProductRow(it, i, { orderId: order.id, scope: 's', accordion: true }); }).join('');
 
     return '' +
       '<div class="dlp2-section">' +
@@ -1035,6 +1100,11 @@
               renderNitRow(order) +
               renderCustomerComment(order) +
                           '</div>' +
+            '<div class="dlp2-expanded-totals dlp2-expanded-totals-left">' +
+              '<div class="dlp2-expanded-totals-row"><span>Cantidad de items</span><span>' + Number(order.items_count || items.length) + '</span></div>' +
+              '<div class="dlp2-expanded-totals-divider"></div>' +
+              '<div class="dlp2-expanded-totals-row dlp2-expanded-totals-final"><span>Total del Pedido</span><span class="dlp2-total-amount">' + esc(formatMoney(order.total)) + '</span></div>' +
+            '</div>' +
             renderActionsCard(order) +
           '</div>' +
 
@@ -1046,7 +1116,7 @@
               '</div>' +
               '<span class="dlp2-expanded-combo-count">' + comboCount + ' combos</span>' +
             '</div>' +
-            '<div class="dlp2-products dlp2-expanded-products">' + items.map(renderProductRow).join('') + '</div>' +
+            '<div class="dlp2-products dlp2-expanded-products">' + items.map(function (it, i) { return renderProductRow(it, i, { orderId: order.id, scope: 'e' }); }).join('') + '</div>' +
             '<div class="dlp2-expanded-totals dlp2-expanded-totals-below">' +
               '<div class="dlp2-expanded-totals-row"><span>Cantidad de items</span><span>' + Number(order.items_count || items.length) + '</span></div>' +
               '<div class="dlp2-expanded-totals-divider"></div>' +
@@ -1540,6 +1610,14 @@
       }
     });
   });
+
+  // Acordeones de productos/hamburguesas: se recuerda cuales estan abiertos para que un refresco no los cierre.
+  root.addEventListener('toggle', function (event) {
+    var d = event.target;
+    if (d && d.matches && d.matches('details[data-acc]')) {
+      state.openAcc[d.getAttribute('data-acc')] = d.open;
+    }
+  }, true);
 
   // Buscador del selector de tiendas: solo se repinta la lista, no toda la barra (para no perder el foco).
   root.addEventListener('input', function (event) {

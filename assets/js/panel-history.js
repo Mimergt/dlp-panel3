@@ -518,7 +518,7 @@
             '<div class="dlp2-section-title-row"><span class="dlp2-section-title">Detalle de Productos</span><span class="dlp2-items-count">' + Number(order.items_count || items.length) + ' items</span></div>' +
             '<span class="dlp2-expanded-combo-count">' + items.length + ' combos</span>' +
           '</div>' +
-          '<div class="dlp2-products dlp2-expanded-products">' + items.map(UI.renderProductRow).join('') + '</div>' +
+          '<div class="dlp2-products dlp2-expanded-products">' + items.map(function (it, i) { return UI.renderProductRow(it, i, {}); }).join('') + '</div>' +
         '</div>' +
       '</div>';
   }
