@@ -52,8 +52,15 @@ class DLP_Paneles_REST {
                 );
             }
 
+            $product = is_callable(array($item, 'get_product')) ? $item->get_product() : null;
+            $image = '';
+            if ($product && $product->get_image_id()) {
+                $image = (string) wp_get_attachment_image_url($product->get_image_id(), 'thumbnail');
+            }
+
             $items[] = array(
                 'name' => $item->get_name(),
+                'image' => $image,
                 'quantity' => $item->get_quantity(),
                 'total' => (float) $item->get_total(),
                 'meta' => $meta,
@@ -881,6 +888,10 @@ class DLP_Paneles_REST {
             return new WP_REST_Response(array('message' => 'No autorizado para este pedido'), 403);
         }
 
+        if ($order->get_status() === 'completed') {
+            return new WP_REST_Response(array('message' => 'En un pedido completado solo se puede bloquear al cliente'), 409);
+        }
+
         $priority_param = $request->get_param('priority');
         if ($priority_param !== null) {
             $order->update_meta_data('_dlp_priority', $priority_param ? '1' : '0');
@@ -908,6 +919,11 @@ class DLP_Paneles_REST {
 
         if (!$store_id) {
             return new WP_REST_Response(array('message' => 'Tienda invalida'), 400);
+        }
+
+        $order_check = wc_get_order($order_id);
+        if ($order_check && $order_check->get_status() === 'completed') {
+            return new WP_REST_Response(array('message' => 'En un pedido completado solo se puede bloquear al cliente'), 409);
         }
 
         $order = wc_get_order($order_id);

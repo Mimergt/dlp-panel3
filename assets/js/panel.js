@@ -608,21 +608,70 @@
     return { html: rows.join(''), modifiersTotal: modifiersTotal };
   }
 
-  // Extras ya normalizados por el servidor (Product Add-Ons o WooFood): se agrupan por nombre de grupo.
-  function renderExtras(extras) {
-    var order = [], groups = {};
-    (extras || []).forEach(function (e) {
-      if (!groups[e.group]) { groups[e.group] = []; order.push(e.group); }
-      groups[e.group].push(e);
-    });
-    return order.map(function (g) {
-      return '<div class="dlp2-product-mod">' +
-        '<div class="dlp2-product-mod-title">' + esc(capitalizeFirst(g)) + '</div>' +
-        groups[g].map(function (e) {
-          return '<div class="dlp2-product-mod-row"><span>&bull; ' + esc(e.name) + '</span>' +
-            (e.price > 0 ? '<span class="dlp2-product-mod-price">+' + esc(formatMoney(e.price)) + '</span>' : '') + '</div>';
-        }).join('') +
+  // Extras ya normalizados por el servidor (Product Add-Ons o WooFood). Se clasifican por el nombre del grupo
+  // y se muestran con titulos cortos: "Cambio Carne", "Complemento", "Bebida", "Bebida Extra" y "Quitar ingredientes".
+  function xNorm(t) {
+    return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  }
+
+  function classifyExtra(group) {
+    var g = xNorm(group);
+    if (/quitar|ingrediente/.test(g)) { return { kind: 'remove', title: 'Quitar ingredientes:', icon: '🚫', rank: 9 }; }
+    if (/carne/.test(g)) { return { kind: 'meat', title: 'Cambio Carne', icon: '🥩', rank: 1 }; }
+    if (/bebida/.test(g)) {
+      return /extra/.test(g) ? { kind: 'drinkx', title: 'Bebida Extra', icon: '🥤', rank: 4 } : { kind: 'drink', title: 'Bebida', icon: '🥤', rank: 3 };
+    }
+    if (/complemento/.test(g)) { return { kind: 'side', title: 'Complemento', icon: '🍟', rank: 2 }; }
+    return { kind: 'other', title: capitalizeFirst(group), icon: '➕', rank: 5 };
+  }
+
+  function extraValueHtml(name) {
+    var n = String(name == null ? '' : name).trim();
+    return /^\d+$/.test(n) ? '&times; ' + esc(n) : esc(n);
+  }
+
+  // Los combos traen varios sandwiches ("Clasica 1: carne", "Clasica 2: carne"...): se separan por ese prefijo
+  // para que cada sandwich muestre su carne, complemento, bebida e ingredientes a quitar.
+  function renderExtraSection(rows) {
+    var html = '';
+    rows.sort(function (a, b) { return a.c.rank - b.c.rank || a.i - b.i; });
+    var removed = rows.filter(function (r) { return r.c.kind === 'remove'; });
+
+    rows.forEach(function (r) {
+      if (r.c.kind === 'remove') { return; }
+      html += '<div class="dlp2-x-row dlp2-x-' + r.c.kind + '">' +
+        '<span class="dlp2-x-ico">' + r.c.icon + '</span>' +
+        '<span class="dlp2-x-text"><span class="dlp2-x-label">' + esc(r.c.title) + '</span>' +
+        '<span class="dlp2-x-val">' + extraValueHtml(r.e.name) + '</span></span>' +
+        (Number(r.e.price) > 0 ? '<span class="dlp2-x-price">+' + esc(formatMoney(r.e.price)) + '</span>' : '') +
       '</div>';
+    });
+
+    if (removed.length) {
+      html += '<div class="dlp2-x-remove">' +
+        '<span class="dlp2-x-label"><span class="dlp2-x-ico">🚫</span>Quitar ingredientes:</span>' +
+        '<div class="dlp2-x-chips">' + removed.map(function (r) {
+          return '<span class="dlp2-x-chip">' + esc(String(r.e.name).replace(/^\s*sin\s+/i, '')) + '</span>';
+        }).join('') + '</div>' +
+      '</div>';
+    }
+    return html;
+  }
+
+  function renderExtras(extras) {
+    var sections = [], byKey = {};
+    (extras || []).forEach(function (e, i) {
+      var m = String(e.group || '').match(/^(.+?):\s*(.+)$/);
+      var prefix = m ? m[1].trim() : '';
+      var base = m ? m[2].trim() : String(e.group || '');
+      if (!byKey[prefix]) { byKey[prefix] = { prefix: prefix, rows: [] }; sections.push(byKey[prefix]); }
+      byKey[prefix].rows.push({ c: classifyExtra(base), e: e, i: i });
+    });
+
+    var multi = sections.length > 1 || (sections.length === 1 && sections[0].prefix);
+    return sections.map(function (sec) {
+      return (multi && sec.prefix ? '<div class="dlp2-x-section"><span class="dlp2-x-section-title">' + esc(sec.prefix) + '</span>' : '<div class="dlp2-x-section">') +
+        renderExtraSection(sec.rows) + '</div>';
     }).join('');
   }
 
@@ -640,10 +689,14 @@
     var baseTotal = Math.max(0, lineTotal - metaResult.modifiersTotal);
     var baseUnit = qty > 0 ? baseTotal / qty : baseTotal;
 
+    var lead = '<span class="dlp2-product-lead' + (item.image ? ' has-thumb' : '') + '">' +
+      (item.image ? '<img class="dlp2-product-thumb" src="' + esc(item.image) + '" alt="" loading="lazy" />' : '') +
+      '<span class="dlp2-product-qty">' + qty + '</span></span>';
+
     return '' +
       '<div class="dlp2-product">' +
         '<div class="dlp2-product-top">' +
-          '<span class="dlp2-product-qty">' + qty + '</span>' +
+          lead +
           '<span class="dlp2-product-name">' + esc(item.name) + '</span>' +
           '<span class="dlp2-product-baseprice">' + esc(formatMoney(baseUnit)) + ' x ' + qty + '</span>' +
         '</div>' +
@@ -717,6 +770,11 @@
       slaLabel = 'Por vencer';
     }
 
+    var done = isFinalStatus(order.status);
+    if (done) {
+      slaLabel = slaState === 'ok' ? 'Entregado a tiempo' : (slaState === 'warning' ? 'Entregado justo' : 'Entregado con atraso');
+    }
+
     return '' +
       '<div class="dlp2-time-card">' +
         '<div class="dlp2-time-card-top">' +
@@ -727,7 +785,7 @@
           '</div>' +
           '<div class="dlp2-time-tags">' +
             '<span class="dlp2-sla-pill dlp2-sla-' + slaState + '">' + esc(slaLabel) + '</span>' +
-            '<div class="dlp2-goal-pill"><span>Atrasado a los</span><strong>' + TIME_LATE_MINUTES + ' min</strong></div>' +
+            (done ? '<div class="dlp2-goal-pill"><span>Tiempo total</span><strong>' + Math.round(elapsedMinutes) + ' min</strong></div>' : '<div class="dlp2-goal-pill"><span>Atrasado a los</span><strong>' + TIME_LATE_MINUTES + ' min</strong></div>') +
           '</div>' +
         '</div>' +
         '<div class="dlp2-time-progress"><div class="dlp2-time-progress-fill dlp2-sla-fill-' + slaState + '" style="width:' + pct + '%"></div></div>' +
@@ -770,7 +828,9 @@
       '<button class="dlp2-task-btn dlp2-task-btn-danger" type="button" disabled title="Solo se desbloquea desde el administrador del sitio">' + ICON.userBlock + '<span>Cliente bloqueado</span></button>' :
       '<button class="dlp2-task-btn dlp2-task-btn-danger" data-action="toggle-block-customer" data-order-id="' + id + '" type="button">' + ICON.userBlock + '<span>Bloquear cliente</span></button>';
 
-    var body = '' +
+    // Pedido completado: la unica accion permitida es bloquear al cliente.
+    var completedOnly = isFinalStatus(order.status);
+    var body = completedOnly ? taskRow('Cliente', clientValue, blockBtn) : '' +
       taskRow('Tienda asignada', esc(order.store_name || 'Sin tienda asignada'),
         '<button class="dlp2-task-btn" data-action="open-reassign-modal" data-order-id="' + id + '" type="button">' + ICON.store + '<span>Asignar a otra tienda</span></button>') +
       taskRow('Prioridad de orden', order.priority ? 'Prioritario' : 'Normal',
@@ -790,7 +850,7 @@
           ICON.tasks +
           '<span class="dlp2-tasks-text">' +
             '<span class="dlp2-tasks-title">Tareas</span>' +
-            '<span class="dlp2-tasks-sub">Tienda, prioridad, bloquear cliente y nota</span>' +
+            '<span class="dlp2-tasks-sub">' + (completedOnly ? 'Bloquear cliente' : 'Tienda, prioridad, bloquear cliente y nota') + '</span>' +
           '</span>' +
           chips +
           '<span class="dlp2-tasks-hint">' +
@@ -975,11 +1035,6 @@
               renderNitRow(order) +
               renderCustomerComment(order) +
                           '</div>' +
-            '<div class="dlp2-expanded-totals">' +
-              '<div class="dlp2-expanded-totals-row"><span>Cantidad de items</span><span>' + Number(order.items_count || items.length) + '</span></div>' +
-              '<div class="dlp2-expanded-totals-divider"></div>' +
-              '<div class="dlp2-expanded-totals-row dlp2-expanded-totals-final"><span>Total del Pedido</span><span class="dlp2-total-amount">' + esc(formatMoney(order.total)) + '</span></div>' +
-            '</div>' +
             renderActionsCard(order) +
           '</div>' +
 
@@ -992,6 +1047,11 @@
               '<span class="dlp2-expanded-combo-count">' + comboCount + ' combos</span>' +
             '</div>' +
             '<div class="dlp2-products dlp2-expanded-products">' + items.map(renderProductRow).join('') + '</div>' +
+            '<div class="dlp2-expanded-totals dlp2-expanded-totals-below">' +
+              '<div class="dlp2-expanded-totals-row"><span>Cantidad de items</span><span>' + Number(order.items_count || items.length) + '</span></div>' +
+              '<div class="dlp2-expanded-totals-divider"></div>' +
+              '<div class="dlp2-expanded-totals-row dlp2-expanded-totals-final"><span>Total del Pedido</span><span class="dlp2-total-amount">' + esc(formatMoney(order.total)) + '</span></div>' +
+            '</div>' +
           '</div>' +
 
       '</div>';

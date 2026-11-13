@@ -2482,3 +2482,27 @@
 }
 .dlp2-product-comment-label svg { width: 12px; height: 12px; }
 .dlp2-product-comment-text { font-size: 13px; font-weight: 700; color: #FDE68A; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+
+/* ---- Productos y extras (vista simplificada) ---- */
+.dlp2-expanded-overlay { z-index: 10; }
+.dlp2-product-lead { position: relative; flex-shrink: 0; display: inline-flex; }
+.dlp2-product-lead.has-thumb .dlp2-product-qty { position: absolute; top: -6px; left: -6px; z-index: 1; box-shadow: 0 0 0 2px var(--dlp-dark-card); }
+.dlp2-product-thumb { width: 52px; height: 52px; border-radius: 10px; object-fit: cover; background: rgba(255,255,255,.06); display: block; }
+.dlp2-product-top { align-items: center; gap: 12px; }
+.dlp2-expanded-products { align-items: start; }
+.dlp2-expanded-products .dlp2-product-meta { padding-left: 0; }
+.dlp2-x-section { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,.035); margin-top: 6px; }
+.dlp2-x-section-title { font-size: 12px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: #93C5FD; margin-bottom: 2px; }
+.dlp2-x-row { display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 10px; padding: 5px 0; }
+.dlp2-x-ico { font-size: 17px; line-height: 1; text-align: center; }
+.dlp2-x-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.dlp2-x-label { color: var(--dlp-dark-muted); font-weight: 600; font-size: 12px; }
+.dlp2-x-val { color: #fff; font-weight: 700; font-size: 15px; overflow-wrap: anywhere; }
+.dlp2-x-price { color: #6EE7B7; font-weight: 800; white-space: nowrap; background: rgba(16,185,129,.14); padding: 2px 9px; border-radius: 999px; font-size: 13px; }
+.dlp2-x-meat .dlp2-x-val { color: #FDBA74; }
+.dlp2-x-remove { margin-top: 6px; padding: 8px 10px; border-radius: 10px; background: rgba(239,68,68,.10); border: 1px solid rgba(239,68,68,.28); }
+.dlp2-x-remove .dlp2-x-label { color: #FCA5A5; display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+.dlp2-x-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.dlp2-x-chip { padding: 3px 10px; border-radius: 999px; background: rgba(239,68,68,.2); color: #FECACA; font-weight: 700; font-size: 13px; text-decoration: line-through; text-decoration-color: rgba(254,202,202,.6); }
+.dlp2-expanded-totals-below { margin-top: 14px; }
