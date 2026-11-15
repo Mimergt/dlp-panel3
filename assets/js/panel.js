@@ -115,6 +115,9 @@
       });
   });
 
+  // Definido antes del modo historial: panel-history.js tambien lo usa al renderizar extras.
+  var PATTY_ICON = '<svg class="dlp2-patty" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><ellipse cx="12" cy="14.5" rx="10" ry="5.2" fill="#6b3416"/><ellipse cx="12" cy="11.8" rx="10" ry="5.2" fill="#9a4f26"/><path d="M5.5 11.5c1.2-1.1 2.4-1.1 3.6 0M10.5 13c1.2-1.1 2.4-1.1 3.6 0M14.5 10.6c1.2-1.1 2.4-1.1 3.6 0" stroke="#5a2a0e" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>';
+
   // Modo historial (/orders/historial/): panel-history.js reutiliza estos
   // renderers y no necesita el tablero, asi que no se registran listeners
   // ni polling de este archivo.
@@ -615,7 +618,6 @@
     return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
   }
 
-  var PATTY_ICON = '<svg class="dlp2-patty" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><ellipse cx="12" cy="14.5" rx="10" ry="5.2" fill="#6b3416"/><ellipse cx="12" cy="11.8" rx="10" ry="5.2" fill="#9a4f26"/><path d="M5.5 11.5c1.2-1.1 2.4-1.1 3.6 0M10.5 13c1.2-1.1 2.4-1.1 3.6 0M14.5 10.6c1.2-1.1 2.4-1.1 3.6 0" stroke="#5a2a0e" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>';
 
   function classifyExtra(group) {
     var g = xNorm(group);
