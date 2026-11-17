@@ -115,6 +115,72 @@
       });
   });
 
+  // ---- Sesion vencida -------------------------------------------------------------------------------------
+  // Cuando la sesion o el nonce vencen, la REST responde 401/403. Antes el panel seguia mostrando la lista vieja sin
+  // avisar. Ahora: se intenta renovar el nonce una vez; si no alcanza, se detiene el refresco y se muestra un aviso
+  // grande con el boton para volver a ingresar (y redireccion automatica). Definido antes del modo historial: lo usa api().
+  var sessionDead = false;
+  var pollTimers = [];
+
+  function sessionCfg() { return window.DLP_PANELES_CONFIG || {}; }
+
+  function authError() {
+    var e = new Error('Tu sesion vencio. Vuelve a ingresar.');
+    e.authExpired = true;
+    return e;
+  }
+
+  function renewNonce() {
+    var c = sessionCfg();
+    var url = c.ajaxUrl || String(c.apiBase || '').split('/wp-json')[0] + '/wp-admin/admin-ajax.php';
+    return fetch(url + (url.indexOf('?') > -1 ? '&' : '?') + 'action=rest-nonce', { credentials: 'same-origin', cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.text() : ''; })
+      .then(function (t) {
+        t = String(t || '').trim();
+        if (t && t !== '0' && /^[a-z0-9]+$/i.test(t)) { sessionCfg().nonce = t; return true; }
+        return false;
+      })
+      .catch(function () { return false; });
+  }
+
+  function sessionExpired() {
+    if (sessionDead) { return; }
+    sessionDead = true;
+    pollTimers.forEach(function (t) { clearInterval(t); });
+    var c = sessionCfg();
+    var base = c.loginUrl || '/ingresar/';
+    var url = base + (base.indexOf('?') > -1 ? '&' : '?') + 'redirect_to=' + encodeURIComponent(window.location.pathname + window.location.search);
+    var secs = 20;
+    var st = document.createElement('style');
+    st.textContent = '.dlp2-sess{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(10,14,20,.72);font-family:Inter,system-ui,sans-serif}' +
+      '.dlp2-sess-box{max-width:420px;width:100%;box-sizing:border-box;padding:26px 22px 22px;border-radius:20px;background:#fff;color:#111;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.4)}' +
+      '.dlp2-sess-ico{display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;margin:0 0 12px;border-radius:16px;background:#111;color:#fff;font-size:28px;font-weight:800}' +
+      '.dlp2-sess-box h2{margin:0 0 8px;font-size:21px;line-height:1.2}.dlp2-sess-box p{margin:0 0 16px;color:#55555e;font-size:14px;line-height:1.5}' +
+      '.dlp2-sess-btn{display:block;box-sizing:border-box;width:100%;padding:15px 18px;border-radius:999px;background:#111;color:#fff!important;font:800 14px/1 Inter,system-ui,sans-serif;letter-spacing:.03em;text-transform:uppercase;text-decoration:none!important}' +
+      '.dlp2-sess-cd{margin:12px 0 0!important;font-size:12.5px!important;color:#8d8d96!important}';
+    document.head.appendChild(st);
+    var box = document.createElement('div');
+    box.className = 'dlp2-sess';
+    box.setAttribute('role', 'alertdialog');
+    box.setAttribute('aria-live', 'assertive');
+    box.innerHTML = '<div class="dlp2-sess-box"><div class="dlp2-sess-ico">!</div><h2>Tu sesi\u00f3n venci\u00f3</h2>' +
+      '<p>Por seguridad hay que volver a ingresar. Mientras tanto <strong>los pedidos nuevos no aparecer\u00e1n</strong> en este panel.</p>' +
+      '<a class="dlp2-sess-btn" href="' + url.replace(/"/g, '&quot;') + '">Volver a ingresar</a><p class="dlp2-sess-cd"></p></div>';
+    document.body.appendChild(box);
+    try { document.title = '\u26a0 Sesi\u00f3n vencida - ' + document.title; } catch (e) {}
+    var cd = box.querySelector('.dlp2-sess-cd');
+    function tick() {
+      if (secs <= 0) { window.location.href = url; return; }
+      cd.textContent = 'Te llevamos a ingresar en ' + secs + ' s';
+      secs -= 1;
+      setTimeout(tick, 1000);
+    }
+    tick();
+  }
+
+  // Lo usan panel-geo.js y panel-history.js.
+  window.DLP_SESSION = { expired: sessionExpired, renew: renewNonce };
+
   // Definido antes del modo historial: panel-history.js tambien lo usa al renderizar extras.
   var PATTY_ICON = '<svg class="dlp2-patty" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><ellipse cx="12" cy="14.5" rx="10" ry="5.2" fill="#6b3416"/><ellipse cx="12" cy="11.8" rx="10" ry="5.2" fill="#9a4f26"/><path d="M5.5 11.5c1.2-1.1 2.4-1.1 3.6 0M10.5 13c1.2-1.1 2.4-1.1 3.6 0M14.5 10.6c1.2-1.1 2.4-1.1 3.6 0" stroke="#5a2a0e" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>';
 
@@ -428,6 +494,10 @@
     var retries = typeof options.retries === 'number' ? options.retries : 0;
     var retryDelayMs = typeof options.retryDelayMs === 'number' ? options.retryDelayMs : 900;
 
+    if (sessionDead) {
+      return Promise.reject(authError());
+    }
+
     return fetch(window.DLP_PANELES_CONFIG.apiBase + path, {
       method: method || 'GET',
       headers: {
@@ -437,6 +507,46 @@
       credentials: 'same-origin',
       body: payload ? JSON.stringify(payload) : undefined,
     }).then(function (res) {
+      // 401/403 de sesion o nonce (no los 403 de "sin acceso a este pedido"): renovar el nonce una vez y reintentar.
+      if (res.status === 401 || res.status === 403) {
+        return res.clone().json().catch(function () { return {}; }).then(function (d) {
+          var code = d && d.code;
+          var authFail = res.status === 401 || code === 'rest_cookie_invalid_nonce' || code === 'rest_forbidden' || code === 'rest_not_logged_in';
+          if (!authFail) {
+            return parseResponse(res);
+          }
+          if (options._renewed) {
+            sessionExpired();
+            throw authError();
+          }
+          return renewNonce().then(function (ok) {
+            if (!ok) {
+              sessionExpired();
+              throw authError();
+            }
+            return api(path, method, payload, { retries: 0, retryDelayMs: retryDelayMs, _renewed: true });
+          });
+        });
+      }
+      return parseResponse(res);
+    }).catch(function (error) {
+      if (error && error.authExpired) {
+        throw error;
+      }
+      if (retries > 0) {
+        return new Promise(function (resolve) {
+          setTimeout(resolve, retryDelayMs);
+        }).then(function () {
+          return api(path, method, payload, {
+            retries: retries - 1,
+            retryDelayMs: retryDelayMs
+          });
+        });
+      }
+      throw error;
+    });
+
+    function parseResponse(res) {
       var contentType = res.headers.get('content-type') || '';
 
       if (contentType.indexOf('application/json') !== -1) {
@@ -454,19 +564,7 @@
         }
         return {};
       });
-    }).catch(function (error) {
-      if (retries > 0) {
-        return new Promise(function (resolve) {
-          setTimeout(resolve, retryDelayMs);
-        }).then(function () {
-          return api(path, method, payload, {
-            retries: retries - 1,
-            retryDelayMs: retryDelayMs
-          });
-        });
-      }
-      throw error;
-    });
+    }
   }
 
   function forceRefresh(button) {
@@ -1504,6 +1602,7 @@
       })
       .catch(function (error) {
         console.error(error);
+        if (error && error.authExpired) { return; } // ya se muestra el aviso de sesion vencida
 
         if (!state.firstLoadDone) {
           state.networkWarning = 'No se pudo cargar el panel. Revisa tu sesion o conexion e intenta recargar.';
@@ -1880,6 +1979,9 @@
   });
 
   loadPanel();
-  setInterval(loadPanel, Number(window.DLP_PANELES_CONFIG.refreshSeconds || 30) * 1000);
+  pollTimers.push(setInterval(loadPanel, Number(window.DLP_PANELES_CONFIG.refreshSeconds || 30) * 1000));
   setInterval(updateLiveTimes, 1000);
+  // Renueva el nonce de vez en cuando (y al volver a la pestaña tras mucho rato) para que una tablet encendida todo el dia no lo pierda.
+  pollTimers.push(setInterval(renewNonce, 3 * 3600 * 1000));
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && !sessionDead) { renewNonce(); } });
 })();

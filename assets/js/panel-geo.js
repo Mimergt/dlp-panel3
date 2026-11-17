@@ -12,7 +12,18 @@
       method: method || 'GET', credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': C.nonce },
       body: payload ? JSON.stringify(payload) : undefined
-    }).then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error((d && d.message) || 'Error de API'); return d; }); });
+    }).then(function (r) {
+      if ((r.status === 401 || r.status === 403) && window.DLP_SESSION) {
+        return r.clone().json().catch(function () { return {}; }).then(function (d) {
+          if (r.status === 401 || (d && (d.code === 'rest_cookie_invalid_nonce' || d.code === 'rest_forbidden' || d.code === 'rest_not_logged_in'))) {
+            window.DLP_SESSION.renew().then(function (ok) { if (!ok) { window.DLP_SESSION.expired(); } });
+            throw new Error('Tu sesion vencio. Vuelve a ingresar.');
+          }
+          throw new Error((d && d.message) || 'Error de API');
+        });
+      }
+      return r.json().then(function (d) { if (!r.ok) throw new Error((d && d.message) || 'Error de API'); return d; });
+    });
   }
   function overlay(html) {
     var el = document.createElement('div');

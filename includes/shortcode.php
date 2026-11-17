@@ -47,6 +47,8 @@ class DLP_Paneles_Shortcode {
         wp_localize_script('dlp-paneles-app', 'DLP_PANELES_CONFIG', array(
             'apiBase' => esc_url_raw(rest_url('dlp-paneles/v1')),
             'nonce' => wp_create_nonce('wp_rest'),
+            'ajaxUrl' => esc_url_raw(admin_url('admin-ajax.php')),
+            'loginUrl' => esc_url_raw(apply_filters('dlp_paneles_login_url', home_url('/ingresar/'))),
             'refreshSeconds' => 30,
             'logoutUrl' => esc_url_raw(wp_logout_url(home_url('/'))),
             'logoutRedirect' => esc_url_raw(wp_login_url((string) get_permalink() ?: home_url('/'))),

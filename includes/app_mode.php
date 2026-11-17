@@ -49,6 +49,8 @@ class DLP_Paneles_App_Mode {
             'historyUrl' => esc_url_raw(home_url('/' . $slug . '/historial/')),
             'apiBase' => esc_url_raw(rest_url('dlp-paneles/v1')),
             'nonce' => wp_create_nonce('wp_rest'),
+            'ajaxUrl' => esc_url_raw(admin_url('admin-ajax.php')),
+            'loginUrl' => esc_url_raw(apply_filters('dlp_paneles_login_url', home_url('/ingresar/'))),
             'refreshSeconds' => 30,
             'logoutUrl' => esc_url_raw(wp_logout_url(home_url('/'))),
             // Tras cerrar sesion desde el panel se vuelve a la pantalla de inicio de sesion del panel.
