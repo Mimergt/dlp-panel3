@@ -552,7 +552,10 @@
       if (contentType.indexOf('application/json') !== -1) {
         return res.json().then(function (data) {
           if (!res.ok) {
-            throw new Error((data && data.message) || 'Error de API');
+            var apiErr = new Error((data && data.message) || 'Error de API');
+            apiErr.status = res.status;
+            apiErr.data = data;
+            throw apiErr;
           }
           return data;
         });
@@ -560,7 +563,9 @@
 
       return res.text().then(function () {
         if (!res.ok) {
-          throw new Error('Error de API (' + res.status + ')');
+          var textErr = new Error('Error de API (' + res.status + ')');
+          textErr.status = res.status;
+          throw textErr;
         }
         return {};
       });
@@ -1535,6 +1540,64 @@
     }
   }
 
+  // Las tiendas no ven la columna Cancelados: un pedido cancelado deja de mostrarse (tablero y detalle).
+  function isShownOrder(order) {
+    return order.group !== 'cancelled' || state.scope === 'supervisor';
+  }
+
+  // Primer pedido a mostrar en el detalle (activos primero), sin contar el que se acaba de mover.
+  function firstShownOrderId(excludeId) {
+    var pool = state.orders.filter(function (o) { return o.id !== excludeId && isShownOrder(o); });
+    var pick = pool.find(function (o) { return o.group === 'processing'; }) || pool.find(function (o) { return o.group === 'shipped'; }) || pool[0];
+    return pick ? pick.id : null;
+  }
+
+  var toastTimer = null;
+  function toast(message, kind) {
+    var el = document.getElementById('dlp2-toast');
+    if (!el) {
+      var st = document.createElement('style');
+      st.textContent = '#dlp2-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2147482000;max-width:92vw;padding:12px 18px;border-radius:12px;background:#111;color:#fff;font:600 14px/1.35 Inter,system-ui,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .2s}' +
+        '#dlp2-toast.on{opacity:1}#dlp2-toast.warn{background:#92400e}';
+      document.head.appendChild(st);
+      el = document.createElement('div');
+      el.id = 'dlp2-toast';
+      el.setAttribute('role', 'status');
+      document.body.appendChild(el);
+    }
+    el.textContent = message;
+    el.className = 'on' + (kind === 'warn' ? ' warn' : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.className = ''; }, 3500);
+  }
+
+  // Aplica al instante el resultado de una accion (estado nuevo del pedido), cierra el detalle ampliado, mueve la seleccion
+  // y confirma; despues se refresca desde el servidor.
+  function applyActionResult(orderId, res, message, kind) {
+    var o = state.orders.find(function (item) { return item.id === orderId; });
+    if (o && res && res.new_status) {
+      o.status = res.new_status;
+      if (res.group && res.group !== 'other') { o.group = res.group; }
+    }
+    if (state.expandedOrderId === orderId) { state.expandedOrderId = null; }
+    if (state.selectedOrderId === orderId) {
+      state.selectedOrderId = firstShownOrderId(orderId);
+    }
+    if (message) { toast(message, kind); }
+    renderKeepingUi();
+    loadPanel();
+  }
+
+  // Error de una accion: un 409/404 es "el pedido ya cambio" (otra tableta, doble toque): se avisa claro y se refresca.
+  function actionError(orderId, prefix, error) {
+    if (error && error.authExpired) { return; }
+    if (error && (error.status === 409 || error.status === 404)) {
+      applyActionResult(orderId, error.data && error.data.current_status ? { new_status: error.data.current_status, group: error.data.group } : null, error.message, 'warn');
+      return;
+    }
+    alert(prefix + ': ' + (error && error.message ? error.message : 'error'));
+  }
+
   function loadPanel(pageSize) {
     var size = pageSize || state.currentPageSize || PAGE_SIZE_STEPS[0];
     var path = '/panel?page=1&per_page=' + size;
@@ -1557,17 +1620,10 @@
         var pagination = data.pagination || null;
         state.currentPageSize = pagination ? pagination.per_page : size;
 
-        if (!state.selectedOrderId && state.orders.length) {
-          state.selectedOrderId = state.orders[0].id;
-        }
-
-        if (state.selectedOrderId) {
-          var exists = state.orders.some(function (order) {
-            return order.id === state.selectedOrderId;
-          });
-          if (!exists) {
-            state.selectedOrderId = state.orders.length ? state.orders[0].id : null;
-          }
+        // El detalle nunca debe quedarse con un pedido que ya no se ve en el tablero (cancelado, para las tiendas, o que ya no viene).
+        var curSel = state.selectedOrderId ? state.orders.find(function (order) { return order.id === state.selectedOrderId; }) : null;
+        if (!curSel || !isShownOrder(curSel)) {
+          state.selectedOrderId = firstShownOrderId(0);
         }
 
         if (state.expandedOrderId) {
@@ -1911,9 +1967,11 @@
       }
 
       api('/pedido/' + orderId + '/estado', 'POST', { new_status: target })
-        .then(function () { loadPanel(); })
+        .then(function (res) {
+          applyActionResult(orderId, res, res && res.group === 'completed' ? 'Pedido completado.' : 'Pedido enviado.');
+        })
         .catch(function (error) {
-          alert('No se pudo cambiar estado: ' + error.message);
+          actionError(orderId, 'No se pudo cambiar estado', error);
         });
       return;
     }
@@ -1925,9 +1983,11 @@
       }
 
       api('/pedido/' + orderId + '/cancelar', 'POST', { motivo: motivo.trim() })
-        .then(function () { loadPanel(); })
+        .then(function (res) {
+          applyActionResult(orderId, res, (res && res.already) ? 'Este pedido ya estaba cancelado.' : 'Pedido cancelado.');
+        })
         .catch(function (error) {
-          alert('No se pudo cancelar: ' + error.message);
+          actionError(orderId, 'No se pudo cancelar', error);
         });
       return;
     }
@@ -1957,9 +2017,16 @@
       }
 
       api('/pedido/' + orderId + '/cliente-bloqueo', 'POST', { block: true })
-        .then(function () { loadPanel(); })
+        .then(function (res) {
+          if (res && res.order_cancelled) {
+            applyActionResult(orderId, { new_status: 'cancelled', group: 'cancelled' }, 'Cliente bloqueado y pedido cancelado.');
+          } else {
+            toast('Cliente bloqueado.');
+            loadPanel();
+          }
+        })
         .catch(function (error) {
-          alert('No se pudo bloquear al cliente: ' + error.message);
+          actionError(orderId, 'No se pudo bloquear al cliente', error);
         });
       return;
     }

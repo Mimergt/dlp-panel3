@@ -25,6 +25,41 @@ class DLP_Paneles_REST {
         return $status === 'cancelled';
     }
 
+    // Columna del tablero a la que pertenece un estado (mismo criterio que get_panel_data).
+    public static function status_group($status) {
+        if (self::is_processing_status($status)) {
+            return 'processing';
+        }
+        if (self::is_shipped_status($status)) {
+            return 'shipped';
+        }
+        if (self::is_completed_status($status)) {
+            return 'completed';
+        }
+        return self::is_cancelled_status($status) ? 'cancelled' : 'other';
+    }
+
+    // Respuesta de las acciones sobre un pedido: el panel actualiza al instante sin esperar al refresco.
+    private static function action_ok($order, $extra = array()) {
+        $status = $order->get_status();
+        return new WP_REST_Response(array_merge(array(
+            'ok' => true,
+            'order_id' => $order->get_id(),
+            'new_status' => $status,
+            'group' => self::status_group($status),
+        ), $extra));
+    }
+
+    // 409 claro: dice en que estado esta el pedido ahora para que el panel lo refresque.
+    private static function action_conflict($order, $message) {
+        $status = $order->get_status();
+        return new WP_REST_Response(array(
+            'message' => $message,
+            'current_status' => $status,
+            'group' => self::status_group($status),
+        ), 409);
+    }
+
     // Mismo dato que usa el panel v2 via wc_display_item_meta(): WooCommerce ya
     // trae los modificadores (carne, complemento, bebida, upgrades) formateados
     // por producto en get_formatted_meta_data().
@@ -833,17 +868,18 @@ class DLP_Paneles_REST {
             );
         }
 
+        // Ya esta en ese estado (otra tableta, doble toque): se responde igual que si lo hubiera cambiado ahora.
+        if ($current_status === $new_status) {
+            return self::action_ok($order, array('already' => true));
+        }
+
         if (!isset($transitions[$current_status]) || !in_array($new_status, $transitions[$current_status], true)) {
-            return new WP_REST_Response(array('message' => 'Transicion no permitida'), 409);
+            return self::action_conflict($order, 'Este pedido ya está «' . wc_get_order_status_name($current_status) . '»; no se puede pasar a «' . wc_get_order_status_name($new_status) . '».');
         }
 
         $order->update_status($new_status);
 
-        return new WP_REST_Response(array(
-            'ok' => true,
-            'order_id' => $order_id,
-            'new_status' => $order->get_status(),
-        ));
+        return self::action_ok($order);
     }
 
     public static function cancel_order(WP_REST_Request $request) {
@@ -864,8 +900,13 @@ class DLP_Paneles_REST {
             return new WP_REST_Response(array('message' => 'No autorizado para este pedido'), 403);
         }
 
-        if (!in_array($order->get_status(), array('processing', 'dlv', 'rtp'), true)) {
-            return new WP_REST_Response(array('message' => 'No se puede cancelar en este estado'), 409);
+        // Ya cancelado (otra tableta, doble toque, el panel no se habia actualizado): no es un error, el resultado es el pedido.
+        if ($order->get_status() === 'cancelled') {
+            return self::action_ok($order, array('already' => true, 'message' => 'Este pedido ya estaba cancelado.'));
+        }
+
+        if (!in_array($order->get_status(), array('processing', 'prep', 'dlv', 'rtp'), true)) {
+            return self::action_conflict($order, 'Este pedido ya está «' . wc_get_order_status_name($order->get_status()) . '» y no se puede cancelar.');
         }
 
         $order->update_status('cancelled');
@@ -873,11 +914,7 @@ class DLP_Paneles_REST {
         $order->update_meta_data('_motivo_cancelacion_tienda', $motivo);
         $order->save_meta_data();
 
-        return new WP_REST_Response(array(
-            'ok' => true,
-            'order_id' => $order_id,
-            'new_status' => $order->get_status(),
-        ));
+        return self::action_ok($order);
     }
 
     public static function update_order_meta(WP_REST_Request $request) {
@@ -998,7 +1035,7 @@ class DLP_Paneles_REST {
 
         // Si el pedido esta en curso, al bloquear al cliente se cancela (mismo flujo que "Cancelar").
         $cancelled = false;
-        if (in_array($order->get_status(), array('processing', 'dlv', 'rtp'), true)) {
+        if (in_array($order->get_status(), array('processing', 'prep', 'dlv', 'rtp'), true)) {
             $motivo = 'Cliente bloqueado desde el panel';
             $order->update_status('cancelled');
             $order->add_order_note('Motivo de cancelacion: ' . $motivo);
