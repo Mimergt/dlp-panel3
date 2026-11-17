@@ -606,6 +606,12 @@ class DLP_Paneles_Export {
 
     // "APP Android" / "App iOS" / "Web y otros": la app abre la web en un webview con ?origin=webview&device=...
     private static function device_label($order) {
+        // Regla central (dlp-frontend, modulo pedidos-admin): admin, panel y Excel usan la misma. Si el plugin no esta, la copia local de abajo.
+        if (function_exists('dlp_fe_origen_pedido')) {
+            $o = dlp_fe_origen_pedido($order);
+            $map = array('android' => 'APP Android', 'ios' => 'App iOS');
+            return isset($map[$o['clave']]) ? $map[$o['clave']] : 'Web y otros';
+        }
         $landing = html_entity_decode((string) $order->get_meta('handl_landing_page', true));
         $device = strtolower((string) $order->get_meta('device', true));
         if (stripos($landing, 'origin=webview') !== false) {
