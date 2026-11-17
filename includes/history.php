@@ -121,6 +121,7 @@ class DLP_Paneles_History {
             // cualquier tienda, para poder avisar cuales ya no corresponden
             // (ej. reasignados a otra tienda).
             $modified = wc_get_orders(array(
+                'type' => 'shop_order',
                 'date_modified' => '>=' . max(0, $since - 5),
                 'orderby' => 'modified',
                 'order' => 'DESC',
@@ -134,6 +135,9 @@ class DLP_Paneles_History {
             }
 
             foreach ($modified as $order) {
+                if ($order->get_type() !== 'shop_order') {
+                    continue;
+                }
                 $created = $order->get_date_created();
                 $eligible = in_array($order->get_status(), $statuses, true)
                     && $created && $created->getTimestamp() >= $min_ts
@@ -155,6 +159,7 @@ class DLP_Paneles_History {
         // barata: solo ids + una carga de metas) y solo se hidratan los
         // pedidos de la pagina pedida.
         $ids = wc_get_orders(array(
+            'type' => 'shop_order',
             'status' => $statuses,
             'date_created' => '>=' . $min_ts,
             'orderby' => 'date',
@@ -167,6 +172,7 @@ class DLP_Paneles_History {
             if (DLP_Paneles_REST::hpos_enabled()) {
                 // Con las tablas propias de WooCommerce el filtro por meta si se hace en la consulta.
                 $ids = wc_get_orders(array(
+                    'type' => 'shop_order',
                     'status' => $statuses,
                     'date_created' => '>=' . $min_ts,
                     'orderby' => 'date',
@@ -188,7 +194,7 @@ class DLP_Paneles_History {
 
         foreach ($slice as $order_id) {
             $order = wc_get_order($order_id);
-            if ($order) {
+            if ($order && $order->get_type() === 'shop_order') {
                 $response['rows'][] = self::index_row($order);
             }
         }

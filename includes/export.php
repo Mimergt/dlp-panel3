@@ -461,7 +461,7 @@ class DLP_Paneles_Export {
         foreach (array_chunk($ids, self::CHUNK) as $slice) {
             foreach ($slice as $id) {
                 $order = wc_get_order($id);
-                if (!$order) {
+                if (!$order || $order->get_type() !== 'shop_order') {
                     continue;
                 }
                 $shade = !$shade;
@@ -506,6 +506,7 @@ class DLP_Paneles_Export {
 
     private static function query_ids(array $statuses, $date_key, $from_ts, $to_ts, $store_ids) {
         $query = array(
+            'type' => 'shop_order',
             'status' => $statuses,
             $date_key => $from_ts . '...' . $to_ts,
             'orderby' => 'ID',

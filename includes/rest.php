@@ -562,6 +562,9 @@ class DLP_Paneles_REST {
     }
 
     public static function user_can_access_order($order, $user_id) {
+        if (!$order || $order->get_type() !== 'shop_order') {
+            return false; // un reembolso no es un pedido del panel
+        }
         if (self::is_supervisor_user($user_id)) {
             return true;
         }
@@ -592,7 +595,9 @@ class DLP_Paneles_REST {
         $supervisor = self::is_supervisor_user($user_id);
         $accessible_store_ids = self::get_accessible_store_ids($user_id);
 
+        // Solo pedidos: wc_get_orders() puede devolver también reembolsos (shop_order_refund), que no tienen cliente ni tienda.
         $base_args = array(
+            'type' => 'shop_order',
             'orderby' => 'date',
             'order' => 'DESC',
             'return' => 'ids',
@@ -675,7 +680,7 @@ class DLP_Paneles_REST {
 
         foreach ($order_ids as $order_id) {
             $order = wc_get_order($order_id);
-            if (!$order) {
+            if (!$order || $order->get_type() !== 'shop_order') {
                 continue;
             }
 
