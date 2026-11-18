@@ -1623,7 +1623,7 @@
         if (data && data.version && sessionCfg().version && String(data.version) !== String(sessionCfg().version)) {
           var last = 0;
           try { last = Number(window.sessionStorage.getItem('dlp2_reload') || 0); } catch (e) {}
-          if (Date.now() - last > 60000) {
+          if (Date.now() - last > 300000) {
             try { window.sessionStorage.setItem('dlp2_reload', String(Date.now())); } catch (e) {}
             toast('Hay una version nueva del panel. Actualizando...');
             setTimeout(function () { window.location.reload(); }, 1200);

@@ -27,18 +27,10 @@ class DLP_Paneles_App_Mode {
 
         add_filter('show_admin_bar', '__return_false');
 
-        $css_file = DLP_PANELES_DIR . 'assets/css/panel.css';
-        $js_file = DLP_PANELES_DIR . 'assets/js/panel.js';
-        $css_version = file_exists($css_file) ? (string) filemtime($css_file) : DLP_PANELES_VERSION;
-        $js_version = file_exists($js_file) ? (string) filemtime($js_file) : DLP_PANELES_VERSION;
-
-        $css_url = DLP_PANELES_URL . 'assets/css/panel.css?ver=' . rawurlencode($css_version);
-        $js_url = DLP_PANELES_URL . 'assets/js/panel.js?ver=' . rawurlencode($js_version);
-        $geo_file = DLP_PANELES_DIR . 'assets/js/panel-geo.js';
-        $geo_url = DLP_PANELES_URL . 'assets/js/panel-geo.js?ver=' . rawurlencode(file_exists($geo_file) ? (string) filemtime($geo_file) : DLP_PANELES_VERSION);
-
-        $history_file = DLP_PANELES_DIR . 'assets/js/panel-history.js';
-        $history_url = DLP_PANELES_URL . 'assets/js/panel-history.js?ver=' . rawurlencode(file_exists($history_file) ? (string) filemtime($history_file) : DLP_PANELES_VERSION);
+        $css_url = DLP_Paneles_Assets::url('assets/css/panel.css');
+        $js_url = DLP_Paneles_Assets::url('assets/js/panel.js');
+        $geo_url = DLP_Paneles_Assets::url('assets/js/panel-geo.js');
+        $history_url = DLP_Paneles_Assets::url('assets/js/panel-history.js');
 
         $current_user = wp_get_current_user();
 

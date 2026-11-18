@@ -14,31 +14,27 @@ class DLP_Paneles_Shortcode {
             return '<div>Debe iniciar sesion para usar el panel.</div>';
         }
 
-        $css_file = DLP_PANELES_DIR . 'assets/css/panel.css';
-        $js_file = DLP_PANELES_DIR . 'assets/js/panel.js';
-        $css_version = file_exists($css_file) ? (string) filemtime($css_file) : DLP_PANELES_VERSION;
-        $js_version = file_exists($js_file) ? (string) filemtime($js_file) : DLP_PANELES_VERSION;
 
         wp_enqueue_style(
             'dlp-paneles-style',
-            DLP_PANELES_URL . 'assets/css/panel.css',
+            DLP_Paneles_Assets::url('assets/css/panel.css'),
             array(),
-            $css_version
+            null
         );
 
         wp_enqueue_script(
             'dlp-paneles-app',
-            DLP_PANELES_URL . 'assets/js/panel.js',
+            DLP_Paneles_Assets::url('assets/js/panel.js'),
             array(),
-            $js_version,
+            null,
             true
         );
 
         wp_enqueue_script(
             'dlp-paneles-geo',
-            DLP_PANELES_URL . 'assets/js/panel-geo.js',
+            DLP_Paneles_Assets::url('assets/js/panel-geo.js'),
             array('dlp-paneles-app'),
-            DLP_PANELES_VERSION,
+            null,
             true
         );
 
