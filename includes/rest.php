@@ -647,6 +647,7 @@ class DLP_Paneles_REST {
                     'stores' => array(),
                     'reassign_stores' => self::format_store_list(self::get_all_store_ids()),
                     'server_time' => current_time('mysql'),
+            'version' => DLP_PANELES_VERSION,
             'sitio' => self::site_hours_info(),
                     'pagination' => array('page' => 1, 'per_page' => 0, 'total' => 0, 'has_more' => false),
                 ));
@@ -828,6 +829,7 @@ class DLP_Paneles_REST {
             // para un usuario de tienda normal solo trae la suya.
             'reassign_stores' => self::format_store_list(self::get_all_store_ids()),
             'server_time' => current_time('mysql'),
+            'version' => DLP_PANELES_VERSION,
             'sitio' => self::site_hours_info(),
             'pagination' => $pagination,
         ));

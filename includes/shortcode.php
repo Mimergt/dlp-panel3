@@ -50,6 +50,7 @@ class DLP_Paneles_Shortcode {
             'ajaxUrl' => esc_url_raw(admin_url('admin-ajax.php')),
             'loginUrl' => esc_url_raw(apply_filters('dlp_paneles_login_url', home_url('/ingresar/'))),
             'refreshSeconds' => 30,
+            'version' => DLP_PANELES_VERSION,
             'logoutUrl' => esc_url_raw(wp_logout_url(home_url('/'))),
             'logoutRedirect' => esc_url_raw(wp_login_url((string) get_permalink() ?: home_url('/'))),
             'brandTitle' => 'DEL PUENTE',

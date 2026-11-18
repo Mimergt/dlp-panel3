@@ -52,6 +52,7 @@ class DLP_Paneles_App_Mode {
             'ajaxUrl' => esc_url_raw(admin_url('admin-ajax.php')),
             'loginUrl' => esc_url_raw(apply_filters('dlp_paneles_login_url', home_url('/ingresar/'))),
             'refreshSeconds' => 30,
+            'version' => DLP_PANELES_VERSION,
             'logoutUrl' => esc_url_raw(wp_logout_url(home_url('/'))),
             // Tras cerrar sesion desde el panel se vuelve a la pantalla de inicio de sesion del panel.
             'logoutRedirect' => esc_url_raw(wp_login_url(home_url('/' . $slug . '/'))),

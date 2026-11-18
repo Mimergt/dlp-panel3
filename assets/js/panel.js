@@ -1618,6 +1618,18 @@
 
     return api(path, 'GET', null, { retries: 2, retryDelayMs: 1200 })
       .then(function (data) {
+        // Si el servidor ya tiene una version nueva del panel, esta pestaña (una tableta puede pasar dias abierta) recarga sola para
+        // recibir el JS nuevo. Maximo una recarga por minuto para no entrar en bucle.
+        if (data && data.version && sessionCfg().version && String(data.version) !== String(sessionCfg().version)) {
+          var last = 0;
+          try { last = Number(window.sessionStorage.getItem('dlp2_reload') || 0); } catch (e) {}
+          if (Date.now() - last > 60000) {
+            try { window.sessionStorage.setItem('dlp2_reload', String(Date.now())); } catch (e) {}
+            toast('Hay una version nueva del panel. Actualizando...');
+            setTimeout(function () { window.location.reload(); }, 1200);
+            return;
+          }
+        }
         var warnWas = !!state.networkWarning;
         state.networkWarning = '';
         state.orders = Array.isArray(data.orders) ? data.orders : [];
