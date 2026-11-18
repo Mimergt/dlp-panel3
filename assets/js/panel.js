@@ -302,6 +302,7 @@
     if (status === 'dlv') return 'Enviada / LPR';
     if (status === 'rtp') return 'Enviada / LPR';
     if (status === 'completed') return 'Completada';
+    if (status === 'cancelled') return 'Cancelado';
     return status;
   }
 
@@ -334,6 +335,11 @@
 
   function isFinalStatus(status) {
     return status === 'completed';
+  }
+
+  // Completado o cancelado: sin flujo, sin cronometro y sin boton de avance.
+  function isClosedStatus(status) {
+    return status === 'completed' || status === 'cancelled';
   }
 
   function isPickup(order) {
@@ -463,7 +469,8 @@
   }
 
   function renderTypeTabs() {
-    var scoped = state.orders.filter(orderInStores);
+    // Solo lo que esta visible en las columnas (las tiendas no ven los cancelados).
+    var scoped = state.orders.filter(function (o) { return orderInStores(o) && isShownOrder(o); });
     var all = scoped.length;
     var deliveryCount = scoped.filter(function (o) { return o.order_type !== 'pickup'; }).length;
     var pickupCount = scoped.filter(function (o) { return o.order_type === 'pickup'; }).length;
@@ -586,6 +593,9 @@
   }
 
   function renderTimeBadge(order, seconds, mini) {
+    if (order.status === 'cancelled') {
+      return '';
+    }
     var tier = timeTier(seconds);
     var sizeClass = mini ? ' dlp2-time-badge-mini' : '';
     return '<span class="dlp2-time-badge' + sizeClass + ' dlp2-time-' + tier + '" data-time-badge="' + order.id + '">' +
@@ -935,6 +945,9 @@
   }
 
   function renderTimeCard(order, secondsOverride) {
+    if (order.status === 'cancelled') {
+      return '<div class="dlp2-time-card"></div>'; // un pedido cancelado no corre contra el tiempo (se deja el contenedor para el refresco)
+    }
     var seconds = typeof secondsOverride === 'number' ? secondsOverride : liveElapsed(order);
     var elapsedMinutes = seconds / 60;
     var pct = Math.min(100, Math.round((elapsedMinutes / TIME_LATE_MINUTES) * 100));
@@ -1121,8 +1134,8 @@
 
           renderTimeCard(order) +
 
-          (isFinalStatus(order.status) ?
-            '<p class="dlp-final-note">Pedido completado. No requiere mas acciones.</p>' :
+          (isClosedStatus(order.status) ?
+            '<p class="dlp-final-note">' + (order.status === 'cancelled' ? 'Pedido cancelado. No requiere mas acciones.' : 'Pedido completado. No requiere mas acciones.') + '</p>' :
             '<div class="dlp2-flow-card">' +
               '<div class="dlp2-flow-top"><span>Flujo operativo</span><span>Paso ' + flowStep(order.status) + ' de 3 en curso</span></div>' +
               '<button class="dlp2-flow-btn" data-action="advance" data-order-id="' + order.id + '">' + ICON.chevrons + '<span>' + esc(nextLabel(order.status)) + '</span></button>' +
@@ -1187,7 +1200,7 @@
             '</div>' +
           '</div>' +
           '<div class="dlp2-expanded-right">' +
-            (isFinalStatus(order.status) ? '' :
+            (isClosedStatus(order.status) ? '' :
               '<button class="dlp2-flow-btn dlp2-expanded-flow-btn" data-action="advance" data-order-id="' + order.id + '">' + ICON.chevrons + '<span>' + esc(nextLabel(order.status)) + '</span></button>') +
           '</div>' +
         '</div>' +
@@ -1548,7 +1561,8 @@
   // Primer pedido a mostrar en el detalle (activos primero), sin contar el que se acaba de mover.
   function firstShownOrderId(excludeId) {
     var pool = state.orders.filter(function (o) { return o.id !== excludeId && isShownOrder(o); });
-    var pick = pool.find(function (o) { return o.group === 'processing'; }) || pool.find(function (o) { return o.group === 'shipped'; }) || pool[0];
+    // Solo pedidos activos: sin ninguno el detalle queda vacio (nunca se muestra un cancelado o completado por defecto).
+    var pick = pool.find(function (o) { return o.group === 'processing'; }) || pool.find(function (o) { return o.group === 'shipped'; });
     return pick ? pick.id : null;
   }
 
@@ -1622,7 +1636,9 @@
 
         // El detalle nunca debe quedarse con un pedido que ya no se ve en el tablero (cancelado, para las tiendas, o que ya no viene).
         var curSel = state.selectedOrderId ? state.orders.find(function (order) { return order.id === state.selectedOrderId; }) : null;
-        if (!curSel || !isShownOrder(curSel)) {
+        var cerradoSinPedir = curSel && (curSel.group === 'cancelled' || curSel.group === 'completed') && state.pickedClosedId !== curSel.id;
+        if (!curSel || !isShownOrder(curSel) || cerradoSinPedir) {
+          // Sin pedido, ya no visible, o que paso a cancelado/completado desde otro lado (otra tableta, el admin): se vuelve a un pedido activo o al estado vacio.
           state.selectedOrderId = firstShownOrderId(0);
         }
 
@@ -1845,6 +1861,9 @@
     var card = event.target.closest('.dlp2-card');
     if (card && card.dataset.orderId) {
       state.selectedOrderId = Number(card.dataset.orderId);
+      var picked = state.orders.find(function (o) { return o.id === state.selectedOrderId; });
+      // Un completado/cancelado solo se queda en el detalle si la persona lo abrio a proposito desde su columna.
+      state.pickedClosedId = picked && (picked.group === 'cancelled' || picked.group === 'completed') ? picked.id : null;
       render();
       return;
     }
